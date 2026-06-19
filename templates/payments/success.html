@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Payment Successful{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="ep-card p-5">
+                <div class="ep-success-animation mb-4">
+                    <div class="ep-page-icon bg-success mx-auto" style="width:80px;height:80px;font-size:2rem;">
+                        <i class="bi bi-check2-circle text-white"></i>
+                    </div>
+                </div>
+                <h2 class="fw-bold text-success mb-2">Payment Successful!</h2>
+                <p class="text-muted mb-4">Your ticket for <strong>{{ booking.event.title }}</strong> is confirmed.</p>
+                <div class="ep-success-details mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Booking ID</span>
+                        <span class="fw-bold">{{ booking.booking_id|stringformat:"s"|slice:":12"|upper }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Amount Paid</span>
+                        <span class="fw-bold text-success">&#8377;{{ booking.total_price }}</span>
+                    </div>
+                    {% if payment %}
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Payment Method</span>
+                        <span class="fw-bold">{{ payment.payment_method|title }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a href="{% url 'bookings:detail' booking.id %}" class="btn ep-btn-primary">
+                        <i class="bi bi-ticket me-1"></i>View E-Ticket
+                    </a>
+                    <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-outline">
+                        <i class="bi bi-download me-1"></i>Download PDF
+                    </a>
+                    <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">
+                        Browse More Events
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

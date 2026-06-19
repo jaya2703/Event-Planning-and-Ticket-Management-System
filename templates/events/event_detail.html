@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row g-4">
+        <!-- Left: Event Info -->
+        <div class="col-lg-8">
+            <!-- Banner -->
+            <div class="ep-event-banner-wrap mb-4">
+                {% include 'partials/event_banner.html' with event=event img_class='ep-event-banner' size_class='ep-banner-detail' %}
+            </div>
+            
+            <!-- Title & Meta -->
+            <div class="ep-card p-4 mb-4">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    {% if event.category %}<span class="badge ep-badge-cat">{{ event.category.name }}</span>{% endif %}
+                    <span class="badge ep-badge-status-{{ event.status }}">{{ event.get_status_display }}</span>
+                </div>
+                <h2 class="fw-bold mb-3">{{ event.title }}</h2>
+                <div class="row g-3 text-muted mb-4">
+                    <div class="col-6 col-md-3">
+                        <i class="bi bi-calendar3 text-primary me-1"></i><strong>Date</strong><br>
+                        <span>{{ event.date }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <i class="bi bi-clock text-primary me-1"></i><strong>Time</strong><br>
+                        <span>{{ event.time }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <i class="bi bi-geo-alt text-primary me-1"></i><strong>City</strong><br>
+                        <span>{{ event.city|default:"TBA" }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <i class="bi bi-building text-primary me-1"></i><strong>Venue</strong><br>
+                        <span>{{ event.venue }}</span>
+                    </div>
+                </div>
+                
+                <!-- Crowd Density -->
+                <div class="ep-crowd-meter mb-4">
+                    <h6 class="fw-semibold mb-2"><i class="bi bi-people me-1"></i>Live Crowd Density</h6>
+                    <div class="ep-crowd-bar">
+                        <div class="ep-crowd-fill ep-crowd-{{ event.crowd_density }}" style="width:{{ event.fill_percentage }}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted">{{ event.tickets_booked }} checked in / {{ event.total_capacity }} capacity</small>
+                        <span class="ep-crowd-label ep-crowd-{{ event.crowd_density }}">
+                            {{ event.crowd_density|title }} Crowd
+                        </span>
+                    </div>
+                </div>
+                
+                <h5 class="fw-bold mb-3">About This Event</h5>
+                <p class="text-muted">{{ event.description|linebreaks }}</p>
+                
+                {% if event.rules %}
+                <h6 class="fw-bold mt-4">Rules & Guidelines</h6>
+                <div class="ep-rules-box">{{ event.rules|linebreaks }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Polls Section -->
+            {% if polls and user.is_authenticated %}
+            <div class="ep-card p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2"></i>Live Polls</h5>
+                {% for poll in polls %}
+                <div class="ep-poll-card mb-3">
+                    <h6>{{ poll.question }}</h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="poll_id" value="{{ poll.id }}">
+                        {% for option in poll.options.all %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="poll_option" 
+                                   value="{{ option.id }}" id="opt_{{ option.id }}">
+                            <label class="form-check-label" for="opt_{{ option.id }}">
+                                {{ option.option_text }}
+                                <span class="text-muted small">({{ option.vote_count }} votes)</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn ep-btn-primary btn-sm mt-2">Vote</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Feedback Section -->
+            <div class="ep-card p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-star me-2"></i>Reviews & Feedback</h5>
+                {% if user.is_authenticated and already_booked and not user_feedback %}
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="feedback" value="1">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Your Rating</label>
+                        <select name="rating" class="form-select ep-input">
+                            <option value="5">&#11088;&#11088;&#11088;&#11088;&#11088; Excellent</option>
+                            <option value="4">&#11088;&#11088;&#11088;&#11088; Good</option>
+                            <option value="3">&#11088;&#11088;&#11088; Average</option>
+                            <option value="2">&#11088;&#11088; Below Average</option>
+                            <option value="1">&#11088; Poor</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Your Comment</label>
+                        <textarea name="comment" class="form-control ep-input" rows="3" placeholder="Share your experience..."></textarea>
+                    </div>
+                    <button type="submit" class="btn ep-btn-primary btn-sm">Submit Review</button>
+                </form>
+                {% endif %}
+                
+                {% for fb in feedbacks %}
+                <div class="ep-feedback-card mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="ep-avatar-sm">{{ fb.user.first_name|first|upper }}</div>
+                            <div>
+                                <strong>{{ fb.user.get_full_name|default:fb.user.username }}</strong>
+                                <div class="text-warning small">{% for i in "12345" %}{% if forloop.counter <= fb.rating %}&#11088;{% endif %}{% endfor %}</div>
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ fb.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    {% if fb.comment %}<p class="text-muted mt-2 mb-0">{{ fb.comment }}</p>{% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted">No reviews yet. Be the first to review!</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Right: Booking Card -->
+        <div class="col-lg-4">
+            <div class="ep-booking-card sticky-top" style="top:80px;">
+                <div class="ep-booking-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="ep-price-label">Ticket Price</div>
+                            <div class="ep-price-value">
+                                {% if event.ticket_price == 0 %}FREE{% else %}&#8377;{{ event.ticket_price }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">Available</div>
+                            <div class="fw-bold text-success">{{ event.tickets_available }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    {% if user.is_authenticated %}
+                        {% if already_booked %}
+                            <div class="alert alert-success py-2 text-center mb-3">
+                                <i class="bi bi-check-circle me-1"></i>You have a booking!
+                            </div>
+                            <a href="{% url 'bookings:history' %}" class="btn ep-btn-outline w-100 mb-2">
+                                View My Booking
+                            </a>
+                        {% elif event.status == 'upcoming' %}
+                            {% if not event.is_full %}
+                            <a href="{% url 'bookings:book' event.id %}" class="btn ep-btn-primary w-100 mb-3">
+                                <i class="bi bi-ticket me-2"></i>Book Tickets
+                            </a>
+                            {% else %}
+                            <a href="{% url 'bookings:book' event.id %}" class="btn btn-warning w-100 mb-3">
+                                <i class="bi bi-clock me-2"></i>Join Waitlist
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="btn ep-btn-primary w-100 mb-3">
+                            Login to Book Tickets
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Organizer controls -->
+                    {% if user.is_authenticated and event.organizer == user or user.is_authenticated and user.role == "admin" %}
+                    <div class="border-top pt-3 mt-2">
+                        <a href="{% url 'events:edit' event.id %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                            <i class="bi bi-pencil me-1"></i>Edit Event
+                        </a>
+                        <a href="{% url 'volunteers:assign' event.id %}" class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                            <i class="bi bi-people me-1"></i>Manage Volunteers
+                        </a>
+                        <a href="{% url 'events:delete' event.id %}" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-trash me-1"></i>Delete Event
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    <div class="ep-event-info-sm">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Organizer</span>
+                            <span class="fw-semibold">{{ event.organizer.get_full_name|default:event.organizer.username }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Capacity</span>
+                            <span class="fw-semibold">{{ event.total_capacity }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Category</span>
+                            <span class="fw-semibold">{{ event.category.name|default:"General" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

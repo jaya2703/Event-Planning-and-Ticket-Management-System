@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1e2e"/>
+      <stop offset="50%" style="stop-color:#6c5ce7"/>
+      <stop offset="100%" style="stop-color:#fd79a8"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="560" fill="url(#bg)"/>
+  <circle cx="200" cy="150" r="4" fill="#fff" opacity="0.6"/>
+  <circle cx="700" cy="100" r="3" fill="#fff" opacity="0.5"/>
+  <circle cx="650" cy="400" r="5" fill="#fff" opacity="0.4"/>
+  <rect x="150" y="180" width="600" height="200" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <text x="450" y="270" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="36" font-weight="bold">Book Tickets</text>
+  <text x="450" y="320" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-family="Arial,sans-serif" font-size="18">Concerts " Conferences " Festivals</text>
+  <text x="450" y="480" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Arial,sans-serif" font-size="16">QR Check-in " Live Crowd " Smart Recommendations</text>
+</svg>

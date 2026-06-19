@@ -1,0 +1,58 @@
+{% load static %}
+<footer class="em-footer-section">
+    <div class="container em-container">
+        <div class="row g-4 em-footer-grid">
+            <div class="col-lg-3 col-md-6">
+                <a href="{% url 'home' %}" class="em-footer-brand">
+                    <span class="em-footer-brand-icon"><i class="fa-solid fa-bolt"></i></span>
+                    <strong>EventPro</strong>
+                </a>
+                <p class="em-footer-desc">Your most trusted destination for event booking and management.</p>
+                <div class="em-footer-social">
+                    <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6 col-6">
+                <h5 class="em-footer-heading">Company</h5>
+                <ul class="em-footer-links">
+                    <li><a href="{% url 'home' %}#how-it-works">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Press</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-2 col-md-6 col-6">
+                <h5 class="em-footer-heading">Platform</h5>
+                <ul class="em-footer-links">
+                    <li><a href="{% url 'events:list' %}">Events</a></li>
+                    <li><a href="{% url 'home' %}#features">Features</a></li>
+                    <li><a href="#">Pricing</a></li>
+                    <li><a href="#">Partners</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-2 col-md-6 col-6">
+                <h5 class="em-footer-heading">Support</h5>
+                <ul class="em-footer-links">
+                    <li><a href="{% url 'home' %}#faq">Help Center</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Refund Policy</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h5 class="em-footer-heading">Contact Us</h5>
+                <ul class="em-footer-contact">
+                    <li><i class="fa-solid fa-envelope"></i> contact@eventpro.com</li>
+                    <li><i class="fa-solid fa-phone"></i> +91 98765 43210</li>
+                    <li><i class="fa-solid fa-location-dot"></i> Mumbai, India</li>
+                </ul>
+            </div>
+        </div>
+        <div class="em-footer-bottom">
+            <p>&copy; 2026 EventPro. All rights reserved.</p>
+        </div>
+    </div>
+</footer>

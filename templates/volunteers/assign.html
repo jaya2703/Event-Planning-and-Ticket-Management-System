@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Assign Volunteers{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="ep-card p-4">
+                <h5 class="fw-bold mb-4">Assign Volunteer to: {{ event.title }}</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Volunteer</label>
+                        <select name="volunteer_id" class="form-select ep-input" required>
+                            <option value="">-- Choose Volunteer --</option>
+                            {% for vol in volunteers %}
+                            <option value="{{ vol.id }}">{{ vol.get_full_name|default:vol.username }} ({{ vol.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role</label>
+                        <select name="role" class="form-select ep-input">
+                            <option value="registration">Registration Desk</option>
+                            <option value="security">Security</option>
+                            <option value="helpdesk">Help Desk</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="logistics">Logistics</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn ep-btn-primary">Assign Volunteer</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="ep-card p-4">
+                <h5 class="fw-bold mb-3">Assigned Volunteers</h5>
+                {% for a in assigned %}
+                <div class="ep-activity-row">
+                    <div class="ep-avatar-xs">{{ a.volunteer.first_name|first|upper }}</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small">{{ a.volunteer.get_full_name|default:a.volunteer.username }}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ a.get_role_display }}</div>
+                    </div>
+                </div>
+                {% empty %}<p class="text-muted">No volunteers assigned yet.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

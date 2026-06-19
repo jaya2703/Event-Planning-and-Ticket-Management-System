@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Home{% endblock %}
+{% block body_class %}ep-site em-home{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="em-hero" id="top">
+    <div class="em-hero-bg" aria-hidden="true">
+        <div class="em-hero-blob em-hero-blob-1"></div>
+        <div class="em-hero-blob em-hero-blob-2"></div>
+        <div class="em-hero-blob em-hero-blob-3"></div>
+        <div class="em-hero-dots"></div>
+    </div>
+    <div class="container em-container position-relative">
+        <div class="row align-items-center em-hero-row">
+            <div class="col-lg-6 em-hero-left">
+                <div class="em-hero-badge">
+                    <i class="fa-solid fa-crown"></i> #1 Premium Event Partner
+                </div>
+                <h1 class="em-hero-title">
+                    Plan, Discover &amp; Book<br>
+                    <span>Amazing Events</span>
+                </h1>
+                <p class="em-hero-desc">
+                    EventPro is your all-in-one platform for seamless event management,
+                    smart ticketing, QR entry, crowd monitoring, rewards and much more.
+                </p>
+                <div class="em-hero-btns">
+                    <a href="{% url 'events:list' %}" class="em-btn-explore">
+                        Explore Events <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    {% if user.is_authenticated and user.role in 'organizer,admin' %}
+                    <a href="{% url 'events:create' %}" class="em-btn-create">
+                        <i class="fa-solid fa-calendar-plus"></i> Create Event
+                    </a>
+                    {% else %}
+                    <a href="{% url 'accounts:register' %}" class="em-btn-create">
+                        <i class="fa-solid fa-calendar-plus"></i> Create Event
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-6 em-hero-right">
+                <div class="em-hero-visual">
+                    {% if spotlight_event %}
+                    <a href="{% url 'events:detail' spotlight_event.id %}" class="em-hero-card">
+                        <div class="em-hero-card-img">
+                            {% if spotlight_event.banner %}
+                            <img src="{{ spotlight_event.banner.url }}" class="em-hero-card-banner" alt="{{ spotlight_event.title }}">
+                            {% else %}
+                            <img src="{% static 'images/hero/hero-concert.jpg' %}" class="em-hero-card-banner" alt="{{ spotlight_event.title }}">
+                            {% endif %}
+                            <div class="em-date-badge">
+                                <span class="em-date-month">{{ spotlight_event.date|date:"M"|upper }}</span>
+                                <span class="em-date-day">{{ spotlight_event.date|date:"d" }}</span>
+                            </div>
+                            {% if spotlight_event.category %}
+                            <span class="em-hero-cat-badge">{{ spotlight_event.category.name }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="em-hero-card-body">
+                            <h4>{{ spotlight_event.title }}</h4>
+                            <p class="em-hero-card-loc">
+                                <i class="fa-solid fa-location-dot"></i>
+                                {{ spotlight_event.venue }}{% if spotlight_event.city %}, {{ spotlight_event.city }}{% endif %}
+                            </p>
+                            <div class="em-hero-card-meta">
+                                <span><i class="fa-regular fa-calendar"></i> {{ spotlight_event.date|date:"d M Y" }}</span>
+                                <span><i class="fa-regular fa-clock"></i> {{ spotlight_event.time|time:"g:i A" }} Onwards</span>
+                            </div>
+                            <div class="em-hero-card-footer">
+                                <div class="em-hero-card-price">
+                                    {% if spotlight_event.ticket_price == 0 %}
+                                    <strong>FREE</strong><small>Entry</small>
+                                    {% else %}
+                                    <strong>₹{{ spotlight_event.ticket_price|floatformat:0 }}</strong><small>Onwards</small>
+                                    {% endif %}
+                                </div>
+                                <span class="em-seats-left">{{ spotlight_event.tickets_available }} Seats Left</span>
+                                <span class="em-btn-book">Book Now</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% else %}
+                    <div class="em-hero-card em-hero-card-empty">
+                        <p>No upcoming events yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="em-stats-row">
+            <div class="em-stat-item">
+                <span class="em-stat-icon"><i class="fa-solid fa-gift"></i></span>
+                <div>
+                    <strong>{{ stat_events }}</strong>
+                    <small>Events Hosted</small>
+                </div>
+            </div>
+            <div class="em-stat-item">
+                <span class="em-stat-icon"><i class="fa-solid fa-ticket"></i></span>
+                <div>
+                    <strong>{{ stat_tickets }}</strong>
+                    <small>Tickets Sold</small>
+                </div>
+            </div>
+            <div class="em-stat-item">
+                <span class="em-stat-icon"><i class="fa-solid fa-users"></i></span>
+                <div>
+                    <strong>{{ stat_users }}</strong>
+                    <small>Happy Users</small>
+                </div>
+            </div>
+            <div class="em-stat-item">
+                <span class="em-stat-icon em-stat-star"><i class="fa-solid fa-star"></i></span>
+                <div>
+                    <strong>4.9</strong>
+                    <small>User Rating</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TRENDING EVENTS -->
+<section class="em-trending-section" id="events">
+    <div class="container em-container">
+        <div class="em-section-head">
+            <h2 class="em-section-title">Trending Events</h2>
+            <a href="{% url 'events:list' %}" class="em-link-all">
+                View All Events <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="em-trending-grid">
+            {% for event in trending_events %}
+            {% include 'partials/trending_event_card.html' with event=event %}
+            {% empty %}
+            <p class="em-trending-empty">No trending events right now.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- WHY CHOOSE -->
+<section class="em-why-section" id="features">
+    <div class="container em-container">
+        <h2 class="em-why-title">Why Choose EventPro?</h2>
+        <div class="em-feature-grid">
+            <div class="em-feature-card">
+                <span class="em-feature-card-icon"><i class="fa-solid fa-ticket"></i></span>
+                <div>
+                    <h5>Smart Ticketing</h5>
+                    <p>Get hassle-free smart tickets with real-time confirmation.</p>
+                </div>
+            </div>
+            <div class="em-feature-card">
+                <span class="em-feature-card-icon"><i class="fa-solid fa-users"></i></span>
+                <div>
+                    <h5>Live Crowd Monitoring</h5>
+                    <p>AI-powered crowd density tracking for safety.</p>
+                </div>
+            </div>
+            <div class="em-feature-card">
+                <span class="em-feature-card-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                <div>
+                    <h5>Emergency SOS</h5>
+                    <p>Instant alert &amp; quick response for emergencies.</p>
+                </div>
+            </div>
+            <div class="em-feature-card">
+                <span class="em-feature-card-icon"><i class="fa-solid fa-star"></i></span>
+                <div>
+                    <h5>Smart Rating</h5>
+                    <p>Real-time tracking data in a secure network.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="em-how-section" id="how-it-works">
+    <div class="container em-container">
+        <h2 class="em-how-title">How It Works?</h2>
+        <div class="em-steps-row">
+            <div class="em-step-item">
+                <div class="em-step-circle em-step-circle-1"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <span class="em-step-num">01</span>
+                <h5>Browse Events</h5>
+                <p>Explore events that interest you.</p>
+            </div>
+            <div class="em-step-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="em-step-item">
+                <div class="em-step-circle em-step-circle-2"><i class="fa-solid fa-ticket"></i></div>
+                <span class="em-step-num">02</span>
+                <h5>Book Tickets</h5>
+                <p>Choose your tickets and book easily.</p>
+            </div>
+            <div class="em-step-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="em-step-item">
+                <div class="em-step-circle em-step-circle-3"><i class="fa-solid fa-qrcode"></i></div>
+                <span class="em-step-num">03</span>
+                <h5>Smooth Entry</h5>
+                <p>Scan a QR code at the event gate.</p>
+            </div>
+            <div class="em-step-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="em-step-item">
+                <div class="em-step-circle em-step-circle-4"><i class="fa-solid fa-champagne-glasses"></i></div>
+                <span class="em-step-num">04</span>
+                <h5>Enjoy the Event</h5>
+                <p>Step in and enjoy the amazing experience!</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS COUNTER -->
+<section class="em-counter-section">
+    <div class="container em-container">
+        <div class="em-counter-grid">
+            <div class="em-counter-item">
+                <span class="em-counter-icon"><i class="fa-solid fa-calendar-days"></i></span>
+                <div>
+                    <strong>{{ stat_events }}</strong>
+                    <small>Events Hosted</small>
+                </div>
+            </div>
+            <div class="em-counter-item">
+                <span class="em-counter-icon"><i class="fa-solid fa-rocket"></i></span>
+                <div>
+                    <strong>{{ stat_tickets }}</strong>
+                    <small>Tickets Sold</small>
+                </div>
+            </div>
+            <div class="em-counter-item">
+                <span class="em-counter-icon"><i class="fa-solid fa-users"></i></span>
+                <div>
+                    <strong>{{ stat_users }}</strong>
+                    <small>Happy Users</small>
+                </div>
+            </div>
+            <div class="em-counter-item">
+                <span class="em-counter-icon"><i class="fa-solid fa-bullseye"></i></span>
+                <div>
+                    <strong>98%</strong>
+                    <small>Satisfaction Rate</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SMART FEATURES -->
+<section class="py-5 em-section-soft">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="em-hero-badge">Smart Features</span>
+            <h2 class="fw-bold display-6">Everything You Need In One Platform</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <h5>Secure Payments</h5>
+                    <p>Mock payment flow with success and failure handling.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-ticket"></i>
+                    <h5>PDF Tickets</h5>
+                    <p>Download printable tickets for your bookings.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-user-clock"></i>
+                    <h5>Waitlist Upgrade</h5>
+                    <p>Automatic ticket allocation on cancellations.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <h5>Easy Cancellation</h5>
+                    <p>Cancel bookings and manage your tickets easily.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <h5>AI Recommendations</h5>
+                    <p>Personalized event suggestions based on your interests.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <h5>Analytics Dashboard</h5>
+                    <p>Revenue, bookings and event insights.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-square-poll-vertical"></i>
+                    <h5>Live Polling</h5>
+                    <p>Audience interaction during events.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="em-smart-card">
+                    <i class="fa-solid fa-star"></i>
+                    <h5>Event Feedback</h5>
+                    <p>Rate and review events after attending.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="em-testimonials-section">
+    <div class="container em-container">
+        <h2 class="em-testimonials-title">What People Say</h2>
+        <div class="em-testimonials-line"></div>
+        <div class="em-testimonials-slider">
+            <button type="button" class="em-testimonials-nav em-testimonials-prev" aria-label="Previous testimonial">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="em-testimonials-track" id="emTestimonialTrack">
+                <article class="em-testimonial-card">
+                    <div class="em-testimonial-top">
+                        <div class="em-testimonial-avatar em-avatar-f">PS</div>
+                        <div class="em-testimonial-stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="em-testimonial-quote">Best platform for event booking! Smooth process and felt really secure in entering personal data.</p>
+                    <p class="em-testimonial-author">— Priyanka Sharma</p>
+                </article>
+                <article class="em-testimonial-card">
+                    <div class="em-testimonial-top">
+                        <div class="em-testimonial-avatar em-avatar-m">RM</div>
+                        <div class="em-testimonial-stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="em-testimonial-quote">I loved searching features for festivals. It really showed variety in my search.</p>
+                    <p class="em-testimonial-author">— Rohan Mehta</p>
+                </article>
+                <article class="em-testimonial-card">
+                    <div class="em-testimonial-top">
+                        <div class="em-testimonial-avatar em-avatar-f">KI</div>
+                        <div class="em-testimonial-stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="em-testimonial-quote">I love the rewards system. Booking tickets is now more interesting and fun!</p>
+                    <p class="em-testimonial-author">— Kavya Iyer</p>
+                </article>
+            </div>
+            <button type="button" class="em-testimonials-nav em-testimonials-next" aria-label="Next testimonial">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- ORGANIZER CTA -->
+<section class="em-organizer-section">
+    <div class="container em-container">
+        <div class="em-organizer-card">
+            <div class="em-organizer-content">
+                <h2>Are You an Organizer?</h2>
+                <p>Create, manage and showcase your events to thousands of potential attendees.</p>
+                {% if user.is_authenticated and user.role in 'organizer,admin' %}
+                <a href="{% url 'events:create' %}" class="em-organizer-btn">
+                    Create Your Event <i class="fa-solid fa-arrow-right"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'accounts:register' %}" class="em-organizer-btn">
+                    Create Your Event <i class="fa-solid fa-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+            <div class="em-organizer-features">
+                <div class="em-organizer-feat">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Real-time Statistics</span>
+                </div>
+                <div class="em-organizer-feat">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Reach Wide Audience</span>
+                </div>
+                <div class="em-organizer-feat">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <span>Promote Events</span>
+                </div>
+                <div class="em-organizer-feat">
+                    <i class="fa-solid fa-ticket"></i>
+                    <span>Secure E-Tickets</span>
+                </div>
+            </div>
+            <div class="em-organizer-visual">
+                <img src="{% static 'images/hero/hero-concert.jpg' %}" alt="Live event crowd">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section class="em-faq-section" id="faq">
+    <div class="container em-container">
+        <div class="em-faq-header">
+            <div class="em-faq-header-main">
+                <h2 class="em-faq-title">Frequently Asked Questions</h2>
+                <div class="em-faq-line"></div>
+            </div>
+            <a href="#faq" class="em-faq-view-all">
+                View All FAQs <i class="fa-solid fa-chevron-right"></i>
+            </a>
+        </div>
+        <div class="row g-3 em-faq-grid">
+            <div class="col-md-6">
+                <div class="accordion em-faq-accordion" id="faqLeft">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                How does ticket booking work?
+                            </button>
+                        </h3>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqLeft">
+                            <div class="accordion-body">
+                                Browse events, select tickets, and complete checkout securely. Your booking is confirmed instantly with a digital ticket.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                How does QR entry work?
+                            </button>
+                        </h3>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqLeft">
+                            <div class="accordion-body">
+                                Every booking generates a unique QR code. Show it at the venue gate for fast, secure check-in.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="accordion em-faq-accordion" id="faqRight">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Can I get a refund?
+                            </button>
+                        </h3>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqRight">
+                            <div class="accordion-body">
+                                Refund eligibility depends on the event organizer's policy. Check the event details or contact support before booking.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                How can I start organizing events?
+                            </button>
+                        </h3>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqRight">
+                            <div class="accordion-body">
+                                Register as an Organizer, then use Create Event from your dashboard to publish and manage your events.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const track = document.getElementById('emTestimonialTrack');
+    if (!track) return;
+    const scrollStep = () => Math.max(track.clientWidth * 0.34, 280);
+    document.querySelector('.em-testimonials-prev')?.addEventListener('click', function () {
+        track.scrollBy({ left: -scrollStep(), behavior: 'smooth' });
+    });
+    document.querySelector('.em-testimonials-next')?.addEventListener('click', function () {
+        track.scrollBy({ left: scrollStep(), behavior: 'smooth' });
+    });
+})();
+</script>
+{% endblock %}

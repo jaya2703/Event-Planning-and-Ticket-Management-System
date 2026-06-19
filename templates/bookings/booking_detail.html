@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Booking Detail{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="ep-ticket-card">
+                <div class="ep-ticket-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="ep-ticket-label">E-TICKET</div>
+                            <h4 class="text-white fw-bold mb-0">{{ booking.event.title }}</h4>
+                        </div>
+                        <div class="text-end">
+                            <span class="ep-ticket-status ep-status-{{ booking.status }}">{{ booking.get_status_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ep-ticket-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">DATE</small>
+                                <div class="fw-semibold">{{ booking.event.date }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">TIME</small>
+                                <div class="fw-semibold">{{ booking.event.time }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">VENUE</small>
+                                <div class="fw-semibold">{{ booking.event.venue }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">TICKETS</small>
+                                <div class="fw-semibold">{{ booking.quantity }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">TOTAL PAID</small>
+                                <div class="fw-semibold text-success">&#8377;{{ booking.total_price }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">BOOKING ID</small>
+                                <div class="fw-semibold text-primary small">{{ booking.booking_id|stringformat:"s"|slice:":16"|upper }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if booking.qr_code and booking.status == 'confirmed' %}
+                    <div class="text-center my-3">
+                        <div class="ep-qr-wrap">
+                            <img src="{{ booking.qr_code.url }}" alt="QR Code" class="ep-qr-img">
+                        </div>
+                        <small class="text-muted">Scan this QR code at the venue entrance</small>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                        {% if booking.status == 'confirmed' %}
+                        <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary">
+                            <i class="bi bi-download me-1"></i>Download PDF Ticket
+                        </a>
+                        <a href="{% url 'bookings:cancel' booking.id %}" class="btn btn-outline-danger">
+                            <i class="bi bi-x-circle me-1"></i>Cancel Booking
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'accounts:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

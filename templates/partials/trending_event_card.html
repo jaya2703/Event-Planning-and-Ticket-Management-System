@@ -1,0 +1,24 @@
+{% load static %}
+<a href="{% url 'events:detail' event.id %}" class="em-trend-card">
+    <div class="em-trend-card-img-wrap">
+        {% if event.banner %}
+        <img src="{{ event.banner.url }}" alt="{{ event.title }}" class="em-trend-img">
+        {% else %}
+        <img src="{% static event.card_fallback_image %}" alt="{{ event.title }}" class="em-trend-img">
+        {% endif %}
+        {% if event.category %}
+        <span class="em-trend-cat">{{ event.category.name }}</span>
+        {% endif %}
+        <div class="em-trend-date">
+            <span class="em-trend-date-month">{{ event.date|date:"M"|upper }}</span>
+            <span class="em-trend-date-day">{{ event.date|date:"d" }}</span>
+        </div>
+    </div>
+    <div class="em-trend-body">
+        <h5 class="em-trend-title">{{ event.title|truncatechars:24 }}</h5>
+        <p class="em-trend-loc">{{ event.venue|truncatechars:22 }}{% if event.city %}, {{ event.city }}{% endif %}</p>
+        <p class="em-trend-price">
+            {% if event.ticket_price == 0 %}FREE{% else %}₹{{ event.ticket_price|floatformat:0 }} onwards{% endif %}
+        </p>
+    </div>
+</a>

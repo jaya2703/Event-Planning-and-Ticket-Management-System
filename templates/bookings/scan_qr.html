@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Scan QR Code{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="ep-card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="ep-page-icon bg-primary me-3"><i class="bi bi-qr-code-scan text-white"></i></div>
+                    <div>
+                        <h4 class="fw-bold mb-0">QR Code Verification</h4>
+                        <p class="text-muted mb-0">Enter or paste the QR code data</p>
+                    </div>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">QR Code Data</label>
+                        <input type="text" name="qr_data" class="form-control ep-input"
+                               placeholder="EVENTPRO-BOOKING-xxxxxxxx-..." required>
+                        <small class="text-muted">Paste the QR code content here (format: EVENTPRO-BOOKING-uuid)</small>
+                    </div>
+                    <button type="submit" class="btn ep-btn-primary w-100">
+                        <i class="bi bi-check-circle me-2"></i>Verify & Check In
+                    </button>
+                </form>
+                <hr class="my-4">
+                <div class="text-center text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    In a real deployment, use a phone camera to scan the QR code directly.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

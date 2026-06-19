@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Payment Failed{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="ep-card p-5">
+                <div class="ep-page-icon bg-danger mx-auto mb-4" style="width:80px;height:80px;font-size:2rem;">
+                    <i class="bi bi-x-circle text-white"></i>
+                </div>
+                <h2 class="fw-bold text-danger mb-2">Payment Failed</h2>
+                <p class="text-muted mb-4">Unfortunately your payment for <strong>{{ booking.event.title }}</strong> could not be processed.</p>
+                <div class="ep-info-box mb-4">
+                    <small><i class="bi bi-info-circle me-1"></i>This is a mock simulation. Try again — 90% of payments succeed.</small>
+                </div>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{% url 'events:detail' booking.event.id %}" class="btn ep-btn-primary">Try Again</a>
+                    <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">Browse Events</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

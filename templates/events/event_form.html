@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Event{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="ep-card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="ep-page-icon bg-primary me-3"><i class="bi bi-calendar-plus text-white"></i></div>
+                    <div>
+                        <h4 class="fw-bold mb-0">{{ action }} Event</h4>
+                        <p class="text-muted mb-0">Fill in the event details below</p>
+                    </div>
+                </div>
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Event Title *</label>
+                            <input type="text" name="title" class="form-control ep-input" 
+                                   value="{{ form.title.value|default:'' }}" placeholder="Give your event a great title" required>
+                            {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Description *</label>
+                            <textarea name="description" class="form-control ep-input" rows="4" 
+                                      placeholder="Describe your event in detail...">{{ form.description.value|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Category</label>
+                            <select name="category" class="form-select ep-input">
+                                <option value="">-- Select Category --</option>
+                                {% for cat in form.category.field.queryset %}
+                                <option value="{{ cat.id }}" 
+                                    {% if form.category.value|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select name="status" class="form-select ep-input">
+                                {% for value, label in form.status.field.choices %}
+                                <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Event Date *</label>
+                            <input type="date" name="date" class="form-control ep-input" 
+                                   value="{{ form.date.value|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Event Time *</label>
+                            <input type="time" name="time" class="form-control ep-input" 
+                                   value="{{ form.time.value|default:'' }}" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Venue Name *</label>
+                            <input type="text" name="venue" class="form-control ep-input" 
+                                   value="{{ form.venue.value|default:'' }}" placeholder="Full venue address" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">City *</label>
+                            <input type="text" name="city" class="form-control ep-input" 
+                                   value="{{ form.city.value|default:'' }}" placeholder="City name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Total Capacity</label>
+                            <input type="number" name="total_capacity" class="form-control ep-input" 
+                                   value="{{ form.total_capacity.value|default:100 }}" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ticket Price (&#8377;)</label>
+                            <input type="number" name="ticket_price" class="form-control ep-input" 
+                                   value="{{ form.ticket_price.value|default:0 }}" min="0" step="0.01">
+                            <small class="text-muted">Enter 0 for free event</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Event Banner Image</label>
+                            <input type="file" name="banner" class="form-control ep-input" accept="image/*">
+                            {% if form.instance.banner %}
+                                <small class="text-muted">Current: {{ form.instance.banner.name }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Rules & Guidelines</label>
+                            <textarea name="rules" class="form-control ep-input" rows="3" 
+                                      placeholder="Any rules attendees should know...">{{ form.rules.value|default:'' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn ep-btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i>{{ action }} Event
+                        </button>
+                        <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

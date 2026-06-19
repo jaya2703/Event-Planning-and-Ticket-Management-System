@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Payment{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="ep-card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="ep-page-icon bg-success me-3"><i class="bi bi-credit-card text-white"></i></div>
+                    <div>
+                        <h4 class="fw-bold mb-0">Complete Payment</h4>
+                        <p class="text-muted mb-0">Secure mock payment (no real money)</p>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="ep-order-summary mb-4">
+                    <h6 class="fw-semibold mb-3">Order Summary</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Event</span>
+                        <span class="fw-semibold">{{ event.title }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Date</span>
+                        <span>{{ event.date }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tickets</span>
+                        <span>{{ booking.quantity }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Price per ticket</span>
+                        <span>&#8377;{{ event.ticket_price }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold fs-5">
+                        <span>Total</span>
+                        <span class="text-success">&#8377;{{ booking.total_price }}</span>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <!-- Payment Method -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Payment Method</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="payment_method" id="pm_card" value="card" checked>
+                                <label class="btn ep-role-btn w-100 text-center" for="pm_card">
+                                    <i class="bi bi-credit-card d-block fs-4 mb-1"></i>Card
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="payment_method" id="pm_upi" value="upi">
+                                <label class="btn ep-role-btn w-100 text-center" for="pm_upi">
+                                    <i class="bi bi-phone d-block fs-4 mb-1"></i>UPI
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="payment_method" id="pm_netbank" value="netbanking">
+                                <label class="btn ep-role-btn w-100 text-center" for="pm_netbank">
+                                    <i class="bi bi-bank d-block fs-4 mb-1"></i>Net Banking
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mock Card Fields -->
+                    <div id="card_fields">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Card Number</label>
+                            <input type="text" class="form-control ep-input" value="4242 4242 4242 4242" readonly>
+                            <small class="text-muted">Mock card — use as is</small>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Expiry</label>
+                                <input type="text" class="form-control ep-input" value="12/28" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">CVV</label>
+                                <input type="text" class="form-control ep-input" value="123" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ep-info-box mb-4">
+                        <small><i class="bi bi-shield-check me-1 text-success"></i>
+                        This is a mock payment. No real transaction happens. 90% success rate simulated.</small>
+                    </div>
+
+                    <button type="submit" class="btn ep-btn-primary w-100 py-2">
+                        <i class="bi bi-lock me-2"></i>Pay &#8377;{{ booking.total_price }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

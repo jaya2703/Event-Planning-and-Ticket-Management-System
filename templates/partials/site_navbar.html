@@ -1,0 +1,62 @@
+<nav class="navbar navbar-expand-lg navbar-light em-navbar sticky-top">
+    <div class="container em-container">
+        <a class="navbar-brand em-brand" href="{% url 'home' %}">
+            <span class="em-brand-icon"><i class="fa-solid fa-bolt"></i></span>
+            <strong class="em-brand-name">EventPro</strong>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#emMenu" aria-controls="emMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="emMenu">
+            <ul class="navbar-nav mx-auto em-nav-links">
+                <li class="nav-item">
+                    <a class="nav-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}" href="{% url 'home' %}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if request.resolver_match.namespace == 'events' and request.resolver_match.url_name == 'list' %} active{% endif %}" href="{% url 'events:list' %}">Events</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}#features">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}#how-it-works">About Us</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}#faq">Contact</a>
+                </li>
+            </ul>
+            <div class="em-nav-actions">
+                {% if user.is_authenticated %}
+                <a href="{% url 'notifications:list' %}" class="em-nav-icon-btn" title="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                </a>
+                <div class="dropdown em-nav-user-menu">
+                    <button class="em-nav-user dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="" class="em-nav-avatar">
+                        {% else %}
+                        <span class="em-nav-avatar em-nav-avatar-text">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+                        {% endif %}
+                        <span class="em-nav-username">{{ user.first_name|default:user.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end em-nav-dropdown">
+                        <li><h6 class="dropdown-header">{{ user.get_role_display }}</h6></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{% url 'bookings:history' %}"><i class="fa-solid fa-ticket"></i> My Bookings</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="fa-solid fa-user"></i> Profile</a></li>
+                        {% if user.role == 'organizer' or user.role == 'admin' %}
+                        <li><a class="dropdown-item" href="{% url 'events:create' %}"><i class="fa-solid fa-calendar-plus"></i> Create Event</a></li>
+                        <li><a class="dropdown-item" href="{% url 'bookings:scan_qr' %}"><i class="fa-solid fa-qrcode"></i> Scan QR</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+                    </ul>
+                </div>
+                {% else %}
+                <a href="{% url 'accounts:login' %}" class="em-link-signin">Sign In</a>
+                <a href="{% url 'accounts:register' %}" class="btn em-btn-start">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

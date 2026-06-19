@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Book Ticket{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="ep-card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="ep-page-icon bg-primary me-3"><i class="bi bi-ticket text-white"></i></div>
+                    <div>
+                        <h4 class="fw-bold mb-0">Book Tickets</h4>
+                        <p class="text-muted mb-0">{{ event.title }}</p>
+                    </div>
+                </div>
+
+                <div class="ep-booking-summary mb-4">
+                    <div class="row g-2 text-sm">
+                        <div class="col-6"><span class="text-muted">Date:</span> <strong>{{ event.date }}</strong></div>
+                        <div class="col-6"><span class="text-muted">Time:</span> <strong>{{ event.time }}</strong></div>
+                        <div class="col-12"><span class="text-muted">Venue:</span> <strong>{{ event.venue }}</strong></div>
+                        <div class="col-6"><span class="text-muted">Price:</span>
+                            <strong>{% if event.ticket_price == 0 %}FREE{% else %}&#8377;{{ event.ticket_price }} / ticket{% endif %}</strong>
+                        </div>
+                        <div class="col-6"><span class="text-muted">Available:</span> <strong class="text-success">{{ available_tickets }}</strong></div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Number of Tickets</label>
+                        <div class="ep-qty-selector d-flex align-items-center gap-3">
+                            <button type="button" class="btn ep-qty-btn" onclick="changeQty(-1)">
+                                <i class="bi bi-dash-lg"></i>
+                            </button>
+                            <input type="number" name="quantity" id="qty" class="form-control ep-input text-center fw-bold fs-4"
+                                   value="1" min="1" max="{{ available_tickets|default:5 }}" style="width:80px;">
+                            <button type="button" class="btn ep-qty-btn" onclick="changeQty(1)">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Max 5 tickets per booking</small>
+                    </div>
+
+                    <div class="ep-total-box mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Total Amount</span>
+                            <span class="ep-total-amount" id="totalAmount">
+                                {% if event.ticket_price == 0 %}FREE{% else %}&#8377;{{ event.ticket_price }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn ep-btn-primary w-100 py-2">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Proceed to Payment
+                    </button>
+                    <a href="{% url 'events:detail' event.id %}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const price = {{ event.ticket_price }};
+function changeQty(delta) {
+    const qty = document.getElementById('qty');
+    let val = parseInt(qty.value) + delta;
+    val = Math.max(1, Math.min(5, val));
+    qty.value = val;
+    const total = price * val;
+    document.getElementById('totalAmount').innerHTML = price == 0 ? 'FREE' : '&#8377;' + total.toFixed(2);
+}
+document.getElementById('qty').addEventListener('input', function() {
+    const val = parseInt(this.value) || 1;
+    const total = price * val;
+    document.getElementById('totalAmount').innerHTML = price == 0 ? 'FREE' : '&#8377;' + total.toFixed(2);
+});
+</script>
+{% endblock %}

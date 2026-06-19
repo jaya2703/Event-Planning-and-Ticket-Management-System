@@ -1,0 +1,7 @@
+{# Reusable event banner: uploaded image or category photo fallback #}
+{% load static %}
+{% if event.banner %}
+<img src="{{ event.banner.url }}" class="{{ img_class|default:'ep-event-img' }}" alt="{{ event.title }}">
+{% else %}
+<img src="{% static event.card_fallback_image %}" class="{{ img_class|default:'ep-event-img' }}" alt="{{ event.title }}">
+{% endif %}

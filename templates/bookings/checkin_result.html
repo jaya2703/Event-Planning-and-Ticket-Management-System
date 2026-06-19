@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Check-in Result{% endblock %}
+{% block content %}
+<div class="container em-container ep-page-wrap">
+    <div class="row justify-content-center">
+        <div class="col-md-5 text-center">
+            <div class="ep-card p-5">
+                {% if success %}
+                    <div class="ep-page-icon bg-success mx-auto mb-3"><i class="bi bi-check2-circle text-white fs-2"></i></div>
+                    <h3 class="fw-bold text-success">Check-in Successful!</h3>
+                    <p class="text-muted">Welcome to <strong>{{ booking.event.title }}</strong></p>
+                    <div class="ep-checkin-info mt-3">
+                        <div><strong>Name:</strong> {{ booking.user.get_full_name }}</div>
+                        <div><strong>Tickets:</strong> {{ booking.quantity }}</div>
+                        <div><strong>Booking ID:</strong> {{ booking.booking_id|stringformat:"s"|slice:":8"|upper }}</div>
+                    </div>
+                {% elif duplicate %}
+                    <div class="ep-page-icon bg-warning mx-auto mb-3"><i class="bi bi-exclamation-triangle text-white fs-2"></i></div>
+                    <h3 class="fw-bold text-warning">Duplicate Entry!</h3>
+                    <p class="text-muted">This ticket has already been used. Possible duplicate scan attempt.</p>
+                {% else %}
+                    <div class="ep-page-icon bg-danger mx-auto mb-3"><i class="bi bi-x-circle text-white fs-2"></i></div>
+                    <h3 class="fw-bold text-danger">Check-in Failed</h3>
+                    <p class="text-muted">Ticket status: <strong>{{ booking.get_status_display }}</strong></p>
+                {% endif %}
+                <a href="{% url 'bookings:scan_qr' %}" class="btn ep-btn-primary mt-4">
+                    <i class="bi bi-qr-code-scan me-1"></i>Scan Another
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
