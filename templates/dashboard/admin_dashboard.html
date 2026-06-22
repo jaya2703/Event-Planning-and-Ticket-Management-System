@@ -1,136 +1,139 @@
 {% extends 'base.html' %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Admin Command Center{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+
 {% block content %}
-<div class="ep-dash-header">
+<div class="ep-ent-header ep-ent-animate">
     <div>
-        <h1 class="ep-dash-title">Admin Dashboard</h1>
-        <p class="ep-dash-subtitle">Complete system overview</p>
+        <h1>Admin Command Center</h1>
+        <p>Enterprise analytics & platform management</p>
+    </div>
+    <div class="ep-ent-quick-actions">
+        <a href="{% url 'accounts:manage_users' %}" class="btn ep-btn-outline btn-sm">Users</a>
+        <a href="{% url 'accounts:manage_events' %}" class="btn ep-btn-outline btn-sm">Events</a>
+        <a href="{% url 'accounts:export_report' 'bookings' %}" class="btn ep-btn-primary btn-sm"><i class="bi bi-download me-1"></i>Export CSV</a>
     </div>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="ep-stat-card ep-stat-purple">
-            <div class="ep-stat-icon"><i class="bi bi-people-fill"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">{{ total_users }}</div>
-                <div class="ep-stat-label">Total Users</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="ep-stat-card ep-stat-blue">
-            <div class="ep-stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">{{ total_events }}</div>
-                <div class="ep-stat-label">Total Events</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="ep-stat-card ep-stat-green">
-            <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">{{ total_bookings }}</div>
-                <div class="ep-stat-label">Total Bookings</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="ep-stat-card ep-stat-orange">
-            <div class="ep-stat-icon"><i class="bi bi-currency-rupee"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">&#8377;{{ total_revenue|floatformat:0 }}</div>
-                <div class="ep-stat-label">Total Revenue</div>
-            </div>
-        </div>
-    </div>
+<div class="ep-ent-nav-pills ep-ent-animate">
+    <a href="{% url 'accounts:admin_dashboard' %}" class="ep-ent-nav-pill active">Overview</a>
+    <a href="{% url 'accounts:manage_users' %}" class="ep-ent-nav-pill">Users</a>
+    <a href="{% url 'accounts:manage_events' %}" class="ep-ent-nav-pill">Events</a>
+    <a href="{% url 'accounts:manage_payments' %}" class="ep-ent-nav-pill">Payments</a>
+    <a href="{% url 'accounts:manage_categories' %}" class="ep-ent-nav-pill">Categories</a>
+    <a href="{% url 'accounts:audit_logs' %}" class="ep-ent-nav-pill">Audit Logs</a>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-6">
-        <div class="ep-card p-4 h-100">
-            <h6 class="fw-bold mb-3">Event Status Breakdown</h6>
-            <div class="ep-breakdown-item mb-3">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Upcoming</span><span class="fw-bold">{{ upcoming_events }}</span>
-                </div>
-                <div class="progress ep-progress">
-                    <div class="progress-bar bg-primary" style="width:{% if total_events %}{% widthratio upcoming_events total_events 100 %}{% else %}0{% endif %}%"></div>
-                </div>
-            </div>
-            <div class="ep-breakdown-item mb-3">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Ongoing</span><span class="fw-bold">{{ ongoing_events }}</span>
-                </div>
-                <div class="progress ep-progress">
-                    <div class="progress-bar bg-success" style="width:{% if total_events %}{% widthratio ongoing_events total_events 100 %}{% else %}0{% endif %}%"></div>
-                </div>
-            </div>
-            <div class="ep-breakdown-item">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Completed</span><span class="fw-bold">{{ completed_events }}</span>
-                </div>
-                <div class="progress ep-progress">
-                    <div class="progress-bar bg-secondary" style="width:{% if total_events %}{% widthratio completed_events total_events 100 %}{% else %}0{% endif %}%"></div>
-                </div>
-            </div>
+<div class="ep-ent-stat-grid ep-ent-animate">
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon blue"><i class="bi bi-people-fill"></i></div><div class="ep-ent-stat-num">{{ total_users }}</div><div class="ep-ent-stat-label">Total Users</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon purple"><i class="bi bi-briefcase-fill"></i></div><div class="ep-ent-stat-num">{{ total_organizers }}</div><div class="ep-ent-stat-label">Organizers</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon green"><i class="bi bi-calendar-event-fill"></i></div><div class="ep-ent-stat-num">{{ total_events }}</div><div class="ep-ent-stat-label">Total Events</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon orange"><i class="bi bi-lightning-fill"></i></div><div class="ep-ent-stat-num">{{ active_events }}</div><div class="ep-ent-stat-label">Active Events</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon green"><i class="bi bi-check-circle-fill"></i></div><div class="ep-ent-stat-num">{{ completed_events_count }}</div><div class="ep-ent-stat-label">Completed</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon red"><i class="bi bi-x-circle-fill"></i></div><div class="ep-ent-stat-num">{{ cancelled_events }}</div><div class="ep-ent-stat-label">Cancelled</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon pink"><i class="bi bi-currency-rupee"></i></div><div class="ep-ent-stat-num">₹{{ total_revenue|floatformat:0 }}</div><div class="ep-ent-stat-label">Total Revenue</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon blue"><i class="bi bi-ticket-perforated-fill"></i></div><div class="ep-ent-stat-num">{{ tickets_sold }}</div><div class="ep-ent-stat-label">Tickets Sold</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon orange"><i class="bi bi-hourglass-split"></i></div><div class="ep-ent-stat-num">{{ pending_payments }}</div><div class="ep-ent-stat-label">Pending Payments</div></div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-8">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5><i class="bi bi-graph-up me-2 text-primary"></i>Monthly Revenue</h5></div>
+            <div class="ep-ent-chart-wrap"><canvas id="chartRevenue"></canvas></div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="ep-card p-4 h-100">
-            <h6 class="fw-bold mb-3">Users by Role</h6>
-            <div class="d-flex flex-column gap-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="ep-role-dot bg-primary"></div>
-                    <span class="flex-grow-1">Regular Users</span>
-                    <span class="fw-bold">{{ user_count }}</span>
-                </div>
-                <div class="d-flex align-items-center gap-3">
-                    <div class="ep-role-dot bg-success"></div>
-                    <span class="flex-grow-1">Organizers</span>
-                    <span class="fw-bold">{{ organizer_count }}</span>
-                </div>
-                <div class="d-flex align-items-center gap-3">
-                    <div class="ep-role-dot bg-warning"></div>
-                    <span class="flex-grow-1">Volunteers</span>
-                    <span class="fw-bold">{{ volunteer_count }}</span>
-                </div>
-            </div>
+    <div class="col-lg-4">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5><i class="bi bi-pie-chart me-2 text-primary"></i>Users by Role</h5></div>
+            <div class="ep-ent-chart-wrap"><canvas id="chartRoles"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>User Growth</h5></div>
+            <div class="ep-ent-chart-wrap" style="height:220px"><canvas id="chartUsers"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>Category Distribution</h5></div>
+            <div class="ep-ent-chart-wrap" style="height:220px"><canvas id="chartCategories"></canvas></div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="ep-card p-4">
-            <h6 class="fw-bold mb-3">Recent Bookings</h6>
-            {% for b in recent_bookings %}
-            <div class="ep-activity-row">
-                <div class="ep-avatar-xs">{{ b.user.first_name|first|upper }}</div>
-                <div class="flex-grow-1">
-                    <div class="fw-semibold small">{{ b.user.username }}</div>
-                    <div class="text-muted" style="font-size:0.75rem;">{{ b.event.title|truncatechars:30 }}</div>
-                </div>
-                <span class="badge ep-badge-status-{{ b.status }}">{{ b.get_status_display }}</span>
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-6">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>Recent Bookings</h5><a href="{% url 'accounts:export_report' 'bookings' %}" class="btn btn-sm ep-btn-outline">Export</a></div>
+            <div class="table-responsive">
+                <table class="ep-ent-table" id="recentBookingsTable">
+                    <thead><tr><th>User</th><th>Event</th><th>Status</th><th>Amount</th></tr></thead>
+                    <tbody>
+                    {% for b in recent_bookings %}
+                    <tr>
+                        <td>{{ b.user.username }}</td>
+                        <td>{{ b.event.title|truncatechars:22 }}</td>
+                        <td><span class="badge ep-badge-status-{{ b.status }}">{{ b.get_status_display }}</span></td>
+                        <td>₹{{ b.total_price }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% empty %}<p class="text-muted small">No bookings yet.</p>{% endfor %}
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="ep-card p-4">
-            <h6 class="fw-bold mb-3">Recent Events</h6>
-            {% for ev in recent_events %}
-            <div class="ep-activity-row">
-                <div class="ep-avatar-xs bg-primary"><i class="bi bi-calendar text-white" style="font-size:0.7rem;"></i></div>
-                <div class="flex-grow-1">
-                    <div class="fw-semibold small">{{ ev.title|truncatechars:28 }}</div>
-                    <div class="text-muted" style="font-size:0.75rem;">{{ ev.date }} &middot; {{ ev.city }}</div>
-                </div>
-                <a href="{% url 'events:detail' ev.id %}" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;">View</a>
+    <div class="col-lg-6">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>Recent Users</h5><a href="{% url 'accounts:manage_users' %}" class="btn btn-sm ep-btn-outline">Manage</a></div>
+            <div class="table-responsive">
+                <table class="ep-ent-table">
+                    <thead><tr><th>User</th><th>Role</th><th>Joined</th></tr></thead>
+                    <tbody>
+                    {% for u in recent_users %}
+                    <tr>
+                        <td><strong>{{ u.username }}</strong><br><small class="text-muted">{{ u.email }}</small></td>
+                        <td><span class="badge bg-secondary">{{ u.get_role_display }}</span></td>
+                        <td>{{ u.date_joined|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% empty %}<p class="text-muted small">No events yet.</p>{% endfor %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const revLabels = {{ chart_revenue_labels|safe }};
+    const revValues = {{ chart_revenue_values|safe }};
+    new Chart(document.getElementById('chartRevenue'), {
+        type: 'line',
+        data: { labels: revLabels, datasets: [{ label: 'Revenue (₹)', data: revValues, borderColor: '#6366F1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+    new Chart(document.getElementById('chartRoles'), {
+        type: 'doughnut',
+        data: { labels: ['Users', 'Organizers', 'Volunteers'], datasets: [{ data: [{{ user_count }}, {{ organizer_count }}, {{ volunteer_count }}], backgroundColor: ['#6366F1','#8B5CF6','#EC4899'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    new Chart(document.getElementById('chartUsers'), {
+        type: 'bar',
+        data: { labels: {{ chart_user_labels|safe }}, datasets: [{ label: 'New Users', data: {{ chart_user_values|safe }}, backgroundColor: '#8B5CF6', borderRadius: 8 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+    new Chart(document.getElementById('chartCategories'), {
+        type: 'polarArea',
+        data: { labels: {{ chart_cat_labels|safe }}, datasets: [{ data: {{ chart_cat_values|safe }}, backgroundColor: ['#6366F1','#8B5CF6','#EC4899','#10B981','#F59E0B','#3B82F6','#EF4444','#14B8A6'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    if (typeof $ !== 'undefined' && $('#recentBookingsTable').length) {
+        $('#recentBookingsTable').DataTable({ pageLength: 5, searching: false, lengthChange: false, info: false });
+    }
+});
+</script>
 {% endblock %}

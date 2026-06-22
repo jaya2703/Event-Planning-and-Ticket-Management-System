@@ -1,0 +1,87 @@
+/* EventPro Enterprise Edition — SaaS design system */
+:root {
+    --ep-ent-primary: #6366F1;
+    --ep-ent-secondary: #8B5CF6;
+    --ep-ent-dark: #0F172A;
+    --ep-ent-muted: #64748B;
+    --ep-ent-border: rgba(148, 163, 184, 0.2);
+    --ep-ent-glass: rgba(255, 255, 255, 0.72);
+    --ep-ent-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+    --ep-ent-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
+}
+.ep-enterprise .ep-sidebar {
+    background: linear-gradient(180deg, #1E1B4B 0%, #312E81 50%, #3730A3 100%);
+}
+.ep-ent-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.ep-ent-header h1 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; color: var(--ep-ent-dark); margin: 0; }
+.ep-ent-header p { color: var(--ep-ent-muted); margin: 0.35rem 0 0; }
+.ep-ent-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.ep-ent-stat { background: #fff; border: 1px solid var(--ep-ent-border); border-radius: 18px; padding: 1.35rem; box-shadow: var(--ep-ent-shadow); transition: transform 0.25s; }
+.ep-ent-stat:hover { transform: translateY(-4px); }
+.ep-ent-stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.85rem; }
+.ep-ent-stat-icon.blue { background: #EFF6FF; color: #2563EB; }
+.ep-ent-stat-icon.green { background: #ECFDF5; color: #059669; }
+.ep-ent-stat-icon.purple { background: #F5F3FF; color: #7C3AED; }
+.ep-ent-stat-icon.orange { background: #FFFBEB; color: #D97706; }
+.ep-ent-stat-icon.pink { background: #FDF2F8; color: #DB2777; }
+.ep-ent-stat-icon.red { background: #FEF2F2; color: #DC2626; }
+.ep-ent-stat-num { font-size: 1.75rem; font-weight: 800; color: var(--ep-ent-dark); }
+.ep-ent-stat-label { font-size: 0.82rem; color: var(--ep-ent-muted); margin-top: 0.3rem; }
+.ep-ent-card { background: #fff; border: 1px solid var(--ep-ent-border); border-radius: 20px; box-shadow: var(--ep-ent-shadow); padding: 1.5rem; margin-bottom: 1.5rem; }
+.ep-ent-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+.ep-ent-card-header h5 { font-weight: 700; margin: 0; }
+.ep-ent-chart-wrap { position: relative; height: 280px; }
+.ep-ent-table { width: 100%; }
+.ep-ent-table thead th { background: #F8FAFC; color: var(--ep-ent-muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; padding: 0.85rem 1rem; border-bottom: 1px solid var(--ep-ent-border); }
+.ep-ent-table tbody td { padding: 0.9rem 1rem; border-bottom: 1px solid #F1F5F9; font-size: 0.88rem; }
+.ep-ent-nav-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+.ep-ent-nav-pill { padding: 0.45rem 1rem; border-radius: 50px; font-size: 0.82rem; font-weight: 600; text-decoration: none; color: var(--ep-ent-muted); background: #F1F5F9; }
+.ep-ent-nav-pill:hover, .ep-ent-nav-pill.active { background: var(--ep-ent-gradient); color: #fff; }
+.ep-crowd-bar { height: 8px; border-radius: 50px; background: #E2E8F0; overflow: hidden; }
+.ep-crowd-bar-fill { height: 100%; border-radius: 50px; }
+.ep-crowd-low { background: linear-gradient(90deg, #34D399, #10B981); }
+.ep-crowd-medium { background: linear-gradient(90deg, #FBBF24, #F59E0B); }
+.ep-crowd-high { background: linear-gradient(90deg, #F87171, #EF4444); }
+.ep-crowd-badge { font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 50px; text-transform: uppercase; }
+.ep-crowd-badge.low { background: #D1FAE5; color: #047857; }
+.ep-crowd-badge.medium { background: #FEF3C7; color: #B45309; }
+.ep-crowd-badge.high { background: #FEE2E2; color: #B91C1C; }
+.ep-badge-status-pending_payment { background: #FEF3C7; color: #B45309; }
+.ep-dashboard-layout .ep-dash-main { background: linear-gradient(160deg, #F8FAFC 0%, #EEF2FF 40%, #F1F5F9 100%); }
+.ep-notif-type-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ep-notif-type-icon.success { background: #ECFDF5; color: #059669; }
+.ep-notif-type-icon.danger { background: #FEF2F2; color: #DC2626; }
+.ep-notif-type-icon.warning { background: #FFFBEB; color: #D97706; }
+.ep-notif-type-icon.primary { background: #F5F3FF; color: #7C3AED; }
+.ep-ent-animate { animation: epEntFadeUp 0.5s ease forwards; }
+@keyframes epEntFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+.ep-wishlist-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+    transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.ep-wishlist-btn:hover { transform: scale(1.08); color: #EF4444; background: #fff; }
+.ep-wishlist-btn.ep-wishlist-active { color: #EF4444; background: #FEF2F2; }
+.ep-wishlist-btn-sm {
+    position: static;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+.ep-event-img-wrap { position: relative; }

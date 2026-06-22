@@ -14,6 +14,7 @@ class Booking(models.Model):
     Represents a ticket booking by a user for an event.
     """
     STATUS_CHOICES = [
+        ('pending_payment', 'Pending Payment'),
         ('confirmed', 'Confirmed'),
         ('cancelled', 'Cancelled'),
         ('waitlisted', 'Waitlisted'),
@@ -26,6 +27,10 @@ class Booking(models.Model):
     # Who booked and which event
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='bookings')
+    ticket_tier = models.ForeignKey(
+        'events.TicketTier', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='bookings'
+    )
     
     # How many tickets
     quantity = models.PositiveIntegerField(default=1)
@@ -53,8 +58,10 @@ class Booking(models.Model):
         return f"Booking #{str(self.booking_id)[:8]} - {self.user.username} -> {self.event.title}"
     
     def save(self, *args, **kwargs):
-        """Override save to calculate total price automatically"""
-        self.total_price = self.event.ticket_price * self.quantity
+        if self.ticket_tier:
+            self.total_price = self.ticket_tier.price * self.quantity
+        else:
+            self.total_price = self.event.ticket_price * self.quantity
         super().save(*args, **kwargs)
 
     @property

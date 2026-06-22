@@ -78,7 +78,7 @@ class Event(models.Model):
         from bookings.models import Booking
         return Booking.objects.filter(
             event=self,
-            status__in=['confirmed', 'attended']
+            status__in=['confirmed', 'attended', 'pending_payment']
         ).aggregate(
             total=models.Sum('quantity')
         )['total'] or 0
@@ -213,3 +213,39 @@ class EventFeedback(models.Model):
     
     def __str__(self):
         return f"{self.user.username} rated {self.event.title}: {self.rating}/5"
+
+
+class TicketTier(models.Model):
+    """Multiple ticket types per event."""
+    TIER_CHOICES = [
+        ('general', 'General'),
+        ('vip', 'VIP'),
+        ('student', 'Student'),
+        ('early_bird', 'Early Bird'),
+    ]
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='ticket_tiers')
+    tier_type = models.CharField(max_length=20, choices=TIER_CHOICES, default='general')
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    capacity = models.PositiveIntegerField(default=50)
+    description = models.CharField(max_length=300, blank=True, default='')
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['event', 'tier_type']
+        ordering = ['price']
+
+    def __str__(self):
+        return f"{self.event.title} — {self.name}"
+
+    @property
+    def sold_count(self):
+        from bookings.models import Booking
+        return Booking.objects.filter(
+            ticket_tier=self,
+            status__in=['confirmed', 'attended', 'pending_payment']
+        ).aggregate(total=models.Sum('quantity'))['total'] or 0
+
+    @property
+    def available(self):
+        return max(0, self.capacity - self.sold_count)

@@ -113,13 +113,21 @@ def event_list(request):
         events = events.filter(ticket_price=0)
     elif price_filter == 'paid':
         events = events.filter(ticket_price__gt=0)
-    
+
+    wishlist_ids = set()
+    if request.user.is_authenticated and request.user.role == 'user':
+        from accounts.models import Wishlist
+        wishlist_ids = set(
+            Wishlist.objects.filter(user=request.user).values_list('event_id', flat=True)
+        )
+
     context = {
         'events': events,
         'categories': categories,
         'search_query': search_query,
         'selected_category': category_filter,
         'selected_city': city_filter,
+        'wishlist_ids': wishlist_ids,
     }
     return render(request, 'events/event_list.html', context)
 
@@ -171,7 +179,14 @@ def event_detail(request, event_id):
             except Exception as e:
                 messages.error(request, "Could not submit vote. You may have already voted.")
             return redirect('events:detail', event_id=event.id)
-    
+
+    wishlist_ids = set()
+    if request.user.is_authenticated and request.user.role == 'user':
+        from accounts.models import Wishlist
+        wishlist_ids = set(
+            Wishlist.objects.filter(user=request.user).values_list('event_id', flat=True)
+        )
+
     context = {
         'event': event,
         'feedbacks': feedbacks,
@@ -179,16 +194,17 @@ def event_detail(request, event_id):
         'already_booked': already_booked,
         'user_feedback': user_feedback,
         'feedback_form': feedback_form,
+        'wishlist_ids': wishlist_ids,
     }
     return render(request, 'events/event_detail.html', context)
 
 
 @login_required
 def create_event(request):
-    """Create a new event - only organizers and admins"""
-    if request.user.role not in ['organizer', 'admin']:
+    """Create a new event — organizers only."""
+    if request.user.role != 'organizer':
         messages.error(request, "Only organizers can create events.")
-        return redirect('events:list')
+        return redirect('accounts:dashboard')
     
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)

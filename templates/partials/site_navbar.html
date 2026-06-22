@@ -51,8 +51,10 @@
                         <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
                         <li><a class="dropdown-item" href="{% url 'bookings:history' %}"><i class="fa-solid fa-ticket"></i> My Bookings</a></li>
                         <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="fa-solid fa-user"></i> Profile</a></li>
-                        {% if user.role == 'organizer' or user.role == 'admin' %}
+                        {% if user.role == 'organizer' %}
                         <li><a class="dropdown-item" href="{% url 'events:create' %}"><i class="fa-solid fa-calendar-plus"></i> Create Event</a></li>
+                        {% endif %}
+                        {% if user.role == 'organizer' or user.role == 'admin' %}
                         <li><a class="dropdown-item" href="{% url 'bookings:scan_qr' %}"><i class="fa-solid fa-qrcode"></i> Scan QR</a></li>
                         {% endif %}
                         <li><hr class="dropdown-divider"></li>

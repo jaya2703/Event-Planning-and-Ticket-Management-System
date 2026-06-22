@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Audit Logs{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header"><div><h1>System Monitoring</h1><p>Audit trail & login history</p></div></div>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="ep-ent-card"><h5 class="mb-3">Recent Activity</h5>
+            <table class="ep-ent-table"><thead><tr><th>User</th><th>Action</th><th>IP</th><th>Time</th></tr></thead>
+            <tbody>{% for l in logs %}<tr><td>{{ l.user.username|default:"—" }}</td><td>{{ l.action }}</td><td>{{ l.ip_address|default:"—" }}</td><td>{{ l.created_at|timesince }} ago</td></tr>{% empty %}<tr><td colspan="4" class="text-muted">No logs yet</td></tr>{% endfor %}</tbody></table>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="ep-ent-card"><h5 class="mb-3">Login History</h5>
+            <table class="ep-ent-table"><thead><tr><th>User</th><th>IP</th><th>When</th></tr></thead>
+            <tbody>{% for l in logins %}<tr><td>{{ l.user.username }}</td><td>{{ l.ip_address }}</td><td>{{ l.logged_in_at|timesince }} ago</td></tr>{% empty %}<tr><td colspan="3" class="text-muted">No logins recorded</td></tr>{% endfor %}</tbody></table>
+        </div>
+    </div>
+</div>
+{% endblock %}

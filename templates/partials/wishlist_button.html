@@ -1,0 +1,7 @@
+{% if user.is_authenticated and user.role == 'user' %}
+<a href="{% url 'accounts:toggle_wishlist' event.id %}"
+   class="ep-wishlist-btn{% if event.id in wishlist_ids %} ep-wishlist-active{% endif %}"
+   title="{% if event.id in wishlist_ids %}Remove from wishlist{% else %}Add to wishlist{% endif %}">
+    <i class="bi bi-heart{% if event.id in wishlist_ids %}-fill{% endif %}"></i>
+</a>
+{% endif %}

@@ -35,7 +35,7 @@
                     <a href="{% url 'events:list' %}" class="em-btn-explore">
                         Explore Events <i class="fa-solid fa-arrow-right"></i>
                     </a>
-                    {% if user.is_authenticated and user.role in 'organizer,admin' %}
+                    {% if user.is_authenticated and user.role == 'organizer' %}
                     <a href="{% url 'events:create' %}" class="em-btn-create">
                         <i class="fa-solid fa-calendar-plus"></i> Create Event
                     </a>
@@ -416,7 +416,7 @@
             <div class="em-organizer-content">
                 <h2>Are You an Organizer?</h2>
                 <p>Create, manage and showcase your events to thousands of potential attendees.</p>
-                {% if user.is_authenticated and user.role in 'organizer,admin' %}
+                {% if user.is_authenticated and user.role == 'organizer' %}
                 <a href="{% url 'events:create' %}" class="em-organizer-btn">
                     Create Your Event <i class="fa-solid fa-arrow-right"></i>
                 </a>

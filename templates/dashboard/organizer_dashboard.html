@@ -1,93 +1,106 @@
 {% extends 'base.html' %}
-{% block title %}Organizer Dashboard{% endblock %}
+{% block title %}Organizer Workspace{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
 {% block content %}
-<div class="ep-dash-header">
+<div class="ep-ent-header ep-ent-animate">
     <div>
-        <h1 class="ep-dash-title">Organizer Dashboard</h1>
-        <p class="ep-dash-subtitle">Manage your events and track performance</p>
+        <h1>Organizer Workspace</h1>
+        <p>Event management, crowd monitoring & volunteer control</p>
     </div>
-    <a href="{% url 'events:create' %}" class="btn ep-btn-primary ep-dash-action">
-        <i class="bi bi-plus-lg me-1"></i> New Event
-    </a>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-sm-4">
-        <div class="ep-stat-card ep-stat-blue">
-            <div class="ep-stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">{{ my_events_count }}</div>
-                <div class="ep-stat-label">My Events</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-4">
-        <div class="ep-stat-card ep-stat-green">
-            <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">{{ my_bookings_count }}</div>
-                <div class="ep-stat-label">Ticket Sales</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-4">
-        <div class="ep-stat-card ep-stat-orange">
-            <div class="ep-stat-icon"><i class="bi bi-currency-rupee"></i></div>
-            <div class="ep-stat-info">
-                <div class="ep-stat-num">&#8377;{{ my_revenue|floatformat:0 }}</div>
-                <div class="ep-stat-label">Revenue</div>
-            </div>
-        </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'events:create' %}" class="btn ep-btn-primary ep-dash-action"><i class="bi bi-plus-lg me-1"></i>New Event</a>
     </div>
 </div>
 
-<div class="ep-card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold mb-0">My Events</h6>
-        <a href="{% url 'events:create' %}" class="btn ep-btn-primary btn-sm">+ Create</a>
-    </div>
-    <div class="table-responsive">
-        <table class="table ep-table">
-            <thead>
-                <tr>
-                    <th>Event</th><th>Date</th><th>Sold</th><th>Revenue</th><th>Status</th><th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ev in my_events %}
-                <tr>
-                    <td><strong>{{ ev.title|truncatechars:25 }}</strong><br><small class="text-muted">{{ ev.venue|truncatechars:20 }}</small></td>
-                    <td>{{ ev.date }}</td>
-                    <td>{{ ev.tickets_booked }}/{{ ev.total_capacity }}</td>
-                    <td>&#8377;{{ ev.tickets_booked|default:0 }}</td>
-                    <td><span class="badge ep-badge-status-{{ ev.status }}">{{ ev.get_status_display }}</span></td>
-                    <td>
-                        <a href="{% url 'events:detail' ev.id %}" class="btn btn-outline-primary btn-sm">View</a>
-                        <a href="{% url 'events:edit' ev.id %}" class="btn btn-outline-secondary btn-sm">Edit</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="6" class="text-center text-muted py-3">No events created yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="ep-ent-stat-grid ep-ent-animate">
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon blue"><i class="bi bi-calendar-event-fill"></i></div><div class="ep-ent-stat-num">{{ my_events_count }}</div><div class="ep-ent-stat-label">My Events</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon green"><i class="bi bi-ticket-perforated-fill"></i></div><div class="ep-ent-stat-num">{{ my_bookings_count }}</div><div class="ep-ent-stat-label">Tickets Sold</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon pink"><i class="bi bi-currency-rupee"></i></div><div class="ep-ent-stat-num">₹{{ my_revenue|floatformat:0 }}</div><div class="ep-ent-stat-label">Revenue</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon purple"><i class="bi bi-people-fill"></i></div><div class="ep-ent-stat-num">{{ my_volunteers.count }}</div><div class="ep-ent-stat-label">Volunteers</div></div>
 </div>
 
-<div class="ep-card p-4">
-    <h6 class="fw-bold mb-3">Recent Ticket Sales</h6>
-    {% for b in recent_bookings %}
-    <div class="ep-activity-row">
-        <div class="ep-avatar-xs">{{ b.user.first_name|first|upper }}</div>
-        <div class="flex-grow-1">
-            <div class="fw-semibold small">{{ b.user.get_full_name|default:b.user.username }}</div>
-            <div class="text-muted" style="font-size:0.75rem;">{{ b.event.title|truncatechars:30 }} &middot; {{ b.quantity }} ticket{{ b.quantity|pluralize }}</div>
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-8">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5><i class="bi bi-people me-2"></i>Live Crowd Density</h5></div>
+            {% for item in event_analytics %}
+            <div class="mb-4 pb-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="small">{{ item.event.title|truncatechars:30 }}</strong>
+                    <span class="ep-crowd-badge {{ item.density }}">{{ item.density }} crowd</span>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>{{ item.checked_in }} checked in</span>
+                    <span>{{ item.occupancy }}% occupancy</span>
+                </div>
+                <div class="ep-crowd-bar"><div class="ep-crowd-bar-fill ep-crowd-{{ item.density }}" style="width:{{ item.occupancy }}%"></div></div>
+                <small class="text-muted">Revenue: ₹{{ item.revenue|floatformat:0 }}</small>
+            </div>
+            {% empty %}<p class="text-muted">Create events to see crowd analytics.</p>{% endfor %}
         </div>
-        <div class="text-end">
-            <div class="fw-bold small text-success">&#8377;{{ b.total_price }}</div>
-            <span class="badge ep-badge-status-{{ b.status }}" style="font-size:0.65rem;">{{ b.get_status_display }}</span>
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>My Events</h5><a href="{% url 'events:create' %}" class="btn ep-btn-primary btn-sm">+ Create</a></div>
+            <div class="table-responsive">
+                <table class="ep-ent-table" id="orgEventsTable">
+                    <thead><tr><th>Event</th><th>Date</th><th>Sold</th><th>Revenue</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                    {% for ev in my_events %}
+                    <tr>
+                        <td><strong>{{ ev.title|truncatechars:22 }}</strong></td>
+                        <td>{{ ev.date }}</td>
+                        <td>{{ ev.tickets_booked }}/{{ ev.total_capacity }}</td>
+                        <td>₹{% widthratio ev.ticket_price 1 ev.tickets_booked %}</td>
+                        <td><span class="badge ep-badge-status-{{ ev.status }}">{{ ev.get_status_display }}</span></td>
+                        <td>
+                            <a href="{% url 'events:detail' ev.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                            <a href="{% url 'events:edit' ev.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            {% if ev.id %}<a href="{% url 'volunteers:assign' ev.id %}" class="btn btn-sm ep-btn-outline">Volunteers</a>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td colspan="6" class="text-muted">No events yet.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-    {% empty %}<p class="text-muted small">No bookings for your events yet.</p>{% endfor %}
+    <div class="col-lg-4">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>Booking Trend</h5></div>
+            <div class="ep-ent-chart-wrap" style="height:200px"><canvas id="orgBookingChart"></canvas></div>
+        </div>
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header"><h5>Volunteers</h5></div>
+            {% for v in my_volunteers %}
+            <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
+                <div class="ep-avatar-xs">{{ v.volunteer.first_name|first|upper }}</div>
+                <div class="flex-grow-1 small">
+                    <div class="fw-semibold">{{ v.volunteer.get_full_name|default:v.volunteer.username }}</div>
+                    <div class="text-muted">{{ v.get_role_display }} · {{ v.event.title|truncatechars:20 }}</div>
+                </div>
+            </div>
+            {% empty %}<p class="text-muted small">No volunteers assigned. Use Volunteers button on an event.</p>{% endfor %}
+        </div>
+        <div class="ep-ent-card">
+            <h5 class="mb-3">Recent Sales</h5>
+            {% for b in recent_bookings %}
+            <div class="d-flex justify-content-between small mb-2">
+                <span>{{ b.user.username }} · {{ b.event.title|truncatechars:18 }}</span>
+                <span class="text-success fw-bold">₹{{ b.total_price }}</span>
+            </div>
+            {% empty %}<p class="text-muted small">No sales yet.</p>{% endfor %}
+        </div>
+    </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new Chart(document.getElementById('orgBookingChart'), {
+        type: 'bar',
+        data: { labels: {{ chart_booking_labels|safe }}, datasets: [{ data: {{ chart_booking_values|safe }}, backgroundColor: '#8B5CF6', borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+    if ($('#orgEventsTable').length) $('#orgEventsTable').DataTable({ pageLength: 5, searching: true });
+});
+</script>
 {% endblock %}

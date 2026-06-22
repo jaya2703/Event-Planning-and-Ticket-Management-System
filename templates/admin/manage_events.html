@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Manage Events{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header">
+    <div><h1>Manage Events</h1><p>All platform events</p></div>
+    <a href="{% url 'accounts:export_report' 'bookings' %}" class="btn ep-btn-primary btn-sm">Export Report</a>
+</div>
+<div class="ep-ent-card">
+    <div class="table-responsive">
+        <table class="ep-ent-table" id="eventsTable">
+            <thead><tr><th>Event</th><th>Organizer</th><th>Date</th><th>Status</th><th>Capacity</th><th></th></tr></thead>
+            <tbody>
+            {% for e in events %}
+            <tr>
+                <td><strong>{{ e.title }}</strong><br><small class="text-muted">{{ e.city }}</small></td>
+                <td>{{ e.organizer.username }}</td>
+                <td>{{ e.date }}</td>
+                <td><span class="badge ep-badge-status-{{ e.status }}">{{ e.get_status_display }}</span></td>
+                <td>{{ e.tickets_booked }}/{{ e.total_capacity }}</td>
+                <td><a href="{% url 'events:detail' e.id %}" class="btn btn-sm ep-btn-outline">View</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}<script>$(function(){ $('#eventsTable').DataTable(); });</script>{% endblock %}

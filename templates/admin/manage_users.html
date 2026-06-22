@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header">
+    <div><h1>Manage Users</h1><p>Platform user administration</p></div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="btn ep-btn-outline btn-sm">← Dashboard</a>
+</div>
+<div class="ep-ent-card">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" name="q" class="form-control ep-input" placeholder="Search..." value="{{ search }}"></div>
+        <div class="col-md-3">
+            <select name="role" class="form-select ep-input">
+                <option value="">All Roles</option>
+                <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                <option value="organizer" {% if role_filter == 'organizer' %}selected{% endif %}>Organizer</option>
+                <option value="volunteer" {% if role_filter == 'volunteer' %}selected{% endif %}>Volunteer</option>
+                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+        </div>
+        <div class="col-md-2"><button class="btn ep-btn-primary w-100">Filter</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="ep-ent-table" id="usersTable">
+            <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+            <tbody>
+            {% for u in users %}
+            <tr>
+                <td><strong>{{ u.username }}</strong></td>
+                <td>{{ u.email }}</td>
+                <td><span class="badge bg-secondary">{{ u.get_role_display }}</span></td>
+                <td>{% if u.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Inactive</span>{% endif %}</td>
+                <td>{{ u.date_joined|date:"M d, Y" }}</td>
+                <td>
+                    <a href="{% url 'accounts:toggle_user' u.id %}" class="btn btn-sm btn-outline-warning"
+                       data-confirm="Toggle active status for {{ u.username }}?">
+                        {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}<script>$(function(){ $('#usersTable').DataTable(); });</script>{% endblock %}

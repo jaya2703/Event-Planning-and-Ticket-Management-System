@@ -23,7 +23,7 @@ def generate_qr_code(booking):
     The QR code contains the booking ID which can be scanned to verify the ticket.
     """
     # The data inside the QR code
-    qr_data = f"EVENTPRO-BOOKING-{booking.booking_id}"
+    qr_data = f"EVENTPRO|B:{booking.booking_id}|E:{booking.event_id}|U:{booking.user_id}"
     
     # Create QR code
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -54,7 +54,7 @@ def book_ticket(request, event_id):
     
     # Check if user already has a confirmed booking
     existing_booking = Booking.objects.filter(
-        user=request.user, event=event, status='confirmed'
+        user=request.user, event=event, status__in=['confirmed', 'pending_payment']
     ).first()
     
     if existing_booking:
@@ -71,26 +71,36 @@ def book_ticket(request, event_id):
         
         # Check availability
         if event.tickets_available >= quantity:
-            # Create the booking
+            tier_id = request.POST.get('ticket_tier')
+            ticket_tier = None
+            if tier_id:
+                from events.models import TicketTier
+                ticket_tier = TicketTier.objects.filter(id=tier_id, event=event, is_active=True).first()
+                if ticket_tier and ticket_tier.available < quantity:
+                    messages.error(request, "Not enough tickets available for this tier.")
+                    return redirect('events:detail', event_id=event.id)
+
             booking = Booking.objects.create(
                 user=request.user,
                 event=event,
                 quantity=quantity,
-                status='confirmed'
+                ticket_tier=ticket_tier,
+                status='pending_payment' if (ticket_tier and ticket_tier.price > 0) or event.ticket_price > 0 else 'confirmed'
             )
-            
-            # Generate QR code for this booking
-            qr_path = generate_qr_code(booking)
-            booking.qr_code = qr_path
-            booking.save()
-            
-            # Send notification to user
-            Notification.objects.create(
-                user=request.user,
-                message=f"🎉 Your booking for '{event.title}' is confirmed! Booking ID: {str(booking.booking_id)[:8].upper()}"
-            )
-            
-            # Redirect to payment page
+
+            if booking.status == 'confirmed':
+                qr_path = generate_qr_code(booking)
+                booking.qr_code = qr_path
+                booking.save()
+                from accounts.services import notify
+                notify(request.user, f"Your booking for '{event.title}' is confirmed!", 'booking_success',
+                       link=f'/bookings/{booking.id}/')
+                messages.success(request, "Booking confirmed!")
+                return redirect('bookings:detail', booking_id=booking.id)
+
+            from accounts.services import notify
+            notify(request.user, f"Complete payment for '{event.title}' to confirm your booking.", 'payment_success',
+                   link=f'/payments/process/{booking.id}/')
             return redirect('payments:process', booking_id=booking.id)
         
         else:
@@ -202,23 +212,25 @@ def promote_from_waitlist(event, freed_quantity):
         ).first()
         
         if waitlisted_booking:
-            # Upgrade their booking from waitlisted to confirmed
-            waitlisted_booking.status = 'confirmed'
+            waitlisted_booking.status = 'pending_payment' if event.ticket_price > 0 else 'confirmed'
             waitlisted_booking.waitlist_position = None
-            
-            # Generate QR code for them now
-            qr_path = generate_qr_code(waitlisted_booking)
-            waitlisted_booking.qr_code = qr_path
+
+            if waitlisted_booking.status == 'confirmed':
+                qr_path = generate_qr_code(waitlisted_booking)
+                waitlisted_booking.qr_code = qr_path
             waitlisted_booking.save()
-            
-            # Remove from waitlist table
+
             first_in_line.delete()
-            
-            # Notify the lucky user!
-            Notification.objects.create(
-                user=user_to_promote,
-                message=f"🎉 Great news! A spot opened up for '{event.title}'. Your booking is now CONFIRMED! Please complete your payment."
+
+            from accounts.services import notify
+            msg = (
+                f"Great news! A spot opened for '{event.title}'. "
+                + ("Complete payment to confirm your booking." if waitlisted_booking.status == 'pending_payment'
+                   else "Your booking is now confirmed!")
             )
+            notify(user_to_promote, msg, 'waitlist_upgraded',
+                   link=f'/payments/process/{waitlisted_booking.id}/' if waitlisted_booking.status == 'pending_payment'
+                   else f'/bookings/{waitlisted_booking.id}/')
             
             # Re-number remaining waitlist positions
             remaining = Waitlist.objects.filter(event=event).order_by('position')
@@ -372,6 +384,11 @@ def scan_qr(request):
         if qr_data.startswith('EVENTPRO-BOOKING-'):
             booking_uuid = qr_data.replace('EVENTPRO-BOOKING-', '')
             return redirect('bookings:verify_checkin', booking_uuid=booking_uuid)
+        if qr_data.startswith('EVENTPRO|'):
+            parts = dict(p.split(':', 1) for p in qr_data.split('|')[1:] if ':' in p)
+            booking_uuid = parts.get('B', '')
+            if booking_uuid:
+                return redirect('bookings:verify_checkin', booking_uuid=booking_uuid)
         else:
             messages.error(request, "Invalid QR code format.")
     

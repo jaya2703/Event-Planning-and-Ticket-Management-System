@@ -52,6 +52,8 @@ class CustomUser(AbstractUser):
     
     # When the user was created
     created_at = models.DateTimeField(auto_now_add=True)
+    email_verified = models.BooleanField(default=False)
+    email_verification_token = models.CharField(max_length=64, blank=True, default='')
     
     def __str__(self):
         # This is what shows in Django admin for this user
@@ -71,24 +73,91 @@ class CustomUser(AbstractUser):
 
 
 class Notification(models.Model):
-    """
-    Stores notifications for users
-    e.g. "Your ticket has been booked!", "Event cancelled"
-    """
+    """In-app notification center with typed icons."""
+    TYPE_CHOICES = [
+        ('booking_success', 'Booking Success'),
+        ('payment_success', 'Payment Success'),
+        ('payment_failed', 'Payment Failed'),
+        ('event_reminder', 'Event Reminder'),
+        ('event_cancelled', 'Event Cancelled'),
+        ('waitlist_upgraded', 'Waitlist Upgraded'),
+        ('poll_started', 'Poll Started'),
+        ('poll_ended', 'Poll Ended'),
+        ('refund', 'Refund'),
+        ('general', 'General'),
+    ]
     user = models.ForeignKey(
         CustomUser,
-        on_delete=models.CASCADE,  # If user deleted, delete their notifications
+        on_delete=models.CASCADE,
         related_name='user_notifications'
     )
     message = models.TextField()
+    notification_type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='general')
+    link = models.CharField(max_length=300, blank=True, default='')
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
-        ordering = ['-created_at']  # Show newest first
-    
+        ordering = ['-created_at']
+
+    @property
+    def icon_class(self):
+        icons = {
+            'booking_success': 'bi-ticket-perforated-fill',
+            'payment_success': 'bi-credit-card-fill',
+            'payment_failed': 'bi-x-circle-fill',
+            'event_reminder': 'bi-calendar-event-fill',
+            'event_cancelled': 'bi-calendar-x-fill',
+            'waitlist_upgraded': 'bi-arrow-up-circle-fill',
+            'poll_started': 'bi-bar-chart-fill',
+            'poll_ended': 'bi-pie-chart-fill',
+            'refund': 'bi-arrow-counterclockwise',
+        }
+        return icons.get(self.notification_type, 'bi-bell-fill')
+
     def __str__(self):
         return f"Notification for {self.user.username}: {self.message[:50]}"
+
+
+class Wishlist(models.Model):
+    """User saved / wishlist events."""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='wishlist_items')
+    event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='wishlisted_by')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'event']
+        ordering = ['-added_at']
+
+    def __str__(self):
+        return f"{self.user.username} ♥ {self.event.title}"
+
+
+class AuditLog(models.Model):
+    """System audit trail for admin monitoring."""
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=120)
+    details = models.TextField(blank=True, default='')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.action} @ {self.created_at}"
+
+
+class LoginHistory(models.Model):
+    """Track user login sessions."""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='login_history')
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.CharField(max_length=500, blank=True, default='')
+    logged_in_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-logged_in_at']
+        verbose_name_plural = 'Login histories'
 
 
 class WindowSession(models.Model):

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Payments{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header"><div><h1>Payment Management</h1><p>Transaction monitoring</p></div>
+<a href="{% url 'accounts:export_report' 'payments' %}" class="btn ep-btn-primary btn-sm">Export CSV</a></div>
+<div class="ep-ent-card">
+    <table class="ep-ent-table" id="payTable">
+        <thead><tr><th>TX ID</th><th>User</th><th>Event</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for p in payments %}
+        <tr>
+            <td><code>{{ p.payment_id|stringformat:"s"|slice:":8" }}</code></td>
+            <td>{{ p.booking.user.username }}</td>
+            <td>{{ p.booking.event.title|truncatechars:25 }}</td>
+            <td>₹{{ p.amount }}</td>
+            <td>{{ p.payment_method|title }}</td>
+            <td><span class="badge {% if p.status == 'success' %}bg-success{% elif p.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">{{ p.status|title }}</span></td>
+            <td>{{ p.created_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block extra_js %}<script>$(function(){ $('#payTable').DataTable({ order: [[6, 'desc']] }); });</script>{% endblock %}

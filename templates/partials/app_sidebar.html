@@ -14,7 +14,7 @@
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
 
-        {% if user.role == 'organizer' or user.role == 'admin' %}
+        {% if user.role == 'organizer' %}
         <a href="{% url 'events:create' %}"
            class="ep-nav-item{% if ns == 'events' and name == 'create' or ns == 'events' and name == 'edit' %} active{% endif %}">
             <i class="bi bi-plus-circle"></i> Create Event
@@ -26,22 +26,27 @@
            class="ep-nav-item{% if ns == 'events' and name == 'list' or ns == 'events' and name == 'detail' %} active{% endif %}">
             <i class="bi bi-calendar3"></i> Browse Events
         </a>
-        {% elif user.role == 'admin' %}
-        <a href="{% url 'events:list' %}"
-           class="ep-nav-item{% if ns == 'events' and name == 'list' or ns == 'events' and name == 'detail' %} active{% endif %}">
-            <i class="bi bi-calendar3"></i> All Events
+        <a href="{% url 'accounts:wishlist' %}"
+           class="ep-nav-item{% if name == 'wishlist' %} active{% endif %}">
+            <i class="bi bi-heart"></i> Wishlist
         </a>
-        {% endif %}
-
-        {% if user.role == 'user' or user.role == 'volunteer' %}
         <a href="{% url 'bookings:history' %}"
            class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
             <i class="bi bi-ticket"></i> My Bookings
         </a>
         {% elif user.role == 'admin' %}
+        <a href="{% url 'accounts:manage_events' %}"
+           class="ep-nav-item{% if name == 'manage_events' %} active{% endif %}">
+            <i class="bi bi-calendar3"></i> All Events
+        </a>
         <a href="{% url 'bookings:history' %}"
            class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
             <i class="bi bi-ticket"></i> Bookings
+        </a>
+        {% elif user.role == 'organizer' %}
+        <a href="{% url 'accounts:organizer_dashboard' %}"
+           class="ep-nav-item{% if name == 'organizer_dashboard' %} active{% endif %}">
+            <i class="bi bi-calendar-event"></i> My Events
         </a>
         {% endif %}
 
@@ -69,8 +74,15 @@
         </a>
 
         {% if user.role == 'admin' %}
-        <a href="/admin/" class="ep-nav-item">
-            <i class="bi bi-gear"></i> Django Admin
+        <div class="ep-nav-section-label text-white-50 small px-3 pt-2 pb-1">Admin Panel</div>
+        <a href="{% url 'accounts:manage_users' %}" class="ep-nav-item{% if name == 'manage_users' %} active{% endif %}">
+            <i class="bi bi-people"></i> Manage Users
+        </a>
+        <a href="{% url 'accounts:manage_payments' %}" class="ep-nav-item{% if name == 'manage_payments' %} active{% endif %}">
+            <i class="bi bi-credit-card"></i> Payments
+        </a>
+        <a href="{% url 'accounts:audit_logs' %}" class="ep-nav-item{% if name == 'audit_logs' %} active{% endif %}">
+            <i class="bi bi-shield-check"></i> Audit Logs
         </a>
         {% endif %}
 

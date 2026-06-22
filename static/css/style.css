@@ -257,6 +257,33 @@ body {
     padding-bottom: 2rem;
 }
 .ep-auth-card { background: #fff; border-radius: var(--ep-radius); box-shadow: var(--ep-shadow-lg); padding: 2.5rem; border: 1px solid var(--ep-border); }
+.ep-auth-card-compact {
+    padding: 1.65rem 1.75rem;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.ep-auth-card-compact .ep-auth-logo {
+    width: 46px;
+    height: 46px;
+    font-size: 1.15rem;
+    border-radius: 12px;
+}
+.ep-auth-card-compact .ep-auth-title {
+    font-size: 1.35rem;
+    margin-bottom: 0.15rem;
+}
+.ep-auth-card-compact .ep-role-select-compact {
+    padding: 0.6rem 0.25rem;
+}
+.ep-auth-card-compact .ep-role-select-compact .ep-role-select-icon {
+    font-size: 1.15rem;
+    margin-bottom: 0.15rem;
+}
+.ep-auth-card-compact .ep-role-select-compact .ep-role-select-name {
+    font-size: 0.74rem;
+    line-height: 1.2;
+}
 .ep-auth-logo {
     width: 56px; height: 56px;
     background: linear-gradient(135deg, var(--ep-primary), var(--ep-secondary));
@@ -288,6 +315,9 @@ body {
 }
 .btn-check:checked + .ep-role-select-card .ep-role-select-icon,
 .btn-check:checked + .ep-role-select-card .ep-role-select-name { color: var(--ep-primary); }
+.btn-check:checked + .ep-role-select-admin { border-color: #7C3AED; background: #F5F3FF; }
+.btn-check:checked + .ep-role-select-admin .ep-role-select-icon,
+.btn-check:checked + .ep-role-select-admin .ep-role-select-name { color: #7C3AED; }
 .ep-role-select-icon { font-size: 1.6rem; color: var(--ep-muted); margin-bottom: 0.35rem; transition: var(--ep-transition); }
 .ep-role-select-name { font-size: 0.88rem; font-weight: 700; color: var(--ep-dark); display: block; transition: var(--ep-transition); }
 .ep-role-select-desc { font-size: 0.72rem; color: var(--ep-muted); display: block; margin-top: 0.15rem; line-height: 1.3; }

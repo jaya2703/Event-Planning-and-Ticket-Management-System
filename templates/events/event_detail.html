@@ -9,15 +9,25 @@
         <!-- Left: Event Info -->
         <div class="col-lg-8">
             <!-- Banner -->
-            <div class="ep-event-banner-wrap mb-4">
+            <div class="ep-event-banner-wrap mb-4 position-relative">
                 {% include 'partials/event_banner.html' with event=event img_class='ep-event-banner' size_class='ep-banner-detail' %}
+                {% include 'partials/wishlist_button.html' with event=event %}
             </div>
             
             <!-- Title & Meta -->
             <div class="ep-card p-4 mb-4">
-                <div class="d-flex flex-wrap gap-2 mb-2">
+                <div class="d-flex flex-wrap gap-2 mb-2 align-items-center justify-content-between">
+                    <div class="d-flex flex-wrap gap-2">
                     {% if event.category %}<span class="badge ep-badge-cat">{{ event.category.name }}</span>{% endif %}
                     <span class="badge ep-badge-status-{{ event.status }}">{{ event.get_status_display }}</span>
+                    </div>
+                    {% if user.is_authenticated and user.role == 'user' %}
+                    <a href="{% url 'accounts:toggle_wishlist' event.id %}"
+                       class="btn btn-sm {% if event.id in wishlist_ids %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                        <i class="bi bi-heart{% if event.id in wishlist_ids %}-fill{% endif %} me-1"></i>
+                        {% if event.id in wishlist_ids %}In Wishlist{% else %}Add to Wishlist{% endif %}
+                    </a>
+                    {% endif %}
                 </div>
                 <h2 class="fw-bold mb-3">{{ event.title }}</h2>
                 <div class="row g-3 text-muted mb-4">

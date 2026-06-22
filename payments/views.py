@@ -14,7 +14,17 @@ from django.contrib import messages
 from django.utils import timezone
 from .models import Payment
 from bookings.models import Booking
-from accounts.models import Notification
+from bookings.views import generate_qr_code, promote_from_waitlist
+from accounts.services import notify
+
+
+def _confirm_booking_after_payment(booking):
+    """Mark booking confirmed and generate QR ticket."""
+    if booking.status in ('pending_payment', 'waitlisted'):
+        booking.status = 'confirmed'
+        if not booking.qr_code:
+            booking.qr_code = generate_qr_code(booking)
+        booking.save()
 
 MOCK_UPI_ID = 'eventpro@paytm'
 
@@ -59,6 +69,7 @@ def process_payment(request, booking_id):
             status='success',
             paid_at=timezone.now()
         )
+        _confirm_booking_after_payment(booking)
         return redirect('payments:success', booking_id=booking.id)
     
     if request.method == 'POST':
@@ -86,21 +97,21 @@ def process_payment(request, booking_id):
             else:
                 payment.mock_card_last4 = '4242'
             payment.save()
-            
-            Notification.objects.create(
-                user=request.user,
-                message=f"💳 Payment of INR {booking.total_price} successful for '{booking.event.title}'"
-            )
-            
+            _confirm_booking_after_payment(booking)
+            notify(request.user, f"Payment of ₹{booking.total_price} successful for '{booking.event.title}'",
+                   'payment_success', link=f'/bookings/{booking.id}/')
+            notify(request.user, f"Your ticket for '{booking.event.title}' is confirmed!", 'booking_success',
+                   link=f'/bookings/{booking.id}/')
             return redirect('payments:success', booking_id=booking.id)
         else:
             payment.status = 'failed'
             payment.save()
-            
-            # Cancel the booking if payment failed
+            qty = booking.quantity
+            event = booking.event
             booking.status = 'cancelled'
             booking.save()
-            
+            promote_from_waitlist(event, qty)
+            notify(request.user, f"Payment failed for '{booking.event.title}'. Booking cancelled.", 'payment_failed')
             return redirect('payments:failed', booking_id=booking.id)
     
     upi_qr_image, upi_payload = build_upi_payment_qr(booking)
