@@ -164,9 +164,13 @@ def cancel_booking(request, booking_id):
         booking.save()
         
         # Notify user of cancellation
+        refund_note = ''
+        from payments.models import Payment
+        if booking.total_price > 0 and Payment.objects.filter(booking=booking, status='success').exists():
+            refund_note = ' You can request a refund from My Bookings.'
         Notification.objects.create(
             user=request.user,
-            message=f"❌ Your booking for '{booking.event.title}' has been cancelled."
+            message=f"❌ Your booking for '{booking.event.title}' has been cancelled.{refund_note}"
         )
         
         # --- WAITLIST AUTO UPGRADE ---

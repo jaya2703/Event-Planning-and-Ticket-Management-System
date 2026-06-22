@@ -4,6 +4,9 @@
 <div class="container em-container ep-page-wrap">
     <div class="row justify-content-center">
         <div class="col-md-7">
+            <a href="{% url 'bookings:history' %}" class="ep-back-link">
+                <i class="bi bi-arrow-left"></i> Back to My Bookings
+            </a>
             <div class="ep-ticket-card">
                 <div class="ep-ticket-header">
                     <div class="d-flex justify-content-between align-items-center">
@@ -57,26 +60,41 @@
                     </div>
 
                     {% if booking.qr_code and booking.status == 'confirmed' %}
-                    <div class="text-center my-3">
+                    <div class="ep-ticket-qr my-4">
                         <div class="ep-qr-wrap">
                             <img src="{{ booking.qr_code.url }}" alt="QR Code" class="ep-qr-img">
                         </div>
-                        <small class="text-muted">Scan this QR code at the venue entrance</small>
+                        <p class="ep-ticket-qr-text mb-0">Scan this QR code at the venue entrance</p>
                     </div>
                     {% endif %}
 
-                    <div class="d-flex gap-2 flex-wrap mt-3">
+                    <div class="ep-ticket-actions">
                         {% if booking.status == 'confirmed' %}
-                        <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary">
-                            <i class="bi bi-download me-1"></i>Download PDF Ticket
+                        <div class="row g-2">
+                            <div class="col-sm-6">
+                                <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary w-100">
+                                    <i class="bi bi-download me-1"></i>Download PDF
+                                </a>
+                            </div>
+                            <div class="col-sm-6">
+                                <a href="{% url 'bookings:cancel' booking.id %}" class="btn ep-btn-danger-outline w-100">
+                                    <i class="bi bi-x-circle me-1"></i>Cancel Booking
+                                </a>
+                            </div>
+                        </div>
+                        {% elif booking.is_refund_eligible %}
+                        <div class="ep-refund-banner mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            This booking was cancelled. You can request a refund for your payment.
+                        </div>
+                        <a href="{% url 'payments:refund' booking.id %}" class="btn ep-btn-refund w-100">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Request Refund — &#8377;{{ booking.total_price }}
                         </a>
-                        <a href="{% url 'bookings:cancel' booking.id %}" class="btn btn-outline-danger">
-                            <i class="bi bi-x-circle me-1"></i>Cancel Booking
-                        </a>
+                        {% elif booking.is_refunded_booking %}
+                        <div class="ep-refund-done-banner text-center">
+                            <i class="bi bi-check-circle me-1"></i>Refund processed — amount will be credited in 3–5 business days
+                        </div>
                         {% endif %}
-                        <a href="{% url 'accounts:user_dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
-                        </a>
                     </div>
                 </div>
             </div>

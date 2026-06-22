@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Home{% endblock %}
-{% block body_class %}ep-site em-home{% endblock %}
+{% block body_class %}ep-site em-home{% if user.is_authenticated %} ep-dashboard-layout{% endif %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/home.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -19,7 +19,7 @@
     </div>
     <div class="container em-container position-relative">
         <div class="row align-items-center em-hero-row">
-            <div class="col-lg-6 em-hero-left">
+            <div class="col-lg-6 em-hero-left ep-reveal">
                 <div class="em-hero-badge">
                     <i class="fa-solid fa-crown"></i> #1 Premium Event Partner
                 </div>
@@ -47,7 +47,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-6 em-hero-right">
+            <div class="col-lg-6 em-hero-right ep-reveal ep-reveal-delay-1">
                 <div class="em-hero-visual">
                     {% if spotlight_event %}
                     <a href="{% url 'events:detail' spotlight_event.id %}" class="em-hero-card">
@@ -133,8 +133,12 @@
 <!-- TRENDING EVENTS -->
 <section class="em-trending-section" id="events">
     <div class="container em-container">
-        <div class="em-section-head">
-            <h2 class="em-section-title">Trending Events</h2>
+        <div class="em-section-head ep-reveal">
+            <div class="em-section-head-block">
+                <span class="em-section-label"><i class="fa-solid fa-fire"></i> Hot Picks</span>
+                <h2 class="em-section-title">Trending Events</h2>
+                <p class="em-section-desc">Discover what's popular right now — book before seats run out.</p>
+            </div>
             <a href="{% url 'events:list' %}" class="em-link-all">
                 View All Events <i class="fa-solid fa-arrow-right"></i>
             </a>
@@ -152,7 +156,11 @@
 <!-- WHY CHOOSE -->
 <section class="em-why-section" id="features">
     <div class="container em-container">
-        <h2 class="em-why-title">Why Choose EventPro?</h2>
+        <div class="text-center ep-reveal">
+            <span class="em-section-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Features</span>
+            <h2 class="em-why-title">Why Choose EventPro?</h2>
+            <p class="em-section-desc mx-auto">Everything you need for seamless events — from booking to entry.</p>
+        </div>
         <div class="em-feature-grid">
             <div class="em-feature-card">
                 <span class="em-feature-card-icon"><i class="fa-solid fa-ticket"></i></span>
@@ -186,11 +194,70 @@
     </div>
 </section>
 
+<!-- ABOUT US -->
+<section class="em-about-section" id="about-us">
+    <div class="container em-container">
+        <div class="row align-items-center g-4 g-lg-5">
+            <div class="col-lg-5 ep-reveal">
+                <div class="em-about-gallery">
+                    <div class="em-about-gallery-accent" aria-hidden="true"></div>
+                    <div class="em-about-photo em-about-photo-main">
+                        <img src="{% static 'images/events/education.jpg' %}" alt="Workshop and learning event">
+                    </div>
+                    <div class="em-about-photo em-about-photo-secondary">
+                        <img src="{% static 'images/hero-events.jpg' %}" alt="Community events and gatherings">
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7 ep-reveal ep-reveal-delay-1">
+                <h2 class="em-about-title">
+                    Making Every Event Experience <span>Unforgettable</span>
+                </h2>
+                <p class="em-about-lead">
+                    EventPro connects people with the events they love and gives organizers
+                    the tools to create, promote, and manage events with confidence.
+                </p>
+                <p class="em-about-text">
+                    From concerts and festivals to workshops and corporate gatherings, we bring
+                    smart ticketing, secure payments, and seamless QR entry under one platform.
+                </p>
+                <ul class="em-about-list">
+                    <li>
+                        <span class="em-about-list-icon"><i class="fa-solid fa-bullseye"></i></span>
+                        <div>
+                            <strong>Our Mission</strong>
+                            <p>Connect audiences with amazing live experiences.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="em-about-list-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                        <div>
+                            <strong>Our Promise</strong>
+                            <p>Secure, simple, and reliable event management for everyone.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="em-about-list-icon"><i class="fa-solid fa-bolt"></i></span>
+                        <div>
+                            <strong>Why EventPro</strong>
+                            <p>One platform for discovery, booking, payments, and entry.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="em-how-section" id="how-it-works">
     <div class="container em-container">
-        <h2 class="em-how-title">How It Works?</h2>
-        <div class="em-steps-row">
+        <div class="text-center ep-reveal">
+            <span class="em-section-label"><i class="fa-solid fa-route"></i> Simple Process</span>
+            <h2 class="em-how-title">How It Works?</h2>
+            <p class="em-section-desc mx-auto">Four easy steps from discovery to an unforgettable experience.</p>
+        </div>
+        <div class="em-steps-row ep-reveal ep-reveal-delay-1">
             <div class="em-step-item">
                 <div class="em-step-circle em-step-circle-1"><i class="fa-solid fa-magnifying-glass"></i></div>
                 <span class="em-step-num">01</span>
@@ -222,48 +289,13 @@
     </div>
 </section>
 
-<!-- STATS COUNTER -->
-<section class="em-counter-section">
-    <div class="container em-container">
-        <div class="em-counter-grid">
-            <div class="em-counter-item">
-                <span class="em-counter-icon"><i class="fa-solid fa-calendar-days"></i></span>
-                <div>
-                    <strong>{{ stat_events }}</strong>
-                    <small>Events Hosted</small>
-                </div>
-            </div>
-            <div class="em-counter-item">
-                <span class="em-counter-icon"><i class="fa-solid fa-rocket"></i></span>
-                <div>
-                    <strong>{{ stat_tickets }}</strong>
-                    <small>Tickets Sold</small>
-                </div>
-            </div>
-            <div class="em-counter-item">
-                <span class="em-counter-icon"><i class="fa-solid fa-users"></i></span>
-                <div>
-                    <strong>{{ stat_users }}</strong>
-                    <small>Happy Users</small>
-                </div>
-            </div>
-            <div class="em-counter-item">
-                <span class="em-counter-icon"><i class="fa-solid fa-bullseye"></i></span>
-                <div>
-                    <strong>98%</strong>
-                    <small>Satisfaction Rate</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
 <!-- SMART FEATURES -->
 <section class="py-5 em-section-soft">
-    <div class="container">
-        <div class="text-center mb-5">
-            <span class="em-hero-badge">Smart Features</span>
-            <h2 class="fw-bold display-6">Everything You Need In One Platform</h2>
+    <div class="container em-container">
+        <div class="text-center mb-5 ep-reveal">
+            <span class="em-section-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Smart Features</span>
+            <h2 class="fw-bold display-6 em-smart-heading">Everything You Need In One Platform</h2>
+            <p class="em-section-desc mx-auto">Powerful tools for attendees and organizers, all in one place.</p>
         </div>
         <div class="row g-4">
             <div class="col-lg-3 col-md-6">
@@ -329,9 +361,12 @@
 <!-- TESTIMONIALS -->
 <section class="em-testimonials-section">
     <div class="container em-container">
-        <h2 class="em-testimonials-title">What People Say</h2>
-        <div class="em-testimonials-line"></div>
-        <div class="em-testimonials-slider">
+        <div class="text-center ep-reveal">
+            <span class="em-section-label"><i class="fa-solid fa-quote-left"></i> Testimonials</span>
+            <h2 class="em-testimonials-title">What People Say</h2>
+            <p class="em-section-desc mx-auto">Trusted by thousands of event-goers across India.</p>
+        </div>
+        <div class="em-testimonials-slider ep-reveal ep-reveal-delay-1">
             <button type="button" class="em-testimonials-nav em-testimonials-prev" aria-label="Previous testimonial">
                 <i class="fa-solid fa-chevron-left"></i>
             </button>
@@ -376,7 +411,7 @@
 
 <!-- ORGANIZER CTA -->
 <section class="em-organizer-section">
-    <div class="container em-container">
+    <div class="container em-container ep-reveal">
         <div class="em-organizer-card">
             <div class="em-organizer-content">
                 <h2>Are You an Organizer?</h2>
@@ -419,16 +454,17 @@
 <!-- FAQ -->
 <section class="em-faq-section" id="faq">
     <div class="container em-container">
-        <div class="em-faq-header">
+        <div class="em-faq-header ep-reveal">
             <div class="em-faq-header-main">
+                <span class="em-section-label"><i class="fa-solid fa-circle-question"></i> FAQ</span>
                 <h2 class="em-faq-title">Frequently Asked Questions</h2>
-                <div class="em-faq-line"></div>
+                <p class="em-section-desc">Quick answers to common questions about EventPro.</p>
             </div>
             <a href="#faq" class="em-faq-view-all">
                 View All FAQs <i class="fa-solid fa-chevron-right"></i>
             </a>
         </div>
-        <div class="row g-3 em-faq-grid">
+        <div class="row g-3 em-faq-grid ep-reveal ep-reveal-delay-1">
             <div class="col-md-6">
                 <div class="accordion em-faq-accordion" id="faqLeft">
                     <div class="accordion-item">
@@ -489,6 +525,10 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block footer %}
+{% include 'partials/site_footer.html' %}
 {% endblock %}
 
 {% block extra_js %}

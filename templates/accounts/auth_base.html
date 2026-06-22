@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block body_class %}ep-site ep-auth-layout{% endblock %}
+
+{% block content %}
+<div class="ep-auth-page">
+    <a href="{% url 'home' %}" class="ep-auth-back">
+        <i class="fa-solid fa-arrow-left"></i> Back to Home
+    </a>
+    {% block auth_content %}{% endblock %}
+</div>
+{% endblock %}

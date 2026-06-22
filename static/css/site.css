@@ -92,18 +92,20 @@
 }
 .ep-site .em-link-signin:hover { color: var(--em-primary); }
 .ep-site .em-btn-start {
-    background: linear-gradient(135deg, var(--em-primary), var(--em-secondary)) !important;
+    background: linear-gradient(135deg, #6D28D9, #8B5CF6) !important;
     color: #fff !important;
     border: none !important;
-    padding: 9px 20px;
-    border-radius: 10px;
-    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 700;
     font-size: 0.88rem;
+    box-shadow: 0 6px 22px rgba(124, 58, 237, 0.4);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .ep-site .em-btn-start:hover {
     color: #fff !important;
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.5);
 }
 .ep-site .em-nav-icon-btn {
     width: 38px;

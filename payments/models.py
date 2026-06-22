@@ -29,6 +29,9 @@ class Payment(models.Model):
     
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    is_refunded = models.BooleanField(default=False)
+    refunded_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
         return f"Payment {str(self.payment_id)[:8]} - {self.status} - INR {self.amount}"

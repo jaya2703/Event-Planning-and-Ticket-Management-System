@@ -1,0 +1,82 @@
+{% with ns=request.resolver_match.namespace|default:'' name=request.resolver_match.url_name|default:'' %}
+<aside class="ep-sidebar">
+    {% include 'partials/sidebar_brand.html' %}
+    <div class="ep-sidebar-user">
+        <div class="ep-avatar-sm">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+        <div>
+            <div class="fw-semibold small text-white">{{ user.get_full_name|default:user.username }}</div>
+            <div class="ep-badge-role-sm">{{ user.get_role_display }}</div>
+        </div>
+    </div>
+    <nav class="ep-sidebar-nav">
+        <a href="{% url 'accounts:dashboard' %}"
+           class="ep-nav-item{% if name == 'dashboard' or name == 'user_dashboard' or name == 'organizer_dashboard' or name == 'admin_dashboard' %} active{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+
+        {% if user.role == 'organizer' or user.role == 'admin' %}
+        <a href="{% url 'events:create' %}"
+           class="ep-nav-item{% if ns == 'events' and name == 'create' or ns == 'events' and name == 'edit' %} active{% endif %}">
+            <i class="bi bi-plus-circle"></i> Create Event
+        </a>
+        {% endif %}
+
+        {% if user.role == 'user' %}
+        <a href="{% url 'events:list' %}"
+           class="ep-nav-item{% if ns == 'events' and name == 'list' or ns == 'events' and name == 'detail' %} active{% endif %}">
+            <i class="bi bi-calendar3"></i> Browse Events
+        </a>
+        {% elif user.role == 'admin' %}
+        <a href="{% url 'events:list' %}"
+           class="ep-nav-item{% if ns == 'events' and name == 'list' or ns == 'events' and name == 'detail' %} active{% endif %}">
+            <i class="bi bi-calendar3"></i> All Events
+        </a>
+        {% endif %}
+
+        {% if user.role == 'user' or user.role == 'volunteer' %}
+        <a href="{% url 'bookings:history' %}"
+           class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
+            <i class="bi bi-ticket"></i> My Bookings
+        </a>
+        {% elif user.role == 'admin' %}
+        <a href="{% url 'bookings:history' %}"
+           class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
+            <i class="bi bi-ticket"></i> Bookings
+        </a>
+        {% endif %}
+
+        {% if user.role == 'organizer' or user.role == 'admin' %}
+        <a href="{% url 'bookings:scan_qr' %}"
+           class="ep-nav-item{% if ns == 'bookings' and name == 'scan_qr' or ns == 'bookings' and name == 'checkin_result' %} active{% endif %}">
+            <i class="bi bi-qr-code-scan"></i> Scan QR
+        </a>
+        {% endif %}
+
+        <a href="{% url 'notifications:list' %}"
+           class="ep-nav-item ep-nav-notify{% if ns == 'notifications' %} active{% endif %}">
+            <span class="ep-nav-icon-wrap">
+                <i class="bi bi-bell{% if sidebar_unread_notifications %}-fill{% endif %}"></i>
+                {% if sidebar_unread_notifications %}
+                <span class="ep-nav-badge-count">{{ sidebar_unread_notifications }}</span>
+                {% endif %}
+            </span>
+            Notifications
+        </a>
+
+        <a href="{% url 'accounts:profile' %}"
+           class="ep-nav-item{% if ns == 'accounts' and name == 'profile' or ns == 'accounts' and name == 'change_password' %} active{% endif %}">
+            <i class="bi bi-person"></i> Profile
+        </a>
+
+        {% if user.role == 'admin' %}
+        <a href="/admin/" class="ep-nav-item">
+            <i class="bi bi-gear"></i> Django Admin
+        </a>
+        {% endif %}
+
+        <a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </nav>
+</aside>
+{% endwith %}

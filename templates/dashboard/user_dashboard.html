@@ -1,153 +1,103 @@
 {% extends 'base.html' %}
 {% block title %}My Dashboard{% endblock %}
 {% block content %}
-<div class="ep-dashboard">
-    <!-- Sidebar -->
-    <div class="ep-sidebar">
-        {% include 'partials/sidebar_brand.html' %}
-        <div class="ep-sidebar-user">
-            <div class="ep-avatar-sm">{{ user.first_name|first|upper }}</div>
-            <div>
-                <div class="fw-semibold small text-white">{{ user.get_full_name|default:user.username }}</div>
-                <div class="ep-badge-role-sm">{{ user.get_role_display }}</div>
-            </div>
-        </div>
-        <nav class="ep-sidebar-nav">
-            <a href="{% url 'accounts:user_dashboard' %}" class="ep-nav-item active">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="{% url 'events:list' %}" class="ep-nav-item">
-                <i class="bi bi-calendar3"></i> Browse Events
-            </a>
-            <a href="{% url 'bookings:history' %}" class="ep-nav-item">
-                <i class="bi bi-ticket"></i> My Bookings
-            </a>
-            <a href="{% url 'notifications:list' %}" class="ep-nav-item">
-                <i class="bi bi-bell"></i> Notifications
-                {% if notifications %}<span class="ep-nav-badge">{{ notifications|length }}</span>{% endif %}
-            </a>
-            <a href="{% url 'accounts:profile' %}" class="ep-nav-item">
-                <i class="bi bi-person"></i> Profile
-            </a>
-            <a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </a>
-        </nav>
+<div class="ep-dash-header">
+    <div>
+        <h1 class="ep-dash-title">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+        <p class="ep-dash-subtitle">Here is a summary of your activity</p>
     </div>
-
-    <div class="ep-dash-main">
-        <div class="ep-dash-header">
-            <h4 class="fw-bold mb-0">Welcome back, {{ user.first_name|default:user.username }}! 👋</h4>
-            <p class="text-muted mb-0">Here is a summary of your activity</p>
-        </div>
-
-        <!-- Stats -->
-        <div class="row g-4 mb-4">
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-blue">
-                    <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ my_bookings_count }}</div>
-                        <div class="ep-stat-label">Total Bookings</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-green">
-                    <div class="ep-stat-icon"><i class="bi bi-calendar-check-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ upcoming_bookings|length }}</div>
-                        <div class="ep-stat-label">Upcoming Events</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-purple">
-                    <div class="ep-stat-icon"><i class="bi bi-bell-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ notifications|length }}</div>
-                        <div class="ep-stat-label">Notifications</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-orange">
-                    <div class="ep-stat-icon"><i class="bi bi-star-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ recommended_events|length }}</div>
-                        <div class="ep-stat-label">Recommendations</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifications -->
-        {% if notifications %}
-        <div class="ep-card p-4 mb-4">
-            <h6 class="fw-bold mb-3"><i class="bi bi-bell me-2 text-warning"></i>New Notifications</h6>
-            {% for notif in notifications %}
-            <div class="ep-notif-row">
-                <div class="ep-notif-dot"></div>
-                <div class="flex-grow-1 small">{{ notif.message }}</div>
-                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
-            </div>
-            {% endfor %}
-            <a href="{% url 'notifications:list' %}" class="btn ep-btn-outline btn-sm mt-2">View All</a>
-        </div>
-        {% endif %}
-
-        <!-- Upcoming Bookings -->
-        <div class="ep-card p-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0">Upcoming Events</h6>
-                <a href="{% url 'bookings:history' %}" class="btn ep-btn-outline btn-sm">All Bookings</a>
-            </div>
-            {% for booking in upcoming_bookings %}
-            <div class="ep-activity-row">
-                <div class="ep-avatar-xs bg-primary"><i class="bi bi-calendar text-white" style="font-size:0.7rem;"></i></div>
-                <div class="flex-grow-1">
-                    <div class="fw-semibold small">{{ booking.event.title }}</div>
-                    <div class="text-muted" style="font-size:0.75rem;">{{ booking.event.date }} &middot; {{ booking.event.venue|truncatechars:25 }}</div>
-                </div>
-                <div class="d-flex gap-1">
-                    <a href="{% url 'bookings:detail' booking.id %}" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;">Ticket</a>
-                    <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary btn-sm" style="font-size:0.7rem;">
-                        <i class="bi bi-download"></i>
-                    </a>
-                </div>
-            </div>
-            {% empty %}
-            <div class="text-center py-3">
-                <p class="text-muted mb-2">No upcoming events booked.</p>
-                <a href="{% url 'events:list' %}" class="btn ep-btn-primary btn-sm">Find Events</a>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- AI Recommendations -->
-        {% if recommended_events %}
-        <div class="ep-card p-4">
-            <h6 class="fw-bold mb-1"><i class="bi bi-stars me-2 text-warning"></i>Recommended For You</h6>
-            <p class="text-muted small mb-3">Based on your interests and booking history</p>
-            <div class="row g-3">
-                {% for event in recommended_events %}
-                <div class="col-md-6">
-                    <div class="ep-rec-card d-flex gap-3 align-items-center p-3">
-                        {% include 'partials/event_banner.html' with event=event img_class='ep-rec-thumb' size_class='ep-banner-thumb' show_label=False %}
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold small">{{ event.title|truncatechars:25 }}</div>
-                            <div class="text-muted" style="font-size:0.75rem;">{{ event.date }}</div>
-                            <div class="text-success fw-bold small">
-                                {% if event.ticket_price == 0 %}FREE{% else %}&#8377;{{ event.ticket_price }}{% endif %}
-                            </div>
-                        </div>
-                        <a href="{% url 'events:detail' event.id %}" class="btn ep-btn-primary btn-sm">View</a>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
+    <div class="ep-dash-header-actions">
+        <a href="{% url 'notifications:list' %}" class="ep-dash-notify-btn" title="Notifications">
+            <i class="bi bi-bell{% if sidebar_unread_notifications %}-fill{% endif %}"></i>
+            {% if sidebar_unread_notifications %}
+            <span class="ep-dash-notify-badge">{{ sidebar_unread_notifications }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'events:list' %}" class="btn ep-btn-primary ep-dash-action">
+            <i class="bi bi-search me-1"></i> Browse Events
+        </a>
     </div>
 </div>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-4">
+        <div class="ep-stat-card ep-stat-blue">
+            <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ my_bookings_count }}</div>
+                <div class="ep-stat-label">Total Bookings</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="ep-stat-card ep-stat-green">
+            <div class="ep-stat-icon"><i class="bi bi-calendar-check-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ upcoming_bookings|length }}</div>
+                <div class="ep-stat-label">Upcoming Events</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="ep-stat-card ep-stat-orange">
+            <div class="ep-stat-icon"><i class="bi bi-star-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ recommended_events|length }}</div>
+                <div class="ep-stat-label">Recommendations</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ep-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Upcoming Events</h6>
+        <a href="{% url 'bookings:history' %}" class="btn ep-btn-outline btn-sm">All Bookings</a>
+    </div>
+    {% for booking in upcoming_bookings %}
+    <div class="ep-activity-row">
+        <div class="ep-avatar-xs bg-primary"><i class="bi bi-calendar text-white" style="font-size:0.7rem;"></i></div>
+        <div class="flex-grow-1">
+            <div class="fw-semibold small">{{ booking.event.title }}</div>
+            <div class="text-muted" style="font-size:0.75rem;">{{ booking.event.date }} &middot; {{ booking.event.venue|truncatechars:25 }}</div>
+        </div>
+        <div class="d-flex gap-1">
+            <a href="{% url 'bookings:detail' booking.id %}" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;">Ticket</a>
+            <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary btn-sm" style="font-size:0.7rem;">
+                <i class="bi bi-download"></i>
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4 ep-empty-state">
+        <div class="ep-empty-icon"><i class="bi bi-calendar-x"></i></div>
+        <p class="text-muted mb-3">No upcoming events booked yet.</p>
+        <a href="{% url 'events:list' %}" class="btn ep-btn-primary btn-sm">Find Events</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if recommended_events %}
+<div class="ep-card p-4">
+    <h6 class="fw-bold mb-1"><i class="bi bi-stars me-2 text-warning"></i>Recommended For You</h6>
+    <p class="text-muted small mb-3">Based on your interests and booking history</p>
+    <div class="row g-3">
+        {% for event in recommended_events %}
+        <div class="col-md-6">
+            <div class="ep-rec-card d-flex gap-3 align-items-center p-3">
+                {% include 'partials/event_banner.html' with event=event img_class='ep-rec-thumb' size_class='ep-banner-thumb' show_label=False %}
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small">{{ event.title|truncatechars:25 }}</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ event.date }}</div>
+                    <div class="text-success fw-bold small">
+                        {% if event.ticket_price == 0 %}FREE{% else %}&#8377;{{ event.ticket_price }}{% endif %}
+                    </div>
+                </div>
+                <a href="{% url 'events:detail' event.id %}" class="btn ep-btn-primary btn-sm">View</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -34,12 +34,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-shrink-0">
                     <a href="{% url 'bookings:detail' booking.id %}" class="btn ep-btn-outline btn-sm">View</a>
                     {% if booking.status == 'confirmed' %}
                     <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary btn-sm">
                         <i class="bi bi-download"></i>
                     </a>
+                    {% elif booking.is_refund_eligible %}
+                    <a href="{% url 'payments:refund' booking.id %}" class="btn ep-btn-refund btn-sm">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Refund
+                    </a>
+                    {% elif booking.is_refunded_booking %}
+                    <span class="badge ep-badge-refunded align-self-center">Refunded</span>
                     {% endif %}
                 </div>
             </div>

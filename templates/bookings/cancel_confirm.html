@@ -11,6 +11,10 @@
                 <div class="ep-info-box mb-4">
                     <p class="mb-1 small"><i class="bi bi-info-circle me-1 text-info"></i>
                     If someone is on the waitlist, they will automatically get your spot.</p>
+                    {% if booking.total_price > 0 %}
+                    <p class="mb-0 small"><i class="bi bi-arrow-counterclockwise me-1 text-warning"></i>
+                    After cancellation, you can request a refund from My Bookings.</p>
+                    {% endif %}
                 </div>
                 <form method="post">
                     {% csrf_token %}

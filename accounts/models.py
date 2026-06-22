@@ -89,3 +89,14 @@ class Notification(models.Model):
     
     def __str__(self):
         return f"Notification for {self.user.username}: {self.message[:50]}"
+
+
+class WindowSession(models.Model):
+    """Maps a browser window/tab id (wsid) to an isolated Django session."""
+    wsid = models.CharField(max_length=64, unique=True, db_index=True)
+    session_key = models.CharField(max_length=40, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Window {self.wsid[:8]}…"

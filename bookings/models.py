@@ -57,6 +57,20 @@ class Booking(models.Model):
         self.total_price = self.event.ticket_price * self.quantity
         super().save(*args, **kwargs)
 
+    @property
+    def is_refund_eligible(self):
+        if self.status != 'cancelled' or self.total_price <= 0:
+            return False
+        from payments.models import Payment
+        return Payment.objects.filter(
+            booking=self, status='success', is_refunded=False
+        ).exists()
+
+    @property
+    def is_refunded_booking(self):
+        from payments.models import Payment
+        return Payment.objects.filter(booking=self, is_refunded=True).exists()
+
 
 class Waitlist(models.Model):
     """

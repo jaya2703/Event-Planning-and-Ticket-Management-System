@@ -73,6 +73,14 @@ def event_list(request):
     Event listing page with search and filters.
     Users can search events and filter by category, date, city, price.
     """
+    if request.user.is_authenticated:
+        if request.user.role == 'organizer':
+            messages.info(request, 'Organizers manage events from the dashboard.')
+            return redirect('accounts:organizer_dashboard')
+        if request.user.role == 'volunteer':
+            messages.info(request, 'Use your dashboard to view assigned events.')
+            return redirect('accounts:dashboard')
+
     events = Event.objects.filter(status='upcoming').order_by('date')
     categories = Category.objects.all()
     

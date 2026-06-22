@@ -84,6 +84,13 @@ def logout_view(request):
     return redirect('home')
 
 
+def switch_account_view(request):
+    """Log out and go to login so another user can sign in."""
+    logout(request)
+    messages.info(request, "Signed out. You can now log in with a different account.")
+    return redirect('accounts:login')
+
+
 @login_required  # This decorator means: "User must be logged in to access this"
 def dashboard_view(request):
     """
@@ -203,18 +210,12 @@ def user_dashboard_view(request):
     # Get all bookings for this user
     my_bookings = Booking.objects.filter(user=request.user).order_by('-booked_at')
     
-    # Notifications for this user
-    my_notifications = Notification.objects.filter(
-        user=request.user, is_read=False
-    )[:5]
-    
     # AI Recommendation - simple logic based on interests and past bookings
     recommended_events = get_recommended_events(request.user)
     
     context = {
         'my_bookings': my_bookings,
         'my_bookings_count': my_bookings.count(),
-        'notifications': my_notifications,
         'recommended_events': recommended_events,
         'upcoming_bookings': my_bookings.filter(event__status='upcoming')[:3],
     }

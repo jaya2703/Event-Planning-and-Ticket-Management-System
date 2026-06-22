@@ -1,0 +1,195 @@
+/* ============================================================
+   EventPro — Premium UI (v3 — high-impact visual layer)
+   ============================================================ */
+
+:root {
+    --ep-glass: rgba(255, 255, 255, 0.92);
+    --ep-gradient: linear-gradient(135deg, #6D28D9 0%, #7C3AED 45%, #A78BFA 100%);
+    --ep-gradient-dark: linear-gradient(135deg, #4C1D95 0%, #6D28D9 50%, #7C3AED 100%);
+    --ep-shadow-md: 0 10px 40px rgba(124, 58, 237, 0.12);
+    --ep-shadow-lg: 0 20px 50px rgba(124, 58, 237, 0.18);
+    --ep-shadow-xl: 0 28px 70px rgba(15, 23, 42, 0.16);
+}
+
+::selection {
+    background: rgba(124, 58, 237, 0.25);
+    color: #0F172A;
+}
+
+/* ── Navbar — always polished ── */
+.ep-site .em-navbar {
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(124, 58, 237, 0.08) !important;
+    box-shadow: 0 4px 30px rgba(124, 58, 237, 0.08) !important;
+    transition: box-shadow 0.3s ease, padding 0.3s ease;
+}
+.ep-site .em-navbar.em-navbar-scrolled {
+    box-shadow: 0 8px 40px rgba(124, 58, 237, 0.14) !important;
+    padding: 10px 0 !important;
+}
+.ep-site .em-brand-icon {
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+}
+.ep-site .em-nav-links .nav-link {
+    border-radius: 8px;
+    transition: color 0.2s, background 0.2s;
+}
+.ep-site .em-nav-links .nav-link:hover {
+    background: #F5F3FF;
+}
+.ep-site .em-nav-links .nav-link.active {
+    background: #EDE9FE;
+}
+.ep-site .em-nav-links .nav-link.active::after { display: none; }
+
+/* ── Section headers ── */
+.em-section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--ep-gradient);
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+}
+.em-section-head-block .em-section-title {
+    font-size: clamp(1.65rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #0F172A;
+}
+.em-section-head-block .em-section-desc {
+    font-size: 1rem;
+    color: #64748B;
+    line-height: 1.7;
+}
+
+/* ── Inner pages ── */
+.ep-page-wrap { padding: 3rem 0 4.5rem; }
+.ep-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--ep-muted);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+    padding: 0.4rem 0;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.ep-back-link:hover {
+    color: var(--ep-primary);
+    transform: translateX(-3px);
+}
+.ep-booking-card-sticky { top: 1.5rem; }
+.ep-page-header {
+    margin-bottom: 2.25rem;
+    padding: 1.75rem 2rem;
+    background: var(--ep-gradient);
+    border-radius: 20px;
+    color: #fff;
+    box-shadow: var(--ep-shadow-lg);
+    border: none;
+}
+.ep-page-header::before { display: none; }
+.ep-page-header h2 {
+    color: #fff;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    margin-bottom: 0.4rem;
+}
+.ep-page-header p { color: rgba(255, 255, 255, 0.88); font-size: 1rem; }
+
+.ep-search-bar {
+    background: #fff;
+    border: 1px solid #EEF2FF;
+    border-radius: 20px;
+    padding: 1.5rem 1.75rem;
+    box-shadow: var(--ep-shadow-md);
+}
+
+/* ── Event cards ── */
+.ep-event-card {
+    border-radius: 20px !important;
+    border: 1px solid #EDE9FE !important;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06) !important;
+    transition: transform 0.35s ease, box-shadow 0.35s ease !important;
+}
+.ep-event-card:hover {
+    transform: translateY(-10px) !important;
+    box-shadow: var(--ep-shadow-lg) !important;
+    border-color: #C4B5FD !important;
+}
+
+/* ── Buttons ── */
+.ep-btn-primary {
+    background: var(--ep-gradient) !important;
+    border-radius: 12px !important;
+    padding: 0.65rem 1.35rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 6px 24px rgba(124, 58, 237, 0.35) !important;
+    border: none !important;
+}
+.ep-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 32px rgba(124, 58, 237, 0.45) !important;
+}
+
+/* ── Forms ── */
+.ep-input:focus, .ep-input-group .form-control:focus, .ep-input-group .form-select:focus {
+    border-color: #7C3AED !important;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15) !important;
+}
+
+/* ── Footer ── */
+.ep-site .em-footer-section {
+    background: linear-gradient(180deg, #0F172A 0%, #020617 100%) !important;
+    position: relative;
+}
+.ep-site .em-footer-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--ep-gradient);
+}
+
+/* ── Scroll reveal — content visible without JS ── */
+.ep-reveal {
+    opacity: 1;
+    transform: none;
+}
+html.js-ready .ep-reveal:not(.ep-visible) {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+}
+html.js-ready .ep-reveal.ep-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.ep-reveal-delay-1 { transition-delay: 0.1s !important; }
+.ep-reveal-delay-2 { transition-delay: 0.2s !important; }
+
+/* ── Auth ── */
+.ep-auth-page {
+    background:
+        radial-gradient(ellipse 70% 50% at 20% 20%, rgba(124, 58, 237, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(167, 139, 250, 0.15), transparent),
+        linear-gradient(135deg, #F8FAFC, #EDE9FE) !important;
+}
+.ep-auth-card {
+    border-radius: 24px !important;
+    box-shadow: var(--ep-shadow-xl) !important;
+}

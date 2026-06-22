@@ -2,6 +2,9 @@
 {% block title %}{{ event.title }}{% endblock %}
 {% block content %}
 <div class="container em-container ep-page-wrap">
+    <a href="{% url 'events:list' %}" class="ep-back-link">
+        <i class="bi bi-arrow-left"></i> Back to Events
+    </a>
     <div class="row g-4">
         <!-- Left: Event Info -->
         <div class="col-lg-8">
@@ -133,7 +136,7 @@
         
         <!-- Right: Booking Card -->
         <div class="col-lg-4">
-            <div class="ep-booking-card sticky-top" style="top:80px;">
+            <div class="ep-booking-card sticky-top ep-booking-card-sticky">
                 <div class="ep-booking-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>

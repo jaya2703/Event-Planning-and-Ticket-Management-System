@@ -1,5 +1,64 @@
 {% extends 'base.html' %}
 {% block title %}Payment{% endblock %}
+
+{% block extra_css %}
+<style>
+.ep-pay-panel { animation: epPayFade 0.25s ease; }
+@keyframes epPayFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.ep-upi-toggle .btn { font-size: 0.82rem; font-weight: 600; border-radius: 10px !important; }
+.ep-upi-qr-wrap {
+    text-align: center;
+    padding: 1.25rem;
+    border: 2px dashed var(--ep-border);
+    border-radius: 16px;
+    background: #fafafe;
+}
+.ep-upi-qr-box {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 1rem;
+    padding: 10px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--ep-shadow);
+    position: relative;
+    overflow: hidden;
+}
+.ep-upi-qr-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 6px;
+}
+.ep-upi-qr-scanline {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #7C3AED, transparent);
+    animation: epScan 2.2s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes epScan { 0%, 100% { top: 10px; opacity: 0.3; } 50% { top: calc(100% - 12px); opacity: 1; } }
+.ep-upi-merchant {
+    font-size: 0.82rem;
+    color: var(--ep-muted);
+    margin-bottom: 0.5rem;
+}
+.ep-upi-merchant strong { color: var(--ep-dark); }
+.ep-upi-amount {
+    display: inline-block;
+    padding: 0.35rem 0.85rem;
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--ep-primary);
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container em-container ep-page-wrap">
     <div class="row justify-content-center">
@@ -39,26 +98,26 @@
                     </div>
                 </div>
 
-                <form method="post">
+                <form method="post" id="payment_form" novalidate>
                     {% csrf_token %}
                     <!-- Payment Method -->
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Payment Method</label>
                         <div class="row g-2">
                             <div class="col-4">
-                                <input type="radio" class="btn-check" name="payment_method" id="pm_card" value="card" checked>
+                                <input type="radio" class="btn-check ep-pay-method" name="payment_method" id="pm_card" value="card" checked>
                                 <label class="btn ep-role-btn w-100 text-center" for="pm_card">
                                     <i class="bi bi-credit-card d-block fs-4 mb-1"></i>Card
                                 </label>
                             </div>
                             <div class="col-4">
-                                <input type="radio" class="btn-check" name="payment_method" id="pm_upi" value="upi">
+                                <input type="radio" class="btn-check ep-pay-method" name="payment_method" id="pm_upi" value="upi">
                                 <label class="btn ep-role-btn w-100 text-center" for="pm_upi">
                                     <i class="bi bi-phone d-block fs-4 mb-1"></i>UPI
                                 </label>
                             </div>
                             <div class="col-4">
-                                <input type="radio" class="btn-check" name="payment_method" id="pm_netbank" value="netbanking">
+                                <input type="radio" class="btn-check ep-pay-method" name="payment_method" id="pm_netbank" value="netbanking">
                                 <label class="btn ep-role-btn w-100 text-center" for="pm_netbank">
                                     <i class="bi bi-bank d-block fs-4 mb-1"></i>Net Banking
                                 </label>
@@ -66,22 +125,121 @@
                         </div>
                     </div>
 
-                    <!-- Mock Card Fields -->
-                    <div id="card_fields">
+                    <!-- Card -->
+                    <div id="card_fields" class="ep-pay-panel">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Card Number</label>
-                            <input type="text" class="form-control ep-input" value="4242 4242 4242 4242" readonly>
-                            <small class="text-muted">Mock card — use as is</small>
+                            <label class="form-label fw-semibold" for="card_name">Cardholder Name</label>
+                            <input type="text" name="card_name" id="card_name" class="form-control ep-input ep-card-field"
+                                   placeholder="Name on card" autocomplete="cc-name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="card_number">Card Number</label>
+                            <input type="text" name="card_number" id="card_number" class="form-control ep-input ep-card-field"
+                                   placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric" autocomplete="cc-number">
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold">Expiry</label>
-                                <input type="text" class="form-control ep-input" value="12/28" readonly>
+                                <label class="form-label fw-semibold" for="card_expiry">Expiry</label>
+                                <input type="text" name="card_expiry" id="card_expiry" class="form-control ep-input ep-card-field"
+                                       placeholder="MM/YY" maxlength="5" inputmode="numeric" autocomplete="cc-exp">
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-semibold">CVV</label>
-                                <input type="text" class="form-control ep-input" value="123" readonly>
+                                <label class="form-label fw-semibold" for="card_cvv">CVV</label>
+                                <input type="password" name="card_cvv" id="card_cvv" class="form-control ep-input ep-card-field"
+                                       placeholder="•••" maxlength="4" inputmode="numeric" autocomplete="cc-csc">
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- UPI -->
+                    <div id="upi_fields" class="ep-pay-panel d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">UPI Option</label>
+                            <div class="row g-2 ep-upi-toggle">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="upi_mode" id="upi_scan" value="scan" checked>
+                                    <label class="btn ep-role-btn w-100 text-center" for="upi_scan">
+                                        <i class="bi bi-qr-code-scan d-block fs-5 mb-1"></i>Scan QR
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="upi_mode" id="upi_id_mode" value="id">
+                                    <label class="btn ep-role-btn w-100 text-center" for="upi_id_mode">
+                                        <i class="bi bi-at d-block fs-5 mb-1"></i>Enter UPI ID
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="upi_scan_panel">
+                            <div class="ep-upi-qr-wrap mb-3">
+                                <div class="ep-upi-qr-box">
+                                    <img src="{{ upi_qr_image }}" alt="UPI payment QR code" class="ep-upi-qr-img">
+                                    <span class="ep-upi-qr-scanline" aria-hidden="true"></span>
+                                </div>
+                                <p class="ep-upi-merchant">Pay to <strong>{{ mock_upi_id }}</strong></p>
+                                <p class="text-muted small mb-2">Open PhonePe, GPay, Paytm, or any UPI app and scan this QR</p>
+                                <span class="ep-upi-amount">Pay &#8377;{{ booking.total_price }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="upi_app">UPI App (optional)</label>
+                                <select name="upi_app" id="upi_app" class="form-select ep-input">
+                                    <option value="">Select app used</option>
+                                    <option value="gpay">Google Pay</option>
+                                    <option value="phonepe">PhonePe</option>
+                                    <option value="paytm">Paytm</option>
+                                    <option value="bhim">BHIM</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="upi_id_panel" class="d-none">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="upi_id">UPI ID</label>
+                                <div class="input-group ep-input-group">
+                                    <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                    <input type="text" name="upi_id" id="upi_id" class="form-control ep-input"
+                                           placeholder="yourname@upi">
+                                </div>
+                                <small class="text-muted">e.g. name@oksbi, name@ybl, name@paytm</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Net Banking -->
+                    <div id="netbank_fields" class="ep-pay-panel d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="bank_name">Select Bank</label>
+                            <select name="bank_name" id="bank_name" class="form-select ep-input ep-netbank-field">
+                                <option value="">Choose your bank</option>
+                                <option value="sbi">State Bank of India</option>
+                                <option value="hdfc">HDFC Bank</option>
+                                <option value="icici">ICICI Bank</option>
+                                <option value="axis">Axis Bank</option>
+                                <option value="kotak">Kotak Mahindra Bank</option>
+                                <option value="pnb">Punjab National Bank</option>
+                                <option value="bob">Bank of Baroda</option>
+                                <option value="canara">Canara Bank</option>
+                                <option value="idbi">IDBI Bank</option>
+                                <option value="yes">Yes Bank</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="netbank_user">Customer ID / User ID</label>
+                            <input type="text" name="netbank_user" id="netbank_user" class="form-control ep-input ep-netbank-field"
+                                   placeholder="Enter your net banking user ID" autocomplete="username">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="netbank_password">Password</label>
+                            <input type="password" name="netbank_password" id="netbank_password" class="form-control ep-input ep-netbank-field"
+                                   placeholder="Enter net banking password" autocomplete="current-password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="netbank_otp">OTP</label>
+                            <input type="text" name="netbank_otp" id="netbank_otp" class="form-control ep-input ep-netbank-field"
+                                   placeholder="Enter OTP sent to registered mobile" maxlength="6" inputmode="numeric">
+                            <small class="text-muted">Mock OTP — enter any 6 digits</small>
                         </div>
                     </div>
 
@@ -98,4 +256,82 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const form = document.getElementById('payment_form');
+    const cardPanel = document.getElementById('card_fields');
+    const upiPanel = document.getElementById('upi_fields');
+    const netbankPanel = document.getElementById('netbank_fields');
+    const upiScanPanel = document.getElementById('upi_scan_panel');
+    const upiIdPanel = document.getElementById('upi_id_panel');
+    const methodRadios = document.querySelectorAll('.ep-pay-method');
+    const upiModeRadios = document.querySelectorAll('input[name="upi_mode"]');
+
+    function setRequired(fields, required) {
+        fields.forEach(function (el) {
+            if (required) el.setAttribute('required', 'required');
+            else el.removeAttribute('required');
+        });
+    }
+
+    function cardFields() { return document.querySelectorAll('.ep-card-field'); }
+    function netbankFields() { return document.querySelectorAll('.ep-netbank-field'); }
+
+    function switchPaymentMethod() {
+        const method = document.querySelector('.ep-pay-method:checked').value;
+        cardPanel.classList.toggle('d-none', method !== 'card');
+        upiPanel.classList.toggle('d-none', method !== 'upi');
+        netbankPanel.classList.toggle('d-none', method !== 'netbanking');
+
+        setRequired(cardFields(), method === 'card');
+        setRequired(netbankFields(), method === 'netbanking');
+
+        const upiId = document.getElementById('upi_id');
+        if (method === 'upi') {
+            const upiMode = document.querySelector('input[name="upi_mode"]:checked').value;
+            setRequired([upiId], upiMode === 'id');
+        } else {
+            setRequired([upiId], false);
+        }
+    }
+
+    function switchUpiMode() {
+        const mode = document.querySelector('input[name="upi_mode"]:checked').value;
+        upiScanPanel.classList.toggle('d-none', mode !== 'scan');
+        upiIdPanel.classList.toggle('d-none', mode !== 'id');
+
+        const upiId = document.getElementById('upi_id');
+        const method = document.querySelector('.ep-pay-method:checked').value;
+        setRequired([upiId], method === 'upi' && mode === 'id');
+    }
+
+    methodRadios.forEach(function (radio) {
+        radio.addEventListener('change', switchPaymentMethod);
+    });
+    upiModeRadios.forEach(function (radio) {
+        radio.addEventListener('change', switchUpiMode);
+    });
+
+    // Card number formatting
+    const cardNumber = document.getElementById('card_number');
+    cardNumber.addEventListener('input', function () {
+        let v = this.value.replace(/\D/g, '').slice(0, 16);
+        this.value = v.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+    });
+
+    // Expiry formatting MM/YY
+    const cardExpiry = document.getElementById('card_expiry');
+    cardExpiry.addEventListener('input', function () {
+        let v = this.value.replace(/\D/g, '').slice(0, 4);
+        if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+        this.value = v;
+    });
+
+    switchPaymentMethod();
+    switchUpiMode();
+})();
+</script>
 {% endblock %}

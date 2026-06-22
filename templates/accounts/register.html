@@ -1,139 +1,141 @@
-{% extends 'base.html' %}
+{% extends 'accounts/auth_base.html' %}
 {% block title %}Create Account{% endblock %}
-{% block footer %}{% endblock %}
-{% block content %}
-<div class="ep-auth-page">
-    <div class="container em-container">
-        <div class="row justify-content-center py-5">
-            <div class="col-md-7 col-lg-6">
-                <div class="ep-auth-card">
-                    <div class="text-center mb-4">
-                        <div class="ep-auth-logo"><i class="fa-solid fa-bolt"></i></div>
-                        <h2 class="fw-bold mt-3">Create Account</h2>
-                        <p class="text-muted">Join EventPro and start your journey</p>
+
+{% block auth_content %}
+<div class="container">
+    <div class="row justify-content-center ep-auth-center ep-auth-center-tall">
+        <div class="col-md-7 col-lg-6">
+            <div class="ep-auth-card">
+                <div class="text-center mb-4">
+                    <div class="ep-auth-logo"><i class="fa-solid fa-bolt"></i></div>
+                    <h2 class="fw-bold mt-3">Create Account</h2>
+                    <p class="text-muted">Join EventPro and start your journey</p>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if wsid %}<input type="hidden" name="wsid" value="{{ wsid }}">{% endif %}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">I want to join as <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="role" id="role_user" value="user"
+                                       {% if form.role.value|default:'user' == 'user' %}checked{% endif %}>
+                                <label class="ep-role-select-card w-100" for="role_user">
+                                    <i class="bi bi-person-fill ep-role-select-icon"></i>
+                                    <span class="ep-role-select-name">Attendee</span>
+                                    <span class="ep-role-select-desc">Discover & book events</span>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="role" id="role_organizer" value="organizer"
+                                       {% if form.role.value == 'organizer' %}checked{% endif %}>
+                                <label class="ep-role-select-card w-100" for="role_organizer">
+                                    <i class="bi bi-briefcase-fill ep-role-select-icon"></i>
+                                    <span class="ep-role-select-name">Organizer</span>
+                                    <span class="ep-role-select-desc">Create & manage events</span>
+                                </label>
+                            </div>
+                        </div>
+                        {% if form.role.errors %}<div class="text-danger small mt-1">{{ form.role.errors }}</div>{% endif %}
                     </div>
 
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-
-                        <!-- Role Selection -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">I want to join as <span class="text-danger">*</span></label>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <input type="radio" class="btn-check" name="role" id="role_user" value="user"
-                                           {% if form.role.value|default:'user' == 'user' %}checked{% endif %}>
-                                    <label class="ep-role-select-card w-100" for="role_user">
-                                        <i class="bi bi-person-fill ep-role-select-icon"></i>
-                                        <span class="ep-role-select-name">Attendee</span>
-                                        <span class="ep-role-select-desc">Discover & book events</span>
-                                    </label>
-                                </div>
-                                <div class="col-6">
-                                    <input type="radio" class="btn-check" name="role" id="role_organizer" value="organizer"
-                                           {% if form.role.value == 'organizer' %}checked{% endif %}>
-                                    <label class="ep-role-select-card w-100" for="role_organizer">
-                                        <i class="bi bi-briefcase-fill ep-role-select-icon"></i>
-                                        <span class="ep-role-select-name">Organizer</span>
-                                        <span class="ep-role-select-desc">Create & manage events</span>
-                                    </label>
-                                </div>
-                            </div>
-                            {% if form.role.errors %}<div class="text-danger small mt-1">{{ form.role.errors }}</div>{% endif %}
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control ep-input"
+                                   placeholder="First name" required
+                                   value="{{ form.first_name.value|default:'' }}">
+                            {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control ep-input"
+                                   placeholder="Last name" required
+                                   value="{{ form.last_name.value|default:'' }}">
+                            {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors }}</div>{% endif %}
                         </div>
 
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" class="form-control ep-input"
-                                       placeholder="First name" required
-                                       value="{{ form.first_name.value|default:'' }}">
-                                {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors }}</div>{% endif %}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                            <div class="input-group ep-input-group">
+                                <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                <input type="text" name="username" class="form-control ep-input"
+                                       placeholder="Choose a username" required
+                                       value="{{ form.username.value|default:'' }}">
                             </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" name="last_name" class="form-control ep-input"
-                                       placeholder="Last name" required
-                                       value="{{ form.last_name.value|default:'' }}">
-                                {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors }}</div>{% endif %}
-                            </div>
+                            {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors }}</div>{% endif %}
+                        </div>
 
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-                                <div class="input-group ep-input-group">
-                                    <span class="input-group-text"><i class="bi bi-at"></i></span>
-                                    <input type="text" name="username" class="form-control ep-input"
-                                           placeholder="Choose a username" required
-                                           value="{{ form.username.value|default:'' }}">
-                                </div>
-                                {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors }}</div>{% endif %}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                            <div class="input-group ep-input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" name="email" class="form-control ep-input"
+                                       placeholder="you@example.com" required
+                                       value="{{ form.email.value|default:'' }}">
                             </div>
+                            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
+                        </div>
 
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
-                                <div class="input-group ep-input-group">
-                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                                    <input type="email" name="email" class="form-control ep-input"
-                                           placeholder="you@example.com" required
-                                           value="{{ form.email.value|default:'' }}">
-                                </div>
-                                {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Phone Number</label>
+                            <div class="input-group ep-input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                <input type="tel" name="phone" class="form-control ep-input"
+                                       placeholder="Phone number (optional)"
+                                       value="{{ form.phone.value|default:'' }}">
                             </div>
+                            {% if form.phone.errors %}<div class="text-danger small">{{ form.phone.errors }}</div>{% endif %}
+                        </div>
 
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Phone Number</label>
-                                <div class="input-group ep-input-group">
-                                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                                    <input type="tel" name="phone" class="form-control ep-input"
-                                           placeholder="Phone number (optional)"
-                                           value="{{ form.phone.value|default:'' }}">
-                                </div>
-                                {% if form.phone.errors %}<div class="text-danger small">{{ form.phone.errors }}</div>{% endif %}
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-                                <div class="input-group ep-input-group ep-input-group-pw">
-                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                            <div class="input-group ep-input-group ep-input-group-pw">
+                                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                <div class="ep-pw-field">
                                     <input type="password" name="password1" id="id_password1"
                                            class="form-control ep-input" placeholder="Create a password">
-                                    <button type="button" class="btn ep-toggle-pw" data-toggle-password="id_password1" tabindex="-1">
+                                    <button type="button" class="ep-toggle-pw" data-toggle-password="id_password1" tabindex="-1" aria-label="Show password">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
-                                {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors }}</div>{% endif %}
-                                <ul class="ep-password-rules-light" id="ep-password-checklist">
-                                    <li data-rule="length"><i class="bi bi-circle"></i> 8+ characters</li>
-                                    <li data-rule="lower"><i class="bi bi-circle"></i> Lowercase</li>
-                                    <li data-rule="upper"><i class="bi bi-circle"></i> Uppercase</li>
-                                    <li data-rule="number"><i class="bi bi-circle"></i> Number</li>
-                                    <li data-rule="special"><i class="bi bi-circle"></i> Special (!@#$%)</li>
-                                </ul>
                             </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
-                                <div class="input-group ep-input-group ep-input-group-pw">
-                                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                                    <input type="password" name="password2" id="id_password2"
-                                           class="form-control ep-input" placeholder="Confirm your password">
-                                    <button type="button" class="btn ep-toggle-pw" data-toggle-password="id_password2" tabindex="-1">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors }}</div>{% endif %}
-                            </div>
+                            {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors }}</div>{% endif %}
+                            <ul class="ep-password-rules-light" id="ep-password-checklist">
+                                <li data-rule="length"><i class="bi bi-circle"></i> 8+ characters</li>
+                                <li data-rule="lower"><i class="bi bi-circle"></i> Lowercase</li>
+                                <li data-rule="upper"><i class="bi bi-circle"></i> Uppercase</li>
+                                <li data-rule="number"><i class="bi bi-circle"></i> Number</li>
+                                <li data-rule="special"><i class="bi bi-circle"></i> Special (!@#$%)</li>
+                            </ul>
                         </div>
 
-                        <button type="submit" class="btn ep-btn-primary w-100 py-2 mt-4">
-                            <i class="bi bi-plus-lg me-1"></i> Create My Account
-                        </button>
-                    </form>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                            <div class="input-group ep-input-group ep-input-group-pw">
+                                <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                <div class="ep-pw-field">
+                                    <input type="password" name="password2" id="id_password2"
+                                           class="form-control ep-input" placeholder="Confirm your password">
+                                    <button type="button" class="ep-toggle-pw" data-toggle-password="id_password2" tabindex="-1" aria-label="Show password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors }}</div>{% endif %}
+                        </div>
+                    </div>
 
-                    <p class="text-center text-muted mt-3 mb-0">
-                        Already have an account? <a href="{% url 'accounts:login' %}" class="text-primary fw-semibold">Sign In</a>
-                    </p>
-                </div>
+                    <button type="submit" class="btn ep-btn-primary w-100 py-2 mt-4">
+                        <i class="bi bi-plus-lg me-1"></i> Create My Account
+                    </button>
+                </form>
+
+                <p class="text-center text-muted mt-3 mb-0">
+                    Already have an account? <a href="{% url 'accounts:login' %}" class="text-primary fw-semibold">Sign In</a>
+                </p>
             </div>
         </div>
     </div>

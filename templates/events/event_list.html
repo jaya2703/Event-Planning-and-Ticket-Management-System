@@ -52,7 +52,7 @@
     <!-- Events Grid -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <p class="text-muted mb-0"><strong>{{ events|length }}</strong> events found</p>
-        {% if user.is_authenticated and user.role in "organizer,admin" %}
+        {% if user.is_authenticated and user.role == 'admin' or user.is_authenticated and user.role == 'organizer' %}
         <a href="{% url 'events:create' %}" class="btn ep-btn-primary btn-sm">
             <i class="bi bi-plus-lg me-1"></i>Create Event
         </a>

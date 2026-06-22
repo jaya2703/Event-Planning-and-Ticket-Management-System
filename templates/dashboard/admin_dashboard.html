@@ -1,176 +1,135 @@
 {% extends 'base.html' %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
-<div class="ep-dashboard">
-    <!-- Sidebar -->
-    <div class="ep-sidebar">
-        {% include 'partials/sidebar_brand.html' %}
-        <div class="ep-sidebar-user">
-            <div class="ep-avatar-sm">{{ user.first_name|first|upper }}</div>
-            <div>
-                <div class="fw-semibold small text-white">{{ user.get_full_name }}</div>
-                <div class="ep-badge-role-sm">Admin</div>
-            </div>
-        </div>
-        <nav class="ep-sidebar-nav">
-            <a href="{% url 'accounts:admin_dashboard' %}" class="ep-nav-item active">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="{% url 'events:list' %}" class="ep-nav-item">
-                <i class="bi bi-calendar3"></i> All Events
-            </a>
-            <a href="{% url 'events:create' %}" class="ep-nav-item">
-                <i class="bi bi-plus-circle"></i> Create Event
-            </a>
-            <a href="{% url 'bookings:history' %}" class="ep-nav-item">
-                <i class="bi bi-ticket"></i> Bookings
-            </a>
-            <a href="{% url 'accounts:profile' %}" class="ep-nav-item">
-                <i class="bi bi-person"></i> Profile
-            </a>
-            <a href="/admin/" class="ep-nav-item">
-                <i class="bi bi-gear"></i> Django Admin
-            </a>
-            <a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </a>
-        </nav>
+<div class="ep-dash-header">
+    <div>
+        <h1 class="ep-dash-title">Admin Dashboard</h1>
+        <p class="ep-dash-subtitle">Complete system overview</p>
     </div>
+</div>
 
-    <!-- Main Content -->
-    <div class="ep-dash-main">
-        <div class="ep-dash-header">
-            <h4 class="fw-bold mb-0">Admin Dashboard</h4>
-            <p class="text-muted mb-0">Complete system overview</p>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row g-4 mb-4">
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-purple">
-                    <div class="ep-stat-icon"><i class="bi bi-people-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ total_users }}</div>
-                        <div class="ep-stat-label">Total Users</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-blue">
-                    <div class="ep-stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ total_events }}</div>
-                        <div class="ep-stat-label">Total Events</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-green">
-                    <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">{{ total_bookings }}</div>
-                        <div class="ep-stat-label">Total Bookings</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="ep-stat-card ep-stat-orange">
-                    <div class="ep-stat-icon"><i class="bi bi-currency-rupee"></i></div>
-                    <div class="ep-stat-info">
-                        <div class="ep-stat-num">&#8377;{{ total_revenue|floatformat:0 }}</div>
-                        <div class="ep-stat-label">Total Revenue</div>
-                    </div>
-                </div>
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="ep-stat-card ep-stat-purple">
+            <div class="ep-stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ total_users }}</div>
+                <div class="ep-stat-label">Total Users</div>
             </div>
         </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="ep-stat-card ep-stat-blue">
+            <div class="ep-stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ total_events }}</div>
+                <div class="ep-stat-label">Total Events</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="ep-stat-card ep-stat-green">
+            <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ total_bookings }}</div>
+                <div class="ep-stat-label">Total Bookings</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="ep-stat-card ep-stat-orange">
+            <div class="ep-stat-icon"><i class="bi bi-currency-rupee"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">&#8377;{{ total_revenue|floatformat:0 }}</div>
+                <div class="ep-stat-label">Total Revenue</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <!-- Event Status + User Breakdown -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6">
-                <div class="ep-card p-4 h-100">
-                    <h6 class="fw-bold mb-3">Event Status Breakdown</h6>
-                    <div class="ep-breakdown-item mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Upcoming</span><span class="fw-bold">{{ upcoming_events }}</span>
-                        </div>
-                        <div class="progress ep-progress">
-                            <div class="progress-bar bg-primary" style="width:{% if total_events %}{% widthratio upcoming_events total_events 100 %}{% else %}0{% endif %}%"></div>
-                        </div>
-                    </div>
-                    <div class="ep-breakdown-item mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Ongoing</span><span class="fw-bold">{{ ongoing_events }}</span>
-                        </div>
-                        <div class="progress ep-progress">
-                            <div class="progress-bar bg-success" style="width:{% if total_events %}{% widthratio ongoing_events total_events 100 %}{% else %}0{% endif %}%"></div>
-                        </div>
-                    </div>
-                    <div class="ep-breakdown-item">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Completed</span><span class="fw-bold">{{ completed_events }}</span>
-                        </div>
-                        <div class="progress ep-progress">
-                            <div class="progress-bar bg-secondary" style="width:{% if total_events %}{% widthratio completed_events total_events 100 %}{% else %}0{% endif %}%"></div>
-                        </div>
-                    </div>
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="ep-card p-4 h-100">
+            <h6 class="fw-bold mb-3">Event Status Breakdown</h6>
+            <div class="ep-breakdown-item mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Upcoming</span><span class="fw-bold">{{ upcoming_events }}</span>
+                </div>
+                <div class="progress ep-progress">
+                    <div class="progress-bar bg-primary" style="width:{% if total_events %}{% widthratio upcoming_events total_events 100 %}{% else %}0{% endif %}%"></div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="ep-card p-4 h-100">
-                    <h6 class="fw-bold mb-3">Users by Role</h6>
-                    <div class="d-flex flex-column gap-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="ep-role-dot bg-primary"></div>
-                            <span class="flex-grow-1">Regular Users</span>
-                            <span class="fw-bold">{{ user_count }}</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="ep-role-dot bg-success"></div>
-                            <span class="flex-grow-1">Organizers</span>
-                            <span class="fw-bold">{{ organizer_count }}</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="ep-role-dot bg-warning"></div>
-                            <span class="flex-grow-1">Volunteers</span>
-                            <span class="fw-bold">{{ volunteer_count }}</span>
-                        </div>
-                    </div>
+            <div class="ep-breakdown-item mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Ongoing</span><span class="fw-bold">{{ ongoing_events }}</span>
+                </div>
+                <div class="progress ep-progress">
+                    <div class="progress-bar bg-success" style="width:{% if total_events %}{% widthratio ongoing_events total_events 100 %}{% else %}0{% endif %}%"></div>
+                </div>
+            </div>
+            <div class="ep-breakdown-item">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Completed</span><span class="fw-bold">{{ completed_events }}</span>
+                </div>
+                <div class="progress ep-progress">
+                    <div class="progress-bar bg-secondary" style="width:{% if total_events %}{% widthratio completed_events total_events 100 %}{% else %}0{% endif %}%"></div>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="col-md-6">
+        <div class="ep-card p-4 h-100">
+            <h6 class="fw-bold mb-3">Users by Role</h6>
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ep-role-dot bg-primary"></div>
+                    <span class="flex-grow-1">Regular Users</span>
+                    <span class="fw-bold">{{ user_count }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ep-role-dot bg-success"></div>
+                    <span class="flex-grow-1">Organizers</span>
+                    <span class="fw-bold">{{ organizer_count }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ep-role-dot bg-warning"></div>
+                    <span class="flex-grow-1">Volunteers</span>
+                    <span class="fw-bold">{{ volunteer_count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <!-- Recent Activity -->
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="ep-card p-4">
-                    <h6 class="fw-bold mb-3">Recent Bookings</h6>
-                    {% for b in recent_bookings %}
-                    <div class="ep-activity-row">
-                        <div class="ep-avatar-xs">{{ b.user.first_name|first|upper }}</div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold small">{{ b.user.username }}</div>
-                            <div class="text-muted" style="font-size:0.75rem;">{{ b.event.title|truncatechars:30 }}</div>
-                        </div>
-                        <span class="badge ep-badge-status-{{ b.status }}">{{ b.get_status_display }}</span>
-                    </div>
-                    {% empty %}<p class="text-muted small">No bookings yet.</p>{% endfor %}
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="ep-card p-4">
+            <h6 class="fw-bold mb-3">Recent Bookings</h6>
+            {% for b in recent_bookings %}
+            <div class="ep-activity-row">
+                <div class="ep-avatar-xs">{{ b.user.first_name|first|upper }}</div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small">{{ b.user.username }}</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ b.event.title|truncatechars:30 }}</div>
                 </div>
+                <span class="badge ep-badge-status-{{ b.status }}">{{ b.get_status_display }}</span>
             </div>
-            <div class="col-md-6">
-                <div class="ep-card p-4">
-                    <h6 class="fw-bold mb-3">Recent Events</h6>
-                    {% for ev in recent_events %}
-                    <div class="ep-activity-row">
-                        <div class="ep-avatar-xs bg-primary"><i class="bi bi-calendar text-white" style="font-size:0.7rem;"></i></div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold small">{{ ev.title|truncatechars:28 }}</div>
-                            <div class="text-muted" style="font-size:0.75rem;">{{ ev.date }} &middot; {{ ev.city }}</div>
-                        </div>
-                        <a href="{% url 'events:detail' ev.id %}" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;">View</a>
-                    </div>
-                    {% empty %}<p class="text-muted small">No events yet.</p>{% endfor %}
+            {% empty %}<p class="text-muted small">No bookings yet.</p>{% endfor %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="ep-card p-4">
+            <h6 class="fw-bold mb-3">Recent Events</h6>
+            {% for ev in recent_events %}
+            <div class="ep-activity-row">
+                <div class="ep-avatar-xs bg-primary"><i class="bi bi-calendar text-white" style="font-size:0.7rem;"></i></div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small">{{ ev.title|truncatechars:28 }}</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ ev.date }} &middot; {{ ev.city }}</div>
                 </div>
+                <a href="{% url 'events:detail' ev.id %}" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;">View</a>
             </div>
+            {% empty %}<p class="text-muted small">No events yet.</p>{% endfor %}
         </div>
     </div>
 </div>

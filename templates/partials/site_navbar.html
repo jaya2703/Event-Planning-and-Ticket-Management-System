@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light em-navbar sticky-top">
     <div class="container em-container">
-        <a class="navbar-brand em-brand" href="{% url 'home' %}">
+        <a class="navbar-brand em-brand" href="{% if request.resolver_match.url_name == 'home' %}#top{% else %}{% url 'home' %}{% endif %}">
             <span class="em-brand-icon"><i class="fa-solid fa-bolt"></i></span>
             <strong class="em-brand-name">EventPro</strong>
         </a>
@@ -10,19 +10,26 @@
         <div class="collapse navbar-collapse" id="emMenu">
             <ul class="navbar-nav mx-auto em-nav-links">
                 <li class="nav-item">
-                    <a class="nav-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}" href="{% url 'home' %}">Home</a>
+                    <a class="nav-link em-scroll-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}"
+                       href="{% if request.resolver_match.url_name == 'home' %}#top{% else %}{% url 'home' %}{% endif %}"
+                       data-section="top">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link{% if request.resolver_match.namespace == 'events' and request.resolver_match.url_name == 'list' %} active{% endif %}" href="{% url 'events:list' %}">Events</a>
+                    <a class="nav-link em-scroll-link"
+                       href="{% if request.resolver_match.url_name == 'home' %}#events{% else %}{% url 'home' %}#events{% endif %}"
+                       data-section="events">Events</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}#features">Features</a>
+                    <a class="nav-link em-scroll-link" href="{% if request.resolver_match.url_name == 'home' %}#features{% else %}{% url 'home' %}#features{% endif %}"
+                       data-section="features">Features</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}#how-it-works">About Us</a>
+                    <a class="nav-link em-scroll-link" href="{% if request.resolver_match.url_name == 'home' %}#about-us{% else %}{% url 'home' %}#about-us{% endif %}"
+                       data-section="about-us">About Us</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}#faq">Contact</a>
+                    <a class="nav-link em-scroll-link" href="{% if request.resolver_match.url_name == 'home' %}#faq{% else %}{% url 'home' %}#faq{% endif %}"
+                       data-section="faq">Contact</a>
                 </li>
             </ul>
             <div class="em-nav-actions">

@@ -4,14 +4,39 @@ Payments Views
 Mock payment flow: Process -> Success/Failed
 No real money, just simulation for learning purposes.
 """
+import base64
+import io
+import random
+import qrcode
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-import random
 from .models import Payment
 from bookings.models import Booking
 from accounts.models import Notification
+
+MOCK_UPI_ID = 'eventpro@paytm'
+
+
+def build_upi_payment_qr(booking):
+    """Build a scannable UPI payment QR (mock merchant)."""
+    amount = f"{booking.total_price:.2f}"
+    note = f"EventPro {booking.event.title}"[:40]
+    upi_payload = (
+        f"upi://pay?pa={MOCK_UPI_ID}&pn=EventPro"
+        f"&am={amount}&cu=INR&tn={note}"
+    )
+
+    qr = qrcode.QRCode(version=None, box_size=8, border=2)
+    qr.add_data(upi_payload)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    data_uri = 'data:image/png;base64,' + base64.b64encode(buffer.getvalue()).decode('ascii')
+    return data_uri, upi_payload
 
 
 @login_required
@@ -55,7 +80,11 @@ def process_payment(request, booking_id):
         if roll <= 9:  # 90% success
             payment.status = 'success'
             payment.paid_at = timezone.now()
-            payment.mock_card_last4 = '4242'
+            card_number = request.POST.get('card_number', '').replace(' ', '')
+            if payment_method == 'card' and len(card_number) >= 4:
+                payment.mock_card_last4 = card_number[-4:]
+            else:
+                payment.mock_card_last4 = '4242'
             payment.save()
             
             Notification.objects.create(
@@ -74,9 +103,12 @@ def process_payment(request, booking_id):
             
             return redirect('payments:failed', booking_id=booking.id)
     
+    upi_qr_image, upi_payload = build_upi_payment_qr(booking)
     context = {
         'booking': booking,
         'event': booking.event,
+        'upi_qr_image': upi_qr_image,
+        'mock_upi_id': MOCK_UPI_ID,
     }
     return render(request, 'payments/process.html', context)
 
@@ -94,3 +126,51 @@ def payment_failed(request, booking_id):
     """Payment failed page"""
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     return render(request, 'payments/failed.html', {'booking': booking})
+
+
+@login_required
+def request_refund(request, booking_id):
+    """Mock refund for cancelled paid bookings."""
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+
+    if not booking.is_refund_eligible:
+        messages.error(request, "This booking is not eligible for a refund.")
+        return redirect('bookings:detail', booking_id=booking.id)
+
+    payment = booking.payment
+
+    if request.method == 'POST':
+        refund_method = request.POST.get('refund_method', payment.payment_method)
+        payment.is_refunded = True
+        payment.refunded_at = timezone.now()
+        payment.save()
+
+        Notification.objects.create(
+            user=request.user,
+            message=(
+                f"💰 Refund of INR {payment.amount} initiated for '{booking.event.title}'. "
+                f"Amount will be credited within 3–5 business days."
+            )
+        )
+        messages.success(request, f"Refund of ₹{payment.amount} has been initiated successfully.")
+        return redirect('payments:refund_success', booking_id=booking.id)
+
+    context = {
+        'booking': booking,
+        'event': booking.event,
+        'payment': payment,
+    }
+    return render(request, 'payments/refund.html', context)
+
+
+@login_required
+def refund_success(request, booking_id):
+    """Refund success confirmation page."""
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    payment = getattr(booking, 'payment', None)
+    if not payment or not payment.is_refunded:
+        return redirect('bookings:detail', booking_id=booking.id)
+    return render(request, 'payments/refund_success.html', {
+        'booking': booking,
+        'payment': payment,
+    })

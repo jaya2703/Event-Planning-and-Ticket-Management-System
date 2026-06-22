@@ -17,16 +17,125 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ── Navbar active link highlight ──
+// ── Enable scroll-reveal only when JS is active ──
+document.documentElement.classList.add('js-ready');
+
+// ── Navbar glass effect on scroll ──
 document.addEventListener('DOMContentLoaded', function() {
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(function(link) {
-        if (link.getAttribute('href') === currentPath) {
-            link.classList.add('active');
+    const navbar = document.querySelector('.em-navbar');
+    if (!navbar) return;
+    function updateNavbar() {
+        navbar.classList.toggle('em-navbar-scrolled', window.scrollY > 24);
+    }
+    updateNavbar();
+    window.addEventListener('scroll', updateNavbar, { passive: true });
+});
+
+// ── Scroll reveal animations ──
+document.addEventListener('DOMContentLoaded', function() {
+    const revealEls = document.querySelectorAll('.ep-reveal');
+    if (!revealEls.length) return;
+    if (!('IntersectionObserver' in window)) {
+        revealEls.forEach(function(el) { el.classList.add('ep-visible'); });
+        return;
+    }
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('ep-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    revealEls.forEach(function(el) { observer.observe(el); });
+    // Show above-the-fold content immediately
+    revealEls.forEach(function(el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.92) {
+            el.classList.add('ep-visible');
         }
     });
 });
+
+// ── Home page: smooth in-page section scroll (no reload) ──
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.body.classList.contains('em-home')) return;
+
+    const navMenu = document.getElementById('emMenu');
+    const scrollLinks = document.querySelectorAll('.em-scroll-link');
+    const sectionIds = ['top', 'events', 'features', 'about-us', 'how-it-works', 'faq'];
+
+    function scrollToSection(id, updateHash) {
+        const target = document.getElementById(id);
+        if (!target) return;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (updateHash !== false) {
+            history.replaceState(null, '', id === 'top' ? window.location.pathname : '#' + id);
+        }
+        setActiveNavLink(id);
+    }
+
+    function setActiveNavLink(sectionId) {
+        scrollLinks.forEach(function(link) {
+            link.classList.toggle('active', link.dataset.section === sectionId);
+        });
+    }
+
+    scrollLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            const href = link.getAttribute('href');
+            if (!href || !href.startsWith('#')) return;
+            const sectionId = href.slice(1);
+            const target = document.getElementById(sectionId);
+            if (!target) return;
+
+            e.preventDefault();
+            scrollToSection(sectionId);
+
+            if (navMenu && navMenu.classList.contains('show')) {
+                const collapse = bootstrap.Collapse.getInstance(navMenu) || new bootstrap.Collapse(navMenu, { toggle: false });
+                collapse.hide();
+            }
+        });
+    });
+
+    document.querySelector('.em-brand')?.addEventListener('click', function(e) {
+        if (this.getAttribute('href') !== '#top') return;
+        e.preventDefault();
+        scrollToSection('top');
+        if (navMenu && navMenu.classList.contains('show')) {
+            const collapse = bootstrap.Collapse.getInstance(navMenu) || new bootstrap.Collapse(navMenu, { toggle: false });
+            collapse.hide();
+        }
+    });
+
+    if (window.location.hash) {
+        const id = window.location.hash.slice(1);
+        if (sectionIds.includes(id)) {
+            setTimeout(function() { scrollToSection(id, false); }, 50);
+        }
+    }
+
+    let scrollTicking = false;
+    window.addEventListener('scroll', function() {
+        if (scrollTicking) return;
+        scrollTicking = true;
+        requestAnimationFrame(function() {
+            const offset = 100;
+            let current = 'top';
+            sectionIds.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el && el.getBoundingClientRect().top <= offset) {
+                    current = id;
+                }
+            });
+            setActiveNavLink(current);
+            scrollTicking = false;
+        });
+    });
+});
+
+// ── Navbar active link highlight ──
 
 // ── Smooth scroll to top button ──
 // Create a scroll-to-top button dynamically

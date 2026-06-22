@@ -2,29 +2,55 @@
 {% block title %}Notifications{% endblock %}
 {% block content %}
 <div class="container em-container ep-page-wrap">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold">Notifications</h3>
-        <a href="{% url 'accounts:dashboard' %}" class="btn ep-btn-outline btn-sm">
-            <i class="bi bi-arrow-left me-1"></i>Dashboard
-        </a>
+    <a href="{% url 'accounts:dashboard' %}" class="ep-back-link">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <div class="ep-notify-page-header mb-4">
+        <div class="ep-notify-page-icon">
+            <i class="bi bi-bell-fill"></i>
+            {% if sidebar_unread_notifications %}
+            <span class="ep-notify-page-badge">{{ sidebar_unread_notifications }}</span>
+            {% endif %}
+        </div>
+        <div>
+            <h2 class="fw-bold mb-1">Notifications</h2>
+            <p class="text-muted mb-0">All your booking and payment updates</p>
+        </div>
     </div>
+
     {% if notifications %}
-    <div class="ep-card">
+    <div class="ep-card ep-notify-list">
         {% for notif in notifications %}
         <div class="ep-notif-full {% if not notif.is_read %}ep-notif-unread{% endif %}">
-            <div class="ep-notif-dot"></div>
-            <div class="flex-grow-1">
-                <p class="mb-0">{{ notif.message }}</p>
-                <small class="text-muted">{{ notif.created_at|date:"M d, Y H:i" }}</small>
+            <div class="ep-notif-icon">
+                {% if 'Payment' in notif.message or 'payment' in notif.message %}
+                <i class="bi bi-credit-card"></i>
+                {% elif 'cancel' in notif.message|lower %}
+                <i class="bi bi-x-circle"></i>
+                {% elif 'confirmed' in notif.message|lower or 'booked' in notif.message|lower %}
+                <i class="bi bi-check-circle"></i>
+                {% else %}
+                <i class="bi bi-bell"></i>
+                {% endif %}
             </div>
+            <div class="flex-grow-1">
+                <p class="mb-1 fw-medium">{{ notif.message }}</p>
+                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+            </div>
+            {% if not notif.is_read %}
+            <span class="ep-notif-new-pill">New</span>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-bell-slash fs-1 text-muted"></i>
-        <h5 class="text-muted mt-3">No notifications</h5>
-        <p class="text-muted">You are all caught up!</p>
+    <div class="ep-card text-center py-5 ep-notify-empty">
+        <div class="ep-notify-empty-icon">
+            <i class="bi bi-bell-slash"></i>
+        </div>
+        <h5 class="text-muted mt-3 mb-1">No notifications</h5>
+        <p class="text-muted mb-0">You are all caught up!</p>
     </div>
     {% endif %}
 </div>
