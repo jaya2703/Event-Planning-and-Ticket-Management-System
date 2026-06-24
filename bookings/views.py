@@ -50,6 +50,10 @@ def book_ticket(request, event_id):
     Book a ticket for an event.
     If event is full, automatically join waitlist.
     """
+    if request.user.role != 'user':
+        messages.error(request, "Only attendees can book events.")
+        return redirect('accounts:dashboard')
+
     event = get_object_or_404(Event, id=event_id)
     
     # Check if user already has a confirmed booking
@@ -146,13 +150,24 @@ def book_ticket(request, event_id):
 @login_required
 def booking_detail(request, booking_id):
     """View details of a single booking"""
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-    return render(request, 'bookings/booking_detail.html', {'booking': booking})
+    booking = get_object_or_404(Booking, id=booking_id)
+    if booking.user != request.user and request.user.role != 'admin':
+        messages.error(request, "You do not have permission to view this booking.")
+        return redirect('accounts:dashboard')
+    return render(request, 'bookings/booking_detail.html', {
+        'booking': booking,
+        'is_admin_view': request.user.role == 'admin',
+    })
 
 
 @login_required
 def booking_history(request):
     """List all bookings for the current user"""
+    if request.user.role == 'admin':
+        return redirect('accounts:manage_bookings')
+    if request.user.role != 'user':
+        messages.error(request, "Booking history is only available for attendees.")
+        return redirect('accounts:dashboard')
     bookings = Booking.objects.filter(user=request.user).order_by('-booked_at')
     return render(request, 'bookings/booking_history.html', {'bookings': bookings})
 
@@ -343,8 +358,8 @@ def verify_checkin(request, booking_uuid):
     QR Code Verification & Check-in.
     When organizer scans QR code, this view marks the user as checked in.
     """
-    if request.user.role not in ['organizer', 'admin', 'volunteer']:
-        messages.error(request, "Only organizers, volunteers, and admins can verify tickets.")
+    if request.user.role not in ['organizer', 'admin']:
+        messages.error(request, "Only organizers and admins can verify tickets.")
         return redirect('home')
     
     try:
@@ -373,10 +388,10 @@ def verify_checkin(request, booking_uuid):
 
 @login_required
 def scan_qr(request):
-    """Page where organizer/volunteer can scan QR codes"""
-    if request.user.role not in ['organizer', 'admin', 'volunteer']:
+    """Page where organizer can scan QR codes"""
+    if request.user.role != 'organizer':
         messages.error(request, "Access denied.")
-        return redirect('home')
+        return redirect('accounts:dashboard')
     
     if request.method == 'POST':
         qr_data = request.POST.get('qr_data', '')

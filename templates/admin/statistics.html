@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Statistics{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin{% endblock %}
+{% block content %}
+<div class="ep-saas-wrap ep-ent-animate">
+    <div class="ep-saas-page-head">
+        <nav class="ep-logs-crumb"><a href="{% url 'accounts:admin_dashboard' %}">Admin</a><span class="ep-logs-crumb-sep">/</span><span class="ep-logs-crumb-current">Statistics</span></nav>
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2">
+            <div>
+                <h1 class="ep-saas-page-title">Analytics & Statistics</h1>
+                <p class="ep-saas-page-sub">Deep-dive into platform performance</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'accounts:export_report' 'bookings' %}" class="ep-logs-btn ep-logs-btn-ghost"><i class="bi bi-download"></i> Bookings CSV</a>
+                <a href="{% url 'accounts:export_report' 'payments' %}" class="ep-logs-btn ep-logs-btn-ghost"><i class="bi bi-download"></i> Payments CSV</a>
+                <a href="{% url 'accounts:export_report' 'users' %}" class="ep-logs-btn ep-logs-btn-primary"><i class="bi bi-download"></i> Users CSV</a>
+            </div>
+        </div>
+    </div>
+
+    <section class="ep-saas-kpi-row ep-saas-kpi-row-compact">
+        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">₹{{ kpis.revenue.value|floatformat:0 }}</div><div class="ep-saas-kpi-lbl">Total Revenue</div></div>
+        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">{{ kpis.bookings.value }}</div><div class="ep-saas-kpi-lbl">Total Bookings</div></div>
+        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">{{ tickets_sold }}</div><div class="ep-saas-kpi-lbl">Tickets Sold</div></div>
+        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">{{ kpis.users.value }}</div><div class="ep-saas-kpi-lbl">Total Users</div></div>
+    </section>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8" id="revenue">
+            <div class="ep-saas-card">
+                <div class="ep-saas-card-head"><h3>Revenue Analytics</h3><span class="ep-saas-range">12 months</span></div>
+                <div class="ep-saas-chart ep-saas-chart-lg"><canvas id="statRevenue"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="ep-saas-card ep-cat-rank-panel h-100">
+                <div class="ep-saas-card-head"><h3>Category Performance</h3></div>
+                {% include 'partials/category_rank_card.html' with container_id='statCatRank' %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ep-saas-card">
+                <div class="ep-saas-card-head"><h3>User Growth</h3></div>
+                <div class="ep-saas-chart"><canvas id="statUsers"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ep-saas-card">
+                <div class="ep-saas-card-head"><h3>Booking Analytics</h3></div>
+                <div class="ep-saas-chart"><canvas id="statBookings"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="ep-saas-card ep-saas-table-card">
+                <div class="ep-saas-card-head"><h3>Top Performing Events</h3></div>
+                <div class="ep-saas-table-wrap">
+                    <table class="ep-saas-table">
+                        <thead class="ep-saas-thead-sticky"><tr><th>Event</th><th>Bookings</th><th>Revenue</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for e in top_events %}
+                        <tr>
+                            <td><strong>{{ e.title|truncatechars:32 }}</strong></td>
+                            <td>{{ e.booking_count }}</td>
+                            <td>₹{{ e.revenue|default:0|floatformat:0 }}</td>
+                            <td><span class="ep-saas-badge ep-saas-badge-{{ e.status }}">{{ e.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="ep-saas-empty">No event data</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="ep-saas-card ep-saas-table-card">
+                <div class="ep-saas-card-head"><h3>Organizer Performance</h3></div>
+                <div class="ep-saas-table-wrap">
+                    <table class="ep-saas-table">
+                        <thead class="ep-saas-thead-sticky"><tr><th>Organizer</th><th>Events</th><th>Bookings</th></tr></thead>
+                        <tbody>
+                        {% for o in organizers %}
+                        <tr>
+                            <td>
+                                <div class="ep-saas-user-cell">
+                                    <span class="ep-saas-avatar">{{ o.username|first|upper }}</span>
+                                    <span>{{ o.username }}</span>
+                                </div>
+                            </td>
+                            <td>{{ o.event_count }}</td>
+                            <td>{{ o.booking_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="ep-saas-empty">No organizers</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/category-rank.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const o = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+    new Chart(document.getElementById('statRevenue'), { type: 'line', data: { labels: {{ chart_revenue_labels|safe }}, datasets: [{ data: {{ chart_revenue_values|safe }}, borderColor: '#6366F1', fill: true, backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.35 }] }, options: o });
+    new Chart(document.getElementById('statBookings'), { type: 'bar', data: { labels: {{ chart_booking_labels|safe }}, datasets: [{ data: {{ chart_booking_values|safe }}, backgroundColor: '#8B5CF6', borderRadius: 6 }] }, options: o });
+    new Chart(document.getElementById('statUsers'), { type: 'line', data: { labels: {{ chart_user_labels|safe }}, datasets: [{ data: {{ chart_user_values|safe }}, borderColor: '#10B981', tension: 0.35 }] }, options: o });
+    epRenderCategoryRank('statCatRank', {{ chart_cat_labels|safe }}, {{ chart_cat_values|safe }}, { mode: 'events', maxRows: 6 });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Volunteers — {{ event.title }}{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="container ep-page-wrap">
+    <a href="{% url 'events:detail' event.id %}" class="ep-back-link"><i class="bi bi-arrow-left"></i> Back to Event</a>
+
+    <div class="ep-ent-header mb-3">
+        <div>
+            <h1>Event Staff</h1>
+            <p>Manage volunteers for <strong>{{ event.title }}</strong></p>
+        </div>
+        <a href="{% url 'volunteers:overview' %}" class="btn ep-btn-outline btn-sm">All Volunteers</a>
+    </div>
+
+    <div class="ep-ent-stat-grid mb-4" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="ep-ent-stat"><div class="ep-ent-stat-num">{{ stats.total }}</div><div class="ep-ent-stat-label">Total</div></div>
+        <div class="ep-ent-stat"><div class="ep-ent-stat-num">{{ stats.assigned }}</div><div class="ep-ent-stat-label">Assigned</div></div>
+        <div class="ep-ent-stat"><div class="ep-ent-stat-num">{{ stats.active }}</div><div class="ep-ent-stat-label">Active</div></div>
+        <div class="ep-ent-stat"><div class="ep-ent-stat-num">{{ stats.present }}</div><div class="ep-ent-stat-label">Present Today</div></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="ep-ent-card">
+                <h5 class="fw-bold mb-3">Add Volunteer</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Mobile</label>
+                            {{ form.mobile }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Email</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Duty / Area</label>
+                        {{ form.duty }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Shift Timing</label>
+                        {{ form.shift_timing }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Status</label>
+                        {{ form.status }}
+                    </div>
+                    <button type="submit" class="btn ep-btn-primary w-100">Add Volunteer</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="ep-ent-card">
+                <h5 class="fw-bold mb-3">Volunteer List</h5>
+                {% for v in volunteers %}
+                <div class="d-flex align-items-center justify-content-between gap-2 py-3 border-bottom">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="ep-avatar-xs">{{ v.name|first|upper }}</div>
+                        <div>
+                            <div class="fw-semibold">{{ v.name }}</div>
+                            <small class="text-muted">{{ v.get_duty_display }}{% if v.shift_timing %} · {{ v.shift_timing }}{% endif %}</small>
+                            {% if v.mobile %}<small class="d-block text-muted">{{ v.mobile }}</small>{% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                        <span class="badge {% if v.status == 'active' %}bg-success{% elif v.status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ v.get_status_display }}</span>
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="attendance">
+                            <input type="hidden" name="volunteer_id" value="{{ v.id }}">
+                            <button type="submit" class="btn btn-sm {% if v.is_present %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                                {% if v.is_present %}Present{% else %}Check in{% endif %}
+                            </button>
+                        </form>
+                        <a href="{% url 'volunteers:edit' v.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form method="post" class="d-inline" data-confirm="Remove {{ v.name }}?">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="volunteer_id" value="{{ v.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No volunteers assigned yet. Add staff using the form.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

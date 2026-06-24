@@ -162,7 +162,7 @@
                     </div>
                 </div>
                 <div class="p-4">
-                    {% if user.is_authenticated %}
+                    {% if user.is_authenticated and user.role == 'user' %}
                         {% if already_booked %}
                             <div class="alert alert-success py-2 text-center mb-3">
                                 <i class="bi bi-check-circle me-1"></i>You have a booking!
@@ -181,6 +181,10 @@
                             </a>
                             {% endif %}
                         {% endif %}
+                    {% elif user.is_authenticated and user.role == 'admin' %}
+                        <p class="text-muted small text-center mb-0">
+                            <i class="bi bi-info-circle me-1"></i>View all bookings from the admin panel.
+                        </p>
                     {% else %}
                         <a href="{% url 'accounts:login' %}" class="btn ep-btn-primary w-100 mb-3">
                             Login to Book Tickets
@@ -193,8 +197,8 @@
                         <a href="{% url 'events:edit' event.id %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
                             <i class="bi bi-pencil me-1"></i>Edit Event
                         </a>
-                        <a href="{% url 'volunteers:assign' event.id %}" class="btn btn-outline-secondary btn-sm w-100 mb-2">
-                            <i class="bi bi-people me-1"></i>Manage Volunteers
+                        <a href="{% url 'volunteers:manage' event.id %}" class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                            <i class="bi bi-people me-1"></i>Event Staff
                         </a>
                         <a href="{% url 'events:delete' event.id %}" class="btn btn-outline-danger btn-sm w-100">
                             <i class="bi bi-trash me-1"></i>Delete Event

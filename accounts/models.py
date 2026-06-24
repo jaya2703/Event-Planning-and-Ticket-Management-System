@@ -2,24 +2,24 @@
 Accounts Models
 ===============
 This file defines our custom User with roles.
-Roles: admin, organizer, user, volunteer
+Roles: admin, organizer, user
+(Event staff are managed per-event via volunteers.EventVolunteer)
 """
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+PLATFORM_ROLES = ('admin', 'organizer', 'user')
+
+
 class CustomUser(AbstractUser):
     """
-    Our custom user model.
-    We extend Django's built-in User to add a 'role' field.
-    AbstractUser already gives us: username, email, password, first_name, last_name
+    Custom user with platform role: admin, organizer, or user.
     """
     
-    # Define the possible roles a user can have
     ROLE_CHOICES = [
         ('admin', 'Admin'),
         ('organizer', 'Organizer'),
         ('user', 'User'),
-        ('volunteer', 'Volunteer'),
     ]
     
     # Role field - every user must have one role
@@ -65,11 +65,13 @@ class CustomUser(AbstractUser):
     def is_organizer(self):
         return self.role == 'organizer'
     
-    def is_volunteer(self):
-        return self.role == 'volunteer'
-    
     def is_regular_user(self):
         return self.role == 'user'
+
+    @classmethod
+    def platform_users(cls):
+        """Users with a platform login role (excludes legacy volunteer accounts)."""
+        return cls.objects.filter(role__in=PLATFORM_ROLES)
 
 
 class Notification(models.Model):

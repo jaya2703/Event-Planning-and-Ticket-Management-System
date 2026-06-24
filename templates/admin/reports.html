@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin{% endblock %}
+{% block content %}
+<div class="ep-saas-wrap ep-ent-animate">
+    <div class="ep-saas-page-head">
+        <nav class="ep-logs-crumb"><a href="{% url 'accounts:admin_dashboard' %}">Admin</a><span class="ep-logs-crumb-sep">/</span><span class="ep-logs-crumb-current">Reports</span></nav>
+        <h1 class="ep-saas-page-title">Reports & Exports</h1>
+        <p class="ep-saas-page-sub">Download platform data for accounting, compliance, and analysis</p>
+    </div>
+
+    <div class="row g-3">
+        {% for item in report_items %}
+        <div class="col-md-6 col-lg-4">
+            <div class="ep-saas-report-card">
+                <div class="ep-saas-report-icon"><i class="bi {{ item.icon }}"></i></div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.desc }}</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'accounts:export_report' item.csv %}" class="ep-logs-btn ep-logs-btn-primary ep-logs-btn-sm">
+                        <i class="bi bi-filetype-csv"></i> Download CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="ep-saas-card mt-3 p-4">
+        <h3 class="h6 fw-bold mb-2">Monthly & Yearly Reports</h3>
+        <p class="text-muted small mb-3">For detailed visual analytics including monthly trends and yearly comparisons, visit the Statistics page.</p>
+        <a href="{% url 'accounts:admin_statistics' %}" class="ep-saas-link">Open Statistics Dashboard →</a>
+    </div>
+</div>
+{% endblock %}

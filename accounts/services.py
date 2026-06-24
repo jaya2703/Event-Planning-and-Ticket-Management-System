@@ -75,12 +75,12 @@ def monthly_revenue_data(months=6):
 
 
 def monthly_user_growth(months=6):
-    from accounts.models import CustomUser
+    from accounts.models import CustomUser, PLATFORM_ROLES
     from django.utils import timezone
     from datetime import timedelta
     start = timezone.now() - timedelta(days=months * 31)
     qs = (
-        CustomUser.objects.filter(date_joined__gte=start)
+        CustomUser.objects.filter(date_joined__gte=start, role__in=PLATFORM_ROLES)
         .annotate(month=TruncMonth('date_joined'))
         .values('month')
         .annotate(count=Count('id'))

@@ -1,0 +1,507 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Booking Management{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-bookings-admin{% endblock %}
+
+{% block content %}
+<div class="ep-bk-wrap ep-ent-animate" id="epBkPrintArea">
+    <header class="ep-bk-header">
+        <div>
+            <nav class="ep-logs-crumb"><a href="{% url 'accounts:admin_dashboard' %}">Admin</a><span class="ep-logs-crumb-sep">/</span><span class="ep-logs-crumb-current">Bookings</span></nav>
+            <h1 class="ep-bk-title">Booking Management</h1>
+            <p class="ep-bk-subtitle">Monitor ticket sales, attendee activity, revenue, and booking performance.</p>
+        </div>
+        <div class="ep-bk-header-actions d-none d-md-flex gap-2 flex-wrap">
+            <a href="{% url 'accounts:export_report' 'bookings' %}" class="ep-logs-btn ep-logs-btn-ghost"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+            <button type="button" class="ep-logs-btn ep-logs-btn-ghost" onclick="window.print()"><i class="bi bi-filetype-pdf"></i> Export PDF</button>
+            <a href="{% url 'accounts:admin_reports' %}" class="ep-logs-btn ep-logs-btn-primary"><i class="bi bi-file-earmark-bar-graph"></i> Generate Report</a>
+        </div>
+        <button class="ep-bk-filter-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#bookingFiltersDrawer">
+            <i class="bi bi-funnel"></i> Filters
+        </button>
+    </header>
+
+    <!-- KPI Analytics -->
+    <div class="ep-saas-kpi-row ep-bk-analytics-row">
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-book"><i class="bi bi-ticket-perforated"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.total.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.total.up %}up{% else %}down{% endif %}"></i>{{ analytics.total.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">{{ analytics.total.value }}</div>
+            <div class="ep-saas-kpi-lbl">Total Bookings</div>
+            <div class="ep-bk-kpi-sub">vs last month</div>
+        </div>
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-ev"><i class="bi bi-check-circle"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.confirmed.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.confirmed.up %}up{% else %}down{% endif %}"></i>{{ analytics.confirmed.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">{{ analytics.confirmed.value }}</div>
+            <div class="ep-saas-kpi-lbl">Confirmed Bookings</div>
+            <div class="ep-bk-kpi-sub">vs last month</div>
+        </div>
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-warn"><i class="bi bi-x-circle"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.cancelled.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.cancelled.up %}up{% else %}down{% endif %}"></i>{{ analytics.cancelled.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">{{ analytics.cancelled.value }}</div>
+            <div class="ep-saas-kpi-lbl">Cancelled Bookings</div>
+            <div class="ep-bk-kpi-sub">vs last month</div>
+        </div>
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-rev"><i class="bi bi-currency-rupee"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.revenue.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.revenue.up %}up{% else %}down{% endif %}"></i>{{ analytics.revenue.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">₹{{ analytics.revenue.value|floatformat:0 }}</div>
+            <div class="ep-saas-kpi-lbl">Revenue Generated</div>
+            <div class="ep-bk-kpi-sub">vs last month</div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-9">
+            <!-- Filters desktop -->
+            <div class="ep-bk-filters-card d-none d-lg-block">
+                <form method="get" class="ep-bk-filters-form">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-lg-3">
+                            <label class="ep-bk-filter-lbl">Search booking</label>
+                            <div class="ep-logs-filter-search w-100">
+                                <i class="bi bi-search"></i>
+                                <input type="text" name="q" placeholder="Attendee, event, ID…" value="{{ search }}">
+                            </div>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="ep-bk-filter-lbl">Event name</label>
+                            <select name="event" class="ep-logs-filter-select w-100">
+                                <option value="">All events</option>
+                                {% for ev in events %}
+                                <option value="{{ ev.id }}" {% if event_filter == ev.id|stringformat:"s" %}selected{% endif %}>{{ ev.title|truncatechars:28 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="ep-bk-filter-lbl">Booking status</label>
+                            <select name="status" class="ep-logs-filter-select w-100">
+                                <option value="">All</option>
+                                <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="pending_payment" {% if status_filter == 'pending_payment' %}selected{% endif %}>Pending payment</option>
+                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                <option value="attended" {% if status_filter == 'attended' %}selected{% endif %}>Attended</option>
+                                <option value="waitlisted" {% if status_filter == 'waitlisted' %}selected{% endif %}>Waitlisted</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="ep-bk-filter-lbl">Payment status</label>
+                            <select name="payment_status" class="ep-logs-filter-select w-100">
+                                <option value="">All</option>
+                                <option value="paid" {% if payment_filter == 'paid' %}selected{% endif %}>Paid</option>
+                                <option value="pending" {% if payment_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="failed" {% if payment_filter == 'failed' %}selected{% endif %}>Failed</option>
+                                <option value="refunded" {% if payment_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="ep-bk-filter-lbl">Organizer</label>
+                            <select name="organizer" class="ep-logs-filter-select w-100">
+                                <option value="">All</option>
+                                {% for o in organizers %}
+                                <option value="{{ o.id }}" {% if organizer_filter == o.id|stringformat:"s" %}selected{% endif %}>{{ o.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-1">
+                            <label class="ep-bk-filter-lbl">From</label>
+                            <input type="date" name="date_from" class="form-control ep-bk-date-input" value="{{ date_from }}">
+                        </div>
+                        <div class="col-lg-1">
+                            <label class="ep-bk-filter-lbl">To</label>
+                            <input type="date" name="date_to" class="form-control ep-bk-date-input" value="{{ date_to }}">
+                        </div>
+                        <div class="col-12 d-flex gap-2 flex-wrap">
+                            <button type="submit" class="ep-logs-btn ep-logs-btn-primary">Apply Filters</button>
+                            <a href="{% url 'accounts:manage_bookings' %}" class="ep-logs-btn ep-logs-btn-ghost">Reset</a>
+                            <a href="{% url 'accounts:export_report' 'bookings' %}" class="ep-logs-btn ep-logs-btn-ghost"><i class="bi bi-download"></i> Export</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Bulk bar -->
+            <div class="ep-bk-bulk-bar d-none" id="epBkBulkBar">
+                <span class="ep-bk-bulk-count"><span id="epBkSelectedCount">0</span> selected</span>
+                <button type="button" class="ep-logs-btn ep-logs-btn-ghost ep-logs-btn-sm" id="epBkExportSelected">Export selected</button>
+                <button type="button" class="ep-logs-btn ep-logs-btn-ghost ep-logs-btn-sm" id="epBkClearSelection">Clear</button>
+            </div>
+
+            <!-- Booking list -->
+            <div class="ep-bk-list-card">
+                <div class="ep-bk-list-head ep-bk-sticky-head">
+                    <div class="ep-bk-col ep-bk-col-check"><input type="checkbox" class="form-check-input" id="epBkSelectAll" aria-label="Select all"></div>
+                    <div class="ep-bk-col ep-bk-col-attendee">
+                        <a href="?{% if query_string %}{{ query_string }}&{% endif %}sort={% if sort == 'date' %}date_asc{% else %}date{% endif %}" class="ep-bk-sort-link">Attendee {% if sort == 'date' %}↓{% elif sort == 'date_asc' %}↑{% endif %}</a>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-event">Event</div>
+                    <div class="ep-bk-col ep-bk-col-qty">
+                        <a href="?{% if query_string %}{{ query_string }}&{% endif %}sort={% if sort == 'qty' %}qty_asc{% else %}qty{% endif %}" class="ep-bk-sort-link">Qty {% if sort == 'qty' %}↓{% elif sort == 'qty_asc' %}↑{% endif %}</a>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-amount">
+                        <a href="?{% if query_string %}{{ query_string }}&{% endif %}sort={% if sort == 'amount' %}amount_asc{% else %}amount{% endif %}" class="ep-bk-sort-link">Amount {% if sort == 'amount' %}↓{% elif sort == 'amount_asc' %}↑{% endif %}</a>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-payment">Payment</div>
+                    <div class="ep-bk-col ep-bk-col-status">
+                        <a href="?{% if query_string %}{{ query_string }}&{% endif %}sort=status" class="ep-bk-sort-link">Status</a>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-date">Date</div>
+                    <div class="ep-bk-col ep-bk-col-ticket">Ticket</div>
+                    <div class="ep-bk-col ep-bk-col-actions"></div>
+                </div>
+
+                {% for row in bookings %}
+                {% with b=row.obj %}
+                <article class="ep-bk-row" data-booking-id="{{ row.display_id }}" data-csv="{{ row.display_id }},{{ b.user.username }},{{ b.event.title }},{{ b.quantity }},{{ b.total_price }},{{ b.status }},{{ b.booked_at|date:'Y-m-d' }}">
+                    <div class="ep-bk-col ep-bk-col-check">
+                        <input type="checkbox" class="form-check-input ep-bk-check" value="{{ b.id }}" aria-label="Select booking">
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-attendee">
+                        <div class="ep-bk-attendee">
+                            <span class="ep-saas-avatar ep-bk-avatar">{{ b.user.first_name|first|default:b.user.username|first|upper }}</span>
+                            <div>
+                                <div class="ep-bk-attendee-name">{{ b.user.get_full_name|default:b.user.username }}</div>
+                                <div class="ep-bk-booking-id">{{ row.display_id }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-event">
+                        <div class="ep-bk-event-cell">
+                            <div class="ep-bk-event-thumb">
+                                {% include 'partials/event_banner.html' with event=b.event img_class='ep-bk-thumb' %}
+                            </div>
+                            <div class="ep-bk-event-title">{{ b.event.title|truncatechars:32 }}</div>
+                        </div>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-qty">
+                        <span class="ep-bk-metric-lbl">Qty</span>
+                        <span class="ep-bk-metric-val">{{ b.quantity }}</span>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-amount">
+                        <span class="ep-bk-metric-lbl">Amount</span>
+                        <span class="ep-bk-metric-val ep-bk-amount">₹{{ b.total_price|floatformat:0 }}</span>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-payment">
+                        <span class="ep-bk-pay ep-bk-pay-{{ row.payment_key }}">{{ row.payment_label }}</span>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-status">
+                        <span class="ep-bk-status ep-bk-status-{{ b.status }}{% if b.is_refunded_booking %} ep-bk-status-refunded{% endif %}">
+                            {% if b.is_refunded_booking %}Refunded{% else %}{{ b.get_status_display }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-date">
+                        <div class="ep-bk-date">{{ b.booked_at|date:"d M Y" }}</div>
+                        <div class="ep-bk-time">{{ b.booked_at|time:"g:i A" }}</div>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-ticket">
+                        <span class="ep-bk-ticket ep-bk-ticket-{{ row.ticket_key }}">{{ row.ticket_label }}</span>
+                    </div>
+                    <div class="ep-bk-col ep-bk-col-actions">
+                        <div class="dropdown">
+                            <button class="ep-saas-kebab" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm ep-bk-dropdown">
+                                <li><a class="dropdown-item" href="{% url 'bookings:detail' b.id %}"><i class="bi bi-eye me-2"></i>View Booking</a></li>
+                                <li><a class="dropdown-item" href="{% url 'bookings:detail' b.id %}"><i class="bi bi-qr-code me-2"></i>View Ticket</a></li>
+                                <li><a class="dropdown-item" href="{% url 'bookings:detail' b.id %}"><i class="bi bi-file-earmark-pdf me-2"></i>Download PDF Ticket</a></li>
+                                <li><a class="dropdown-item" href="{% url 'bookings:detail' b.id %}"><i class="bi bi-send me-2"></i>Resend Ticket</a></li>
+                                {% if b.is_refund_eligible %}
+                                <li><a class="dropdown-item" href="{% url 'bookings:detail' b.id %}"><i class="bi bi-arrow-counterclockwise me-2"></i>Approve Refund</a></li>
+                                {% endif %}
+                                {% if b.status == 'confirmed' %}
+                                <li><a class="dropdown-item text-danger" href="{% url 'bookings:cancel' b.id %}"><i class="bi bi-x-circle me-2"></i>Cancel Booking</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:manage_users' %}?q={{ b.user.username }}"><i class="bi bi-person me-2"></i>View User</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+                {% endwith %}
+                {% empty %}
+                <div class="ep-bk-empty">
+                    <div class="ep-bk-empty-icon"><i class="bi bi-ticket-perforated"></i></div>
+                    <h3>No bookings found</h3>
+                    <p>No ticket bookings match your filters yet.</p>
+                    <a href="{% url 'events:list' %}" class="ep-logs-btn ep-logs-btn-primary">View Events</a>
+                </div>
+                {% endfor %}
+
+                {% if page_obj.paginator.num_pages > 1 %}
+                <div class="ep-bk-pagination">
+                    <span class="ep-bk-page-info">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} bookings</span>
+                    <nav class="ep-bk-page-nav">
+                        {% if page_obj.has_previous %}
+                        <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}" class="ep-bk-page-btn">Previous</a>
+                        {% else %}
+                        <span class="ep-bk-page-btn disabled">Previous</span>
+                        {% endif %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                            <span class="ep-bk-page-num active">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ num }}" class="ep-bk-page-num">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                        <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}" class="ep-bk-page-btn">Next</a>
+                        {% else %}
+                        <span class="ep-bk-page-btn disabled">Next</span>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% elif page_obj.paginator.count %}
+                <div class="ep-bk-pagination">
+                    <span class="ep-bk-page-info">Showing {{ page_obj.paginator.count }} booking{{ page_obj.paginator.count|pluralize }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Charts -->
+            <section class="ep-bk-charts mt-3">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="ep-saas-card">
+                            <div class="ep-saas-card-head"><h3>Daily Bookings</h3></div>
+                            <div class="ep-saas-chart ep-saas-chart-sm"><canvas id="chartDailyBookings"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="ep-saas-card">
+                            <div class="ep-saas-card-head"><h3>Monthly Revenue</h3></div>
+                            <div class="ep-saas-chart ep-saas-chart-sm"><canvas id="chartMonthlyRevenue"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="ep-saas-card">
+                            <div class="ep-saas-card-head"><h3>Booking Status Distribution</h3></div>
+                            <div class="ep-saas-chart ep-saas-chart-sm"><canvas id="chartStatusDist"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="ep-saas-card">
+                            <div class="ep-saas-card-head"><h3>Revenue by Event</h3></div>
+                            <div class="ep-saas-chart ep-saas-chart-sm"><canvas id="chartRevByEvent"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-3">
+            <div class="ep-bk-insights ep-saas-card mb-3">
+                <div class="ep-saas-card-head"><h3>Booking Insights</h3></div>
+                <div class="ep-bk-insight-list">
+                    <div class="ep-bk-insight-item">
+                        <span class="ep-bk-insight-icon"><i class="bi bi-trophy"></i></span>
+                        <div>
+                            <div class="ep-bk-insight-lbl">Top Selling Event</div>
+                            <div class="ep-bk-insight-val">{% if insights.top_event %}{{ insights.top_event.title|truncatechars:26 }}{% else %}—{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="ep-bk-insight-item">
+                        <span class="ep-bk-insight-icon ep-bk-insight-rev"><i class="bi bi-currency-rupee"></i></span>
+                        <div>
+                            <div class="ep-bk-insight-lbl">Highest Revenue Event</div>
+                            <div class="ep-bk-insight-val">{% if insights.top_revenue_event %}{{ insights.top_revenue_event.title|truncatechars:26 }}{% else %}—{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="ep-bk-insight-item">
+                        <span class="ep-bk-insight-icon ep-bk-insight-user"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <div class="ep-bk-insight-lbl">Most Active User</div>
+                            <div class="ep-bk-insight-val">{% if insights.top_user %}{{ insights.top_user.get_full_name|default:insights.top_user.username }}{% else %}—{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="ep-bk-insight-item">
+                        <span class="ep-bk-insight-icon ep-bk-insight-cat"><i class="bi bi-tags"></i></span>
+                        <div>
+                            <div class="ep-bk-insight-lbl">Most Booked Category</div>
+                            <div class="ep-bk-insight-val">{{ insights.top_category }}</div>
+                        </div>
+                    </div>
+                    <div class="ep-bk-insight-item ep-bk-insight-item-last">
+                        <span class="ep-bk-insight-icon ep-bk-insight-qty"><i class="bi bi-123"></i></span>
+                        <div>
+                            <div class="ep-bk-insight-lbl">Avg. Ticket Quantity</div>
+                            <div class="ep-bk-insight-val">{{ insights.avg_quantity }} per booking</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ep-bk-activity ep-saas-card">
+                <div class="ep-saas-card-head"><h3>Recent Activity</h3></div>
+                <div class="ep-bk-feed">
+                    {% for item in activity_feed %}
+                    <div class="ep-bk-feed-item">
+                        <span class="ep-bk-feed-dot ep-bk-feed-{{ item.tone }}"></span>
+                        <div class="ep-bk-feed-body">
+                            <p>{{ item.text }}</p>
+                            <time>{{ item.at|timesince }} ago</time>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small px-3 py-2 mb-0">No recent activity.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile filters -->
+<div class="offcanvas offcanvas-end ep-bk-offcanvas" tabindex="-1" id="bookingFiltersDrawer">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Filter Bookings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form method="get" class="d-flex flex-column gap-3">
+            <div>
+                <label class="ep-bk-filter-lbl">Search</label>
+                <input type="text" name="q" class="form-control ep-bk-date-input" value="{{ search }}">
+            </div>
+            <div>
+                <label class="ep-bk-filter-lbl">Event</label>
+                <select name="event" class="form-select ep-bk-date-input">
+                    <option value="">All</option>
+                    {% for ev in events %}<option value="{{ ev.id }}" {% if event_filter == ev.id|stringformat:"s" %}selected{% endif %}>{{ ev.title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="ep-bk-filter-lbl">Booking status</label>
+                <select name="status" class="form-select ep-bk-date-input">
+                    <option value="">All</option>
+                    <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="pending_payment" {% if status_filter == 'pending_payment' %}selected{% endif %}>Pending payment</option>
+                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    <option value="attended" {% if status_filter == 'attended' %}selected{% endif %}>Attended</option>
+                </select>
+            </div>
+            <div>
+                <label class="ep-bk-filter-lbl">Payment status</label>
+                <select name="payment_status" class="form-select ep-bk-date-input">
+                    <option value="">All</option>
+                    <option value="paid" {% if payment_filter == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="pending" {% if payment_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="failed" {% if payment_filter == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="refunded" {% if payment_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                </select>
+            </div>
+            <div>
+                <label class="ep-bk-filter-lbl">Organizer</label>
+                <select name="organizer" class="form-select ep-bk-date-input">
+                    <option value="">All</option>
+                    {% for o in organizers %}<option value="{{ o.id }}" {% if organizer_filter == o.id|stringformat:"s" %}selected{% endif %}>{{ o.username }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="row g-2">
+                <div class="col-6"><label class="ep-bk-filter-lbl">From</label><input type="date" name="date_from" class="form-control ep-bk-date-input" value="{{ date_from }}"></div>
+                <div class="col-6"><label class="ep-bk-filter-lbl">To</label><input type="date" name="date_to" class="form-control ep-bk-date-input" value="{{ date_to }}"></div>
+            </div>
+            <button type="submit" class="ep-logs-btn ep-logs-btn-primary w-100">Apply Filters</button>
+            <a href="{% url 'accounts:manage_bookings' %}" class="ep-logs-btn ep-logs-btn-ghost w-100 text-center">Reset</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+
+    if (document.getElementById('chartDailyBookings')) {
+        new Chart(document.getElementById('chartDailyBookings'), {
+            type: 'bar',
+            data: {
+                labels: {{ chart_daily_labels|safe }},
+                datasets: [{ data: {{ chart_daily_values|safe }}, backgroundColor: '#6366F1', borderRadius: 6 }]
+            },
+            options: chartOpts
+        });
+    }
+    if (document.getElementById('chartMonthlyRevenue')) {
+        new Chart(document.getElementById('chartMonthlyRevenue'), {
+            type: 'line',
+            data: {
+                labels: {{ chart_rev_month_labels|safe }},
+                datasets: [{ data: {{ chart_rev_month_values|safe }}, borderColor: '#10B981', tension: 0.35, fill: true, backgroundColor: 'rgba(16,185,129,0.08)' }]
+            },
+            options: chartOpts
+        });
+    }
+    if (document.getElementById('chartStatusDist')) {
+        new Chart(document.getElementById('chartStatusDist'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ chart_status_labels|safe }},
+                datasets: [{ data: {{ chart_status_values|safe }}, backgroundColor: ['#10B981','#F59E0B','#EF4444','#3B82F6','#94A3B8'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } } } }
+        });
+    }
+    if (document.getElementById('chartRevByEvent')) {
+        new Chart(document.getElementById('chartRevByEvent'), {
+            type: 'bar',
+            data: {
+                labels: {{ chart_event_rev_labels|safe }},
+                datasets: [{ data: {{ chart_event_rev_values|safe }}, backgroundColor: '#8B5CF6', borderRadius: 6 }]
+            },
+            options: { ...chartOpts, indexAxis: 'y' }
+        });
+    }
+
+    const selectAll = document.getElementById('epBkSelectAll');
+    const checks = document.querySelectorAll('.ep-bk-check');
+    const bulkBar = document.getElementById('epBkBulkBar');
+    const countEl = document.getElementById('epBkSelectedCount');
+
+    function updateBulk() {
+        const n = document.querySelectorAll('.ep-bk-check:checked').length;
+        countEl.textContent = n;
+        bulkBar.classList.toggle('d-none', n === 0);
+        bulkBar.classList.toggle('d-flex', n > 0);
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checks.forEach(c => { c.checked = selectAll.checked; });
+            updateBulk();
+        });
+    }
+    checks.forEach(c => c.addEventListener('change', updateBulk));
+
+    document.getElementById('epBkClearSelection')?.addEventListener('click', function() {
+        checks.forEach(c => { c.checked = false; });
+        if (selectAll) selectAll.checked = false;
+        updateBulk();
+    });
+
+    document.getElementById('epBkExportSelected')?.addEventListener('click', function() {
+        const rows = [];
+        document.querySelectorAll('.ep-bk-row').forEach(row => {
+            const cb = row.querySelector('.ep-bk-check');
+            if (cb && cb.checked) rows.push(row.dataset.csv);
+        });
+        if (!rows.length) return;
+        const blob = new Blob(['ID,User,Event,Qty,Amount,Status,Date\n' + rows.join('\n')], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'bookings_selected.csv';
+        a.click();
+    });
+});
+</script>
+{% endblock %}

@@ -78,8 +78,8 @@ def event_list(request):
             messages.info(request, 'Organizers manage events from the dashboard.')
             return redirect('accounts:organizer_dashboard')
         if request.user.role == 'volunteer':
-            messages.info(request, 'Use your dashboard to view assigned events.')
-            return redirect('accounts:dashboard')
+            messages.info(request, 'Please sign in as an attendee or organizer.')
+            return redirect('accounts:login')
 
     events = Event.objects.filter(status='upcoming').order_by('date')
     categories = Category.objects.all()

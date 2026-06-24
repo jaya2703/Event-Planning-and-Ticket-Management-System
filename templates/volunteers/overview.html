@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Volunteer Management{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header">
+    <div>
+        <h1>Volunteer Management</h1>
+        <p>Staff across your events — duties, shifts, and attendance</p>
+    </div>
+    <a href="{% url 'accounts:organizer_dashboard' %}" class="btn ep-btn-outline btn-sm">← Dashboard</a>
+</div>
+
+<div class="ep-ent-stat-grid mb-4">
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon purple"><i class="bi bi-people-fill"></i></div><div class="ep-ent-stat-num">{{ stats.total }}</div><div class="ep-ent-stat-label">Total Volunteers</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon blue"><i class="bi bi-person-check"></i></div><div class="ep-ent-stat-num">{{ stats.assigned }}</div><div class="ep-ent-stat-label">Assigned</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon green"><i class="bi bi-calendar-check"></i></div><div class="ep-ent-stat-num">{{ stats.active_today }}</div><div class="ep-ent-stat-label">Active Today</div></div>
+    <div class="ep-ent-stat"><div class="ep-ent-stat-icon orange"><i class="bi bi-hourglass"></i></div><div class="ep-ent-stat-num">{{ stats.pending }}</div><div class="ep-ent-stat-label">Pending</div></div>
+</div>
+
+<div class="ep-ent-card mb-3">
+    <h5 class="fw-bold mb-3">Manage by Event</h5>
+    <div class="d-flex flex-wrap gap-2">
+        {% for ev in events %}
+        <a href="{% url 'volunteers:manage' ev.id %}" class="btn btn-sm ep-btn-outline">{{ ev.title|truncatechars:28 }}</a>
+        {% empty %}
+        <p class="text-muted small mb-0">Create an event first to assign volunteers.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="ep-ent-card">
+    <h5 class="fw-bold mb-3">All Volunteers</h5>
+    <div class="table-responsive">
+        <table class="ep-ent-table">
+            <thead><tr><th>Name</th><th>Event</th><th>Duty</th><th>Shift</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            {% for v in volunteers %}
+            <tr>
+                <td><strong>{{ v.name }}</strong><br><small class="text-muted">{{ v.mobile }}</small></td>
+                <td>{{ v.event.title|truncatechars:24 }}</td>
+                <td>{{ v.get_duty_display }}</td>
+                <td class="small">{{ v.shift_timing|default:"—" }}</td>
+                <td><span class="badge bg-secondary">{{ v.get_status_display }}</span></td>
+                <td><a href="{% url 'volunteers:edit' v.id %}" class="btn btn-sm ep-btn-outline">Edit</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-muted text-center">No event staff yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

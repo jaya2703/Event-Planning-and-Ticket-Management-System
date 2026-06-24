@@ -5,6 +5,8 @@ from accounts.models import Notification
 
 @login_required
 def notification_list(request):
+    if request.user.role == 'admin':
+        return redirect('accounts:admin_dashboard')
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     # Mark all as read
     notifications.filter(is_read=False).update(is_read=True)

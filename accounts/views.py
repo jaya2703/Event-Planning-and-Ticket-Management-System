@@ -12,7 +12,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.db.models import Sum, Count, Q
 import json
-from .forms import RegisterForm, ProfileUpdateForm
+from .forms import RegisterForm, ProfileUpdateForm, AdminAccountForm
 from .models import CustomUser, Notification, Wishlist
 from .services import (
     monthly_revenue_data, monthly_user_growth, category_distribution,
@@ -61,7 +61,12 @@ def login_view(request):
             password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=password)
             if user is not None:
-                if user.role != selected_role:
+                if user.role == 'volunteer':
+                    role_error = (
+                        'Volunteer is no longer a platform login role. '
+                        'Event staff are managed by organizers — use Attendee or Organizer to sign in.'
+                    )
+                elif user.role != selected_role:
                     role_labels = {'user': 'Attendee', 'organizer': 'Organizer', 'admin': 'Admin'}
                     role_error = (
                         f"This account is registered as {role_labels.get(user.role, user.role)}. "
@@ -105,7 +110,7 @@ def dashboard_view(request):
     Main dashboard - redirects user to the right dashboard based on their role.
     Admin -> admin dashboard
     Organizer -> organizer dashboard
-    User/Volunteer -> user dashboard
+    User -> user dashboard
     """
     user = request.user
     
@@ -113,6 +118,10 @@ def dashboard_view(request):
         return redirect('accounts:admin_dashboard')
     elif user.role == 'organizer':
         return redirect('accounts:organizer_dashboard')
+    elif user.role == 'volunteer':
+        messages.error(request, 'Volunteer platform accounts are no longer supported. Contact your event organizer.')
+        logout(request)
+        return redirect('accounts:login')
     else:
         return redirect('accounts:user_dashboard')
 
@@ -123,64 +132,10 @@ def admin_dashboard_view(request):
     if request.user.role != 'admin':
         messages.error(request, "Access denied. Admin only.")
         return redirect('accounts:dashboard')
-    
-    from bookings.models import Booking
-    from payments.models import Payment
 
-    total_users = CustomUser.objects.count()
-    total_organizers = CustomUser.objects.filter(role='organizer').count()
-    total_events = Event.objects.count()
-    total_bookings = Booking.objects.count()
-    active_events = Event.objects.filter(status__in=['upcoming', 'ongoing']).count()
-    cancelled_events = Event.objects.filter(status='cancelled').count()
-    completed_events = Event.objects.filter(status='completed').count()
-    tickets_sold = Booking.objects.filter(status__in=['confirmed', 'attended']).aggregate(
-        t=Sum('quantity'))['t'] or 0
-
-    total_revenue = Payment.objects.filter(status='success').aggregate(total=Sum('amount'))['total'] or 0
-    pending_payments = Payment.objects.filter(status='pending').count()
-
-    rev_labels, rev_values = monthly_revenue_data()
-    user_labels, user_values = monthly_user_growth()
-    cat_labels, cat_values = category_distribution()
-
-    recent_users = CustomUser.objects.order_by('-date_joined')[:8]
-    recent_bookings = Booking.objects.select_related('user', 'event').order_by('-booked_at')[:8]
-    recent_events = Event.objects.select_related('organizer').order_by('-created_at')[:8]
-
-    organizer_count = CustomUser.objects.filter(role='organizer').count()
-    volunteer_count = CustomUser.objects.filter(role='volunteer').count()
-    user_count = CustomUser.objects.filter(role='user').count()
-    upcoming_events = Event.objects.filter(status='upcoming').count()
-    ongoing_events = Event.objects.filter(status='ongoing').count()
-
-    context = {
-        'total_users': total_users,
-        'total_organizers': total_organizers,
-        'total_events': total_events,
-        'total_bookings': total_bookings,
-        'active_events': active_events,
-        'cancelled_events': cancelled_events,
-        'completed_events': completed_events,
-        'tickets_sold': tickets_sold,
-        'total_revenue': total_revenue,
-        'pending_payments': pending_payments,
-        'recent_users': recent_users,
-        'recent_bookings': recent_bookings,
-        'recent_events': recent_events,
-        'organizer_count': organizer_count,
-        'volunteer_count': volunteer_count,
-        'user_count': user_count,
-        'upcoming_events': upcoming_events,
-        'ongoing_events': ongoing_events,
-        'completed_events_count': completed_events,
-        'chart_revenue_labels': json.dumps(rev_labels),
-        'chart_revenue_values': json.dumps(rev_values),
-        'chart_user_labels': json.dumps(user_labels),
-        'chart_user_values': json.dumps(user_values),
-        'chart_cat_labels': json.dumps(cat_labels),
-        'chart_cat_values': json.dumps(cat_values),
-    }
+    from .admin_analytics import build_admin_dashboard_context
+    context = build_admin_dashboard_context()
+    context['admin_user'] = request.user
     return render(request, 'dashboard/admin_dashboard.html', context)
 
 
@@ -201,10 +156,15 @@ def organizer_dashboard_view(request):
         booking__event__organizer=request.user, status='success'
     ).aggregate(total=Sum('amount'))['total'] or 0
 
-    from volunteers.models import VolunteerAssignment
-    my_volunteers = VolunteerAssignment.objects.filter(
-        event__organizer=request.user
-    ).select_related('volunteer', 'event')
+    from volunteers.models import EventVolunteer
+    vol_qs = EventVolunteer.objects.filter(event__organizer=request.user)
+    volunteer_stats = {
+        'total': vol_qs.count(),
+        'assigned': vol_qs.filter(status='assigned').count(),
+        'active_today': vol_qs.filter(is_present=True).count(),
+        'pending': vol_qs.filter(status='pending').count(),
+    }
+    my_volunteers = vol_qs.select_related('event').order_by('-assigned_at')[:8]
 
     event_analytics = []
     for ev in my_events[:6]:
@@ -236,6 +196,7 @@ def organizer_dashboard_view(request):
         'my_revenue': my_revenue,
         'recent_bookings': my_bookings.order_by('-booked_at')[:10],
         'my_volunteers': my_volunteers,
+        'volunteer_stats': volunteer_stats,
         'event_analytics': event_analytics,
         'chart_booking_labels': json.dumps(booking_labels),
         'chart_booking_values': json.dumps(booking_values),
@@ -315,6 +276,28 @@ def get_recommended_events(user):
 @login_required
 def profile_view(request):
     """User profile page"""
+    if request.user.role == 'admin':
+        from .models import LoginHistory
+        last_login = (
+            LoginHistory.objects.filter(user=request.user)
+            .order_by('-logged_in_at')
+            .first()
+        )
+        if request.method == 'POST':
+            form = AdminAccountForm(request.POST, instance=request.user)
+            if form.is_valid():
+                user = form.save()
+                if form.cleaned_data.get('new_password'):
+                    update_session_auth_hash(request, user)
+                messages.success(request, 'Account settings updated successfully.')
+                return redirect('accounts:profile')
+        else:
+            form = AdminAccountForm(instance=request.user)
+        return render(request, 'accounts/profile_admin.html', {
+            'form': form,
+            'last_login': last_login,
+        })
+
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
@@ -330,6 +313,9 @@ def profile_view(request):
 @login_required
 def change_password_view(request):
     """Change password page"""
+    if request.user.role == 'admin':
+        return redirect('accounts:profile')
+
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():

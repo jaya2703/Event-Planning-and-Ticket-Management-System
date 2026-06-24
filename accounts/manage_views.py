@@ -1,5 +1,6 @@
 """Custom admin panel views — no Django admin UI."""
 import csv
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -28,7 +29,7 @@ def admin_required(view_func):
 @login_required
 @admin_required
 def manage_users(request):
-    users = CustomUser.objects.all().order_by('-date_joined')
+    users = CustomUser.platform_users().order_by('-date_joined')
     role_filter = request.GET.get('role', '')
     search = request.GET.get('q', '')
     if role_filter:
@@ -62,14 +63,15 @@ def toggle_user_active(request, user_id):
 @login_required
 @admin_required
 def manage_events(request):
-    events = Event.objects.select_related('organizer', 'category').order_by('-created_at')
-    status_filter = request.GET.get('status', '')
-    if status_filter:
-        events = events.filter(status=status_filter)
-    return render(request, 'admin/manage_events.html', {
-        'events': events,
-        'status_filter': status_filter,
-    })
+    from accounts.event_admin_analytics import build_events_admin_context
+    return render(request, 'admin/manage_events.html', build_events_admin_context(request))
+
+
+@login_required
+@admin_required
+def manage_bookings(request):
+    from accounts.booking_admin_analytics import build_bookings_admin_context
+    return render(request, 'admin/manage_bookings.html', build_bookings_admin_context(request))
 
 
 @login_required
@@ -96,15 +98,113 @@ def manage_categories(request):
             Category.objects.create(name=name, icon=icon)
             messages.success(request, f'Category "{name}" created.')
         return redirect('accounts:manage_categories')
-    return render(request, 'admin/manage_categories.html', {'categories': categories})
+
+    active_count = sum(1 for c in categories if c.event_count > 0)
+    events_total = sum(c.event_count for c in categories)
+    most_used = max(categories, key=lambda c: c.event_count, default=None) if categories else None
+    if most_used is not None and most_used.event_count == 0:
+        most_used = None
+
+    return render(request, 'admin/manage_categories.html', {
+        'categories': categories,
+        'stats': {
+            'total': categories.count(),
+            'active': active_count,
+            'events_total': events_total,
+            'empty': categories.count() - active_count,
+            'most_used': most_used,
+        },
+    })
+
+
+@login_required
+@admin_required
+def admin_statistics(request):
+    from accounts.admin_analytics import build_admin_statistics_context
+    return render(request, 'admin/statistics.html', build_admin_statistics_context())
+
+
+@login_required
+@admin_required
+def admin_reports(request):
+    report_items = [
+        {'title': 'Events Report', 'desc': 'All platform events with capacity, status, and organizer.', 'icon': 'bi-calendar-event', 'csv': 'events'},
+        {'title': 'Bookings Report', 'desc': 'All bookings with status, amounts, and dates.', 'icon': 'bi-ticket-perforated', 'csv': 'bookings'},
+        {'title': 'Payments Report', 'desc': 'Transaction history, methods, and payment status.', 'icon': 'bi-credit-card', 'csv': 'payments'},
+        {'title': 'Users Report', 'desc': 'Registered users, roles, and account status.', 'icon': 'bi-people', 'csv': 'users'},
+        {'title': 'Audit Trail', 'desc': 'System activity and admin actions log.', 'icon': 'bi-journal-text', 'csv': 'audit'},
+        {'title': 'Login History', 'desc': 'Authentication sessions and IP addresses.', 'icon': 'bi-box-arrow-in-right', 'csv': 'logins'},
+    ]
+    return render(request, 'admin/reports.html', {'report_items': report_items})
 
 
 @login_required
 @admin_required
 def audit_logs(request):
-    logs = AuditLog.objects.select_related('user').order_by('-created_at')[:200]
-    logins = LoginHistory.objects.select_related('user').order_by('-logged_in_at')[:50]
-    return render(request, 'admin/audit_logs.html', {'logs': logs, 'logins': logins})
+    from datetime import timedelta
+
+    today = timezone.now().date()
+    search = request.GET.get('q', '').strip()
+    action_filter = request.GET.get('action', '').strip()
+    active_tab = request.GET.get('tab', 'audit')
+
+    logs = AuditLog.objects.select_related('user').order_by('-created_at')
+    logins = LoginHistory.objects.select_related('user').order_by('-logged_in_at')
+
+    if search:
+        logs = logs.filter(
+            Q(user__username__icontains=search)
+            | Q(action__icontains=search)
+            | Q(details__icontains=search)
+            | Q(ip_address__icontains=search)
+        )
+        logins = logins.filter(
+            Q(user__username__icontains=search) | Q(ip_address__icontains=search)
+        )
+
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+
+    action_types = (
+        AuditLog.objects.order_by('action')
+        .values_list('action', flat=True)
+        .distinct()
+    )
+
+    stats = {
+        'total_audits': AuditLog.objects.count(),
+        'total_logins': LoginHistory.objects.count(),
+        'logins_today': LoginHistory.objects.filter(logged_in_at__date=today).count(),
+        'active_users_week': LoginHistory.objects.filter(
+            logged_in_at__gte=timezone.now() - timedelta(days=7)
+        ).values('user').distinct().count(),
+    }
+
+    login_chart_labels = []
+    login_chart_values = []
+    audit_chart_values = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        login_chart_labels.append(day.strftime('%a'))
+        login_chart_values.append(
+            LoginHistory.objects.filter(logged_in_at__date=day).count()
+        )
+        audit_chart_values.append(
+            AuditLog.objects.filter(created_at__date=day).count()
+        )
+
+    return render(request, 'admin/audit_logs.html', {
+        'logs': logs[:200],
+        'logins': logins[:100],
+        'stats': stats,
+        'search': search,
+        'action_filter': action_filter,
+        'action_types': action_types,
+        'active_tab': active_tab,
+        'login_chart_labels': json.dumps(login_chart_labels),
+        'login_chart_values': json.dumps(login_chart_values),
+        'audit_chart_values': json.dumps(audit_chart_values),
+    })
 
 
 @login_required
@@ -123,8 +223,36 @@ def export_report(request, report_type):
             writer.writerow([p.payment_id, p.booking.user.username, p.booking.event.title, p.amount, p.status, p.payment_method, p.created_at])
     elif report_type == 'users':
         writer.writerow(['Username', 'Email', 'Role', 'Active', 'Joined'])
-        for u in CustomUser.objects.order_by('-date_joined'):
+        for u in CustomUser.platform_users().order_by('-date_joined'):
             writer.writerow([u.username, u.email, u.role, u.is_active, u.date_joined])
+    elif report_type == 'audit':
+        writer.writerow(['User', 'Action', 'Details', 'IP Address', 'Timestamp'])
+        for log in AuditLog.objects.select_related('user').order_by('-created_at'):
+            writer.writerow([
+                log.user.username if log.user else 'System',
+                log.action,
+                log.details,
+                log.ip_address or '',
+                log.created_at,
+            ])
+    elif report_type == 'logins':
+        writer.writerow(['User', 'IP Address', 'User Agent', 'Logged In At'])
+        for entry in LoginHistory.objects.select_related('user').order_by('-logged_in_at'):
+            writer.writerow([
+                entry.user.username,
+                entry.ip_address,
+                entry.user_agent,
+                entry.logged_in_at,
+            ])
+    elif report_type == 'events':
+        writer.writerow(['Title', 'Organizer', 'Category', 'City', 'Date', 'Status', 'Capacity', 'Tickets Sold', 'Price'])
+        for e in Event.objects.select_related('organizer', 'category').order_by('-created_at'):
+            writer.writerow([
+                e.title, e.organizer.username,
+                e.category.name if e.category else '',
+                e.city, e.date, e.status,
+                e.total_capacity, e.tickets_booked, e.ticket_price,
+            ])
     else:
         messages.error(request, 'Unknown report type.')
         return redirect('accounts:admin_dashboard')

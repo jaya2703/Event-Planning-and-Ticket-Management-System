@@ -1,0 +1,64 @@
+{# Admin sidebar fragment — included from app_sidebar.html inside {% if user.role == 'admin' %} #}
+
+<div class="ep-nav-section-label">Overview</div>
+<a href="{% url 'accounts:admin_dashboard' %}"
+   class="ep-nav-item{% if name == 'admin_dashboard' %} active{% endif %}">
+    <i class="bi bi-speedometer2"></i> Dashboard
+</a>
+<a href="{% url 'accounts:admin_statistics' %}"
+   class="ep-nav-item{% if name == 'admin_statistics' %} active{% endif %}">
+    <i class="bi bi-bar-chart-line"></i> Statistics
+</a>
+
+<div class="ep-nav-section-label">Events</div>
+<a href="{% url 'accounts:manage_events' %}"
+   class="ep-nav-item{% if name == 'manage_events' %} active{% endif %}">
+    <i class="bi bi-calendar3"></i> Events
+</a>
+<a href="{% url 'accounts:manage_categories' %}"
+   class="ep-nav-item{% if name == 'manage_categories' %} active{% endif %}">
+    <i class="bi bi-tags"></i> Categories
+</a>
+<a href="{% url 'accounts:manage_bookings' %}"
+   class="ep-nav-item{% if name == 'manage_bookings' %} active{% endif %}">
+    <i class="bi bi-ticket"></i> Bookings
+</a>
+
+<div class="ep-nav-section-label">Users</div>
+<a href="{% url 'accounts:manage_users' %}"
+   class="ep-nav-item{% if name == 'manage_users' and not request.GET.role %} active{% endif %}">
+    <i class="bi bi-people"></i> Users
+</a>
+<a href="{% url 'accounts:manage_users' %}?role=organizer"
+   class="ep-nav-item{% if name == 'manage_users' and request.GET.role == 'organizer' %} active{% endif %}">
+    <i class="bi bi-briefcase"></i> Organizers
+</a>
+
+<div class="ep-nav-section-label">Finance</div>
+<a href="{% url 'accounts:manage_payments' %}"
+   class="ep-nav-item{% if name == 'manage_payments' %} active{% endif %}">
+    <i class="bi bi-credit-card"></i> Payments
+</a>
+<a href="{% url 'accounts:admin_statistics' %}#revenue"
+   class="ep-nav-item">
+    <i class="bi bi-graph-up-arrow"></i> Revenue
+</a>
+
+<div class="ep-nav-section-label">Reports</div>
+<a href="{% url 'accounts:admin_reports' %}"
+   class="ep-nav-item{% if name == 'admin_reports' %} active{% endif %}">
+    <i class="bi bi-file-earmark-bar-graph"></i> Reports
+</a>
+<a href="{% url 'accounts:audit_logs' %}"
+   class="ep-nav-item{% if name == 'audit_logs' %} active{% endif %}">
+    <i class="bi bi-shield-check"></i> Audit Logs
+</a>
+
+<div class="ep-nav-section-label ep-nav-section-settings">Settings</div>
+<a href="{% url 'accounts:profile' %}"
+   class="ep-nav-item{% if ns == 'accounts' and name == 'profile' or ns == 'accounts' and name == 'change_password' %} active{% endif %}">
+    <i class="bi bi-gear"></i> Profile Settings
+</a>
+<a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger">
+    <i class="bi bi-box-arrow-right"></i> Logout
+</a>

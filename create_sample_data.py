@@ -74,8 +74,6 @@ user2 = make_user('user2', 'user2@eventpro.com', 'user123', 'user', 'Vikram', 'S
 user2.interests = 'technology,education'
 user2.save()
 
-make_user('volunteer1', 'vol1@eventpro.com', 'vol123', 'volunteer', 'Meera', 'Nair')
-
 # ── EVENTS ──
 today = date.today()
 events_data = [
@@ -169,6 +167,21 @@ for ev_data in events_data:
     else:
         print(f"  ⚠️  Event already exists: {ev_data['title']}")
 
+from volunteers.models import EventVolunteer
+music_fest = Event.objects.filter(title='Mumbai Music Fest 2024').first()
+if music_fest and not EventVolunteer.objects.filter(event=music_fest).exists():
+    EventVolunteer.objects.create(
+        event=music_fest, name='Meera Nair', mobile='9876543210',
+        email='meera@example.com', duty='registration',
+        shift_timing='09:00 AM – 01:00 PM', status='assigned',
+    )
+    EventVolunteer.objects.create(
+        event=music_fest, name='Rahul Shah', mobile='9876543211',
+        email='rahul@example.com', duty='entry_gate',
+        shift_timing='01:00 PM – 06:00 PM', status='assigned',
+    )
+    print("  ✅ Event staff volunteers created for Mumbai Music Fest")
+
 print("\n" + "="*50)
 print("✅ Sample data created successfully!")
 print("="*50)
@@ -178,5 +191,5 @@ print("  Organizer1: organizer1 / org123")
 print("  Organizer2: organizer2 / org123")
 print("  User1:      user1 / user123")
 print("  User2:      user2 / user123")
-print("  Volunteer:  volunteer1 / vol123")
+print("\nEvent staff (volunteers) are managed per-event by organizers — no separate login.")
 print("\nRun the server with: python manage.py runserver")

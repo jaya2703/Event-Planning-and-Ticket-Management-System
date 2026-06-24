@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}Profile Settings{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-admin-settings{% endblock %}
+{% block content %}
+<div class="ep-admin-settings-wrap ep-ent-animate">
+    <!-- Hero header -->
+    <div class="ep-settings-hero">
+        <div class="ep-settings-hero-bg"></div>
+        <div class="ep-settings-hero-content">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="ep-settings-avatar">{{ user.username|first|upper }}</div>
+                    <div>
+                        <p class="ep-settings-eyebrow mb-1">Administrator</p>
+                        <h1 class="ep-settings-title mb-2">Profile Settings</h1>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="ep-settings-badge"><i class="bi bi-shield-lock-fill me-1"></i>Administrator</span>
+                            {% if user.is_active %}
+                            <span class="ep-settings-badge ep-settings-badge-success"><i class="bi bi-check-circle-fill me-1"></i>Active</span>
+                            {% else %}
+                            <span class="ep-settings-badge ep-settings-badge-danger"><i class="bi bi-x-circle-fill me-1"></i>Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="ep-settings-hero-meta">
+                    <div class="ep-settings-meta-item">
+                        <span class="ep-settings-meta-label">Last login</span>
+                        <span class="ep-settings-meta-value">
+                            {% if last_login %}
+                            {{ last_login.logged_in_at|date:"M d, Y · g:i A" }}
+                            {% else %}
+                            No login recorded
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="ep-settings-meta-item">
+                        <span class="ep-settings-meta-label">Member since</span>
+                        <span class="ep-settings-meta-value">{{ user.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="ep-settings-meta-item">
+                        <span class="ep-settings-meta-label">Account ID</span>
+                        <span class="ep-settings-meta-value"><code>#{{ user.id|stringformat:"04d" }}</code></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" novalidate class="ep-settings-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small mb-4 ep-settings-alert">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row g-4">
+            <!-- Left column: editable sections -->
+            <div class="col-xl-8">
+                <div class="ep-settings-card">
+                    <div class="ep-settings-card-head">
+                        <div class="ep-settings-card-icon"><i class="bi bi-person-vcard"></i></div>
+                        <div>
+                            <h2>General Information</h2>
+                            <p>Update your administrator identity and contact details</p>
+                        </div>
+                    </div>
+                    <div class="ep-settings-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="ep-settings-label">Username</label>
+                                <input type="text" name="username" class="form-control ep-settings-input"
+                                       value="{{ form.username.value|default:'' }}" required>
+                                {% if form.username.errors %}<div class="ep-settings-error">{{ form.username.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="ep-settings-label">Email address</label>
+                                <input type="email" name="email" class="form-control ep-settings-input"
+                                       value="{{ form.email.value|default:'' }}" required>
+                                {% if form.email.errors %}<div class="ep-settings-error">{{ form.email.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="ep-settings-label">Phone <span class="text-muted fw-normal">(optional)</span></label>
+                                <input type="tel" name="phone" class="form-control ep-settings-input"
+                                       value="{{ form.phone.value|default:'' }}" placeholder="+91 98765 43210">
+                                {% if form.phone.errors %}<div class="ep-settings-error">{{ form.phone.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ep-settings-card">
+                    <div class="ep-settings-card-head">
+                        <div class="ep-settings-card-icon ep-settings-card-icon-security"><i class="bi bi-key-fill"></i></div>
+                        <div>
+                            <h2>Security</h2>
+                            <p>Change your password. Leave all fields empty to keep your current password.</p>
+                        </div>
+                    </div>
+                    <div class="ep-settings-card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="ep-settings-label">Current password</label>
+                                <input type="password" name="current_password" class="form-control ep-settings-input"
+                                       placeholder="Enter current password" autocomplete="current-password">
+                                {% if form.current_password.errors %}<div class="ep-settings-error">{{ form.current_password.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="ep-settings-label">New password</label>
+                                <input type="password" name="new_password" class="form-control ep-settings-input"
+                                       placeholder="Minimum 8 characters" autocomplete="new-password">
+                                {% if form.new_password.errors %}<div class="ep-settings-error">{{ form.new_password.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="ep-settings-label">Confirm new password</label>
+                                <input type="password" name="confirm_password" class="form-control ep-settings-input"
+                                       placeholder="Re-enter new password" autocomplete="new-password">
+                                {% if form.confirm_password.errors %}<div class="ep-settings-error">{{ form.confirm_password.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ep-settings-actions">
+                    <button type="submit" class="btn ep-settings-save">
+                        <i class="bi bi-check2 me-1"></i>Save changes
+                    </button>
+                    <a href="{% url 'accounts:admin_dashboard' %}" class="btn ep-settings-cancel">Cancel</a>
+                </div>
+            </div>
+
+            <!-- Right column: read-only account info -->
+            <div class="col-xl-4">
+                <div class="ep-settings-card ep-settings-card-sticky">
+                    <div class="ep-settings-card-head">
+                        <div class="ep-settings-card-icon ep-settings-card-icon-info"><i class="bi bi-info-circle-fill"></i></div>
+                        <div>
+                            <h2>Account Information</h2>
+                            <p>Read-only account metadata</p>
+                        </div>
+                    </div>
+                    <div class="ep-settings-card-body ep-settings-info-list">
+                        <div class="ep-settings-info-row">
+                            <span class="ep-settings-info-label">Role</span>
+                            <span class="ep-settings-info-value">
+                                <span class="ep-settings-role-pill">{{ user.get_role_display }}</span>
+                            </span>
+                        </div>
+                        <div class="ep-settings-info-row">
+                            <span class="ep-settings-info-label">Account status</span>
+                            <span class="ep-settings-info-value">
+                                {% if user.is_active %}
+                                <span class="ep-settings-status ep-settings-status-active"><span class="ep-settings-status-dot"></span>Active</span>
+                                {% else %}
+                                <span class="ep-settings-status ep-settings-status-inactive"><span class="ep-settings-status-dot"></span>Inactive</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="ep-settings-info-row">
+                            <span class="ep-settings-info-label">Last login</span>
+                            <span class="ep-settings-info-value">
+                                {% if last_login %}
+                                {{ last_login.logged_in_at|date:"M d, Y" }}<br>
+                                <small class="text-muted">{{ last_login.logged_in_at|time:"g:i A" }} · {{ last_login.logged_in_at|timesince }} ago</small>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="ep-settings-info-row">
+                            <span class="ep-settings-info-label">Last login IP</span>
+                            <span class="ep-settings-info-value">
+                                {% if last_login %}<code>{{ last_login.ip_address }}</code>{% else %}<span class="text-muted">—</span>{% endif %}
+                            </span>
+                        </div>
+                        <div class="ep-settings-info-row">
+                            <span class="ep-settings-info-label">Joined</span>
+                            <span class="ep-settings-info-value">{{ user.date_joined|date:"F d, Y" }}</span>
+                        </div>
+                        <div class="ep-settings-info-row ep-settings-info-row-last">
+                            <span class="ep-settings-info-label">Staff access</span>
+                            <span class="ep-settings-info-value">
+                                {% if user.is_staff %}<i class="bi bi-check-lg text-success"></i> Enabled{% else %}<span class="text-muted">Disabled</span>{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ep-settings-tip">
+                    <i class="bi bi-lightbulb"></i>
+                    <div>
+                        <strong>Security tip</strong>
+                        <p class="mb-0">Use a strong unique password and update it periodically. All login activity is recorded in Audit Logs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

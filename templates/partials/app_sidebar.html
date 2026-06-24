@@ -9,10 +9,12 @@
         </div>
     </div>
     <nav class="ep-sidebar-nav">
+        {% if user.role != 'admin' %}
         <a href="{% url 'accounts:dashboard' %}"
-           class="ep-nav-item{% if name == 'dashboard' or name == 'user_dashboard' or name == 'organizer_dashboard' or name == 'admin_dashboard' %} active{% endif %}">
+           class="ep-nav-item{% if name == 'dashboard' or user.role == 'user' and name == 'user_dashboard' or user.role == 'organizer' and name == 'organizer_dashboard' %} active{% endif %}">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
+        {% endif %}
 
         {% if user.role == 'organizer' %}
         <a href="{% url 'events:create' %}"
@@ -34,29 +36,31 @@
            class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
             <i class="bi bi-ticket"></i> My Bookings
         </a>
-        {% elif user.role == 'admin' %}
-        <a href="{% url 'accounts:manage_events' %}"
-           class="ep-nav-item{% if name == 'manage_events' %} active{% endif %}">
-            <i class="bi bi-calendar3"></i> All Events
+        {% endif %}
+
+        {% if user.role == 'admin' %}
+        {% include 'partials/admin_sidebar_nav.html' %}
+        {% endif %}
+
+        {% if user.role == 'organizer' %}
+        <a href="{% url 'volunteers:overview' %}"
+           class="ep-nav-item{% if ns == 'volunteers' %} active{% endif %}">
+            <i class="bi bi-person-badge"></i> Event Staff
         </a>
-        <a href="{% url 'bookings:history' %}"
-           class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
-            <i class="bi bi-ticket"></i> Bookings
-        </a>
-        {% elif user.role == 'organizer' %}
-        <a href="{% url 'accounts:organizer_dashboard' %}"
-           class="ep-nav-item{% if name == 'organizer_dashboard' %} active{% endif %}">
+        <a href="{% url 'accounts:organizer_dashboard' %}#my-events"
+           class="ep-nav-item">
             <i class="bi bi-calendar-event"></i> My Events
         </a>
         {% endif %}
 
-        {% if user.role == 'organizer' or user.role == 'admin' %}
+        {% if user.role == 'organizer' %}
         <a href="{% url 'bookings:scan_qr' %}"
            class="ep-nav-item{% if ns == 'bookings' and name == 'scan_qr' or ns == 'bookings' and name == 'checkin_result' %} active{% endif %}">
             <i class="bi bi-qr-code-scan"></i> Scan QR
         </a>
         {% endif %}
 
+        {% if user.role != 'admin' %}
         <a href="{% url 'notifications:list' %}"
            class="ep-nav-item ep-nav-notify{% if ns == 'notifications' %} active{% endif %}">
             <span class="ep-nav-icon-wrap">
@@ -67,28 +71,17 @@
             </span>
             Notifications
         </a>
+        {% endif %}
 
+        {% if user.role != 'admin' %}
         <a href="{% url 'accounts:profile' %}"
            class="ep-nav-item{% if ns == 'accounts' and name == 'profile' or ns == 'accounts' and name == 'change_password' %} active{% endif %}">
             <i class="bi bi-person"></i> Profile
         </a>
-
-        {% if user.role == 'admin' %}
-        <div class="ep-nav-section-label text-white-50 small px-3 pt-2 pb-1">Admin Panel</div>
-        <a href="{% url 'accounts:manage_users' %}" class="ep-nav-item{% if name == 'manage_users' %} active{% endif %}">
-            <i class="bi bi-people"></i> Manage Users
-        </a>
-        <a href="{% url 'accounts:manage_payments' %}" class="ep-nav-item{% if name == 'manage_payments' %} active{% endif %}">
-            <i class="bi bi-credit-card"></i> Payments
-        </a>
-        <a href="{% url 'accounts:audit_logs' %}" class="ep-nav-item{% if name == 'audit_logs' %} active{% endif %}">
-            <i class="bi bi-shield-check"></i> Audit Logs
-        </a>
-        {% endif %}
-
         <a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger">
             <i class="bi bi-box-arrow-right"></i> Logout
         </a>
+        {% endif %}
     </nav>
 </aside>
 {% endwith %}

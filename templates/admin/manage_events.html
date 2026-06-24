@@ -1,29 +1,410 @@
 {% extends 'base.html' %}
-{% block title %}Manage Events{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% load static %}
+{% block title %}Events Management{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-events-admin{% endblock %}
+
 {% block content %}
-<div class="ep-ent-header">
-    <div><h1>Manage Events</h1><p>All platform events</p></div>
-    <a href="{% url 'accounts:export_report' 'bookings' %}" class="btn ep-btn-primary btn-sm">Export Report</a>
+<div class="ep-ev-wrap ep-ent-animate">
+    <header class="ep-ev-header">
+        <div>
+            <nav class="ep-logs-crumb"><a href="{% url 'accounts:admin_dashboard' %}">Admin</a><span class="ep-logs-crumb-sep">/</span><span class="ep-logs-crumb-current">Events</span></nav>
+            <h1 class="ep-ev-title">Events Management</h1>
+            <p class="ep-ev-subtitle">Manage, monitor and analyze all events across the platform.</p>
+        </div>
+        <button class="ep-ev-filter-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#eventFiltersDrawer">
+            <i class="bi bi-funnel"></i> Filters
+        </button>
+    </header>
+
+    <div class="ep-ev-status-kpis">
+        <div class="ep-ev-status-kpi"><span class="ep-ev-status-kpi-val">{{ status_counts.total }}</span><span class="ep-ev-status-kpi-lbl">Total Events</span></div>
+        <div class="ep-ev-status-kpi ep-ev-status-kpi-upcoming"><span class="ep-ev-status-kpi-val">{{ status_counts.upcoming }}</span><span class="ep-ev-status-kpi-lbl">Upcoming</span></div>
+        <div class="ep-ev-status-kpi ep-ev-status-kpi-ongoing"><span class="ep-ev-status-kpi-val">{{ status_counts.ongoing }}</span><span class="ep-ev-status-kpi-lbl">Ongoing</span></div>
+        <div class="ep-ev-status-kpi ep-ev-status-kpi-completed"><span class="ep-ev-status-kpi-val">{{ status_counts.completed }}</span><span class="ep-ev-status-kpi-lbl">Completed</span></div>
+    </div>
+
+    <div class="ep-saas-kpi-row ep-ev-analytics-row">
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-ev"><i class="bi bi-calendar-event"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.total_events.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.total_events.up %}up{% else %}down{% endif %}"></i>{{ analytics.total_events.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">{{ analytics.total_events.value }}</div>
+            <div class="ep-saas-kpi-lbl">Total Events</div>
+        </div>
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-book"><i class="bi bi-ticket-perforated"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.tickets_sold.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.tickets_sold.up %}up{% else %}down{% endif %}"></i>{{ analytics.tickets_sold.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">{{ analytics.tickets_sold.value }}</div>
+            <div class="ep-saas-kpi-lbl">Tickets Sold</div>
+        </div>
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-rev"><i class="bi bi-currency-rupee"></i></span>
+                <span class="ep-saas-kpi-trend {% if analytics.revenue.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if analytics.revenue.up %}up{% else %}down{% endif %}"></i>{{ analytics.revenue.growth }}%</span>
+            </div>
+            <div class="ep-saas-kpi-val">₹{{ analytics.revenue.value|floatformat:0 }}</div>
+            <div class="ep-saas-kpi-lbl">Event Revenue</div>
+        </div>
+        <div class="ep-saas-kpi">
+            <div class="ep-saas-kpi-top">
+                <span class="ep-saas-kpi-icon ep-saas-kpi-icon-user"><i class="bi bi-people"></i></span>
+                <span class="ep-saas-kpi-trend up"><i class="bi bi-graph-up"></i>avg</span>
+            </div>
+            <div class="ep-saas-kpi-val">{{ analytics.avg_attendance.value }}%</div>
+            <div class="ep-saas-kpi-lbl">Avg. Attendance</div>
+        </div>
+    </div>
+
+    <!-- Compact 2-row filters -->
+    <div class="ep-ev-filters-card d-none d-lg-block">
+        <form method="get" class="ep-ev-filters-form">
+            <div class="ep-ev-filters-bar">
+                <div class="ep-ev-filter-row ep-ev-filter-row-1">
+                    <div class="ep-ev-filter-cell ep-ev-filter-search">
+                        <label class="ep-ev-filter-lbl" for="evSearchDesktop">Search</label>
+                        <div class="ep-logs-filter-search w-100">
+                            <i class="bi bi-search"></i>
+                            <input type="search" id="evSearchDesktop" name="q" placeholder="Name, venue, city…" value="{{ search }}">
+                        </div>
+                    </div>
+                    <div class="ep-ev-filter-cell">
+                        <label class="ep-ev-filter-lbl" for="evCatDesktop">Category</label>
+                        <select id="evCatDesktop" name="category" class="ep-logs-filter-select ep-ev-field-input w-100">
+                            <option value="">All</option>
+                            {% for c in categories %}
+                            <option value="{{ c.id }}" {% if category_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="ep-ev-filter-cell">
+                        <label class="ep-ev-filter-lbl" for="evOrgDesktop">Organizer</label>
+                        <select id="evOrgDesktop" name="organizer" class="ep-logs-filter-select ep-ev-field-input w-100">
+                            <option value="">All</option>
+                            {% for o in organizers %}
+                            <option value="{{ o.id }}" {% if organizer_filter == o.id|stringformat:"s" %}selected{% endif %}>{{ o.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="ep-ev-filter-cell">
+                        <label class="ep-ev-filter-lbl" for="evStatusDesktop">Status</label>
+                        <select id="evStatusDesktop" name="status" class="ep-logs-filter-select ep-ev-field-input w-100">
+                            <option value="">All</option>
+                            <option value="upcoming" {% if status_filter == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                            <option value="ongoing" {% if status_filter == 'ongoing' %}selected{% endif %}>Ongoing</option>
+                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ep-ev-filter-row ep-ev-filter-row-2">
+                    <div class="ep-ev-filter-cell ep-ev-filter-dates">
+                        <label class="ep-ev-filter-lbl">Date range</label>
+                        <div class="ep-ev-date-range">
+                            <input type="date" name="date_from" class="ep-ev-field-input" value="{{ date_from }}" aria-label="From">
+                            <span class="ep-ev-date-sep">–</span>
+                            <input type="date" name="date_to" class="ep-ev-field-input" value="{{ date_to }}" aria-label="To">
+                        </div>
+                    </div>
+                    <div class="ep-ev-filter-cell">
+                        <label class="ep-ev-filter-lbl" for="evCityDesktop">City</label>
+                        <input type="text" id="evCityDesktop" name="city" class="ep-ev-field-input w-100" placeholder="Any city" value="{{ city_filter }}">
+                    </div>
+                    <div class="ep-ev-filter-actions">
+                        <button type="submit" class="ep-logs-btn ep-logs-btn-primary ep-ev-btn-sm">Apply</button>
+                        <a href="{% url 'accounts:manage_events' %}" class="ep-logs-btn ep-logs-btn-ghost ep-ev-btn-sm">Reset</a>
+                        <a href="{% url 'accounts:export_report' 'events' %}" class="ep-logs-btn ep-logs-btn-ghost ep-ev-btn-sm"><i class="bi bi-download"></i> Export</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Insight KPI strip -->
+    <section class="ep-ev-insight-strip" aria-label="Event insights">
+        <div class="ep-ev-insight-card">
+            <span class="ep-ev-insight-card-icon"><i class="bi bi-trophy"></i></span>
+            <div class="ep-ev-insight-card-body">
+                <span class="ep-ev-insight-card-lbl">Top Event</span>
+                <span class="ep-ev-insight-card-val">{% if insights.top_event %}{{ insights.top_event.title|truncatechars:28 }}{% else %}—{% endif %}</span>
+            </div>
+        </div>
+        <div class="ep-ev-insight-card">
+            <span class="ep-ev-insight-card-icon ep-ev-insight-rev"><i class="bi bi-currency-rupee"></i></span>
+            <div class="ep-ev-insight-card-body">
+                <span class="ep-ev-insight-card-lbl">Highest Revenue</span>
+                <span class="ep-ev-insight-card-val">{% if insights.top_revenue_event %}{{ insights.top_revenue_event.title|truncatechars:28 }}{% else %}—{% endif %}</span>
+            </div>
+        </div>
+        <div class="ep-ev-insight-card">
+            <span class="ep-ev-insight-card-icon ep-ev-insight-cat"><i class="bi bi-tags"></i></span>
+            <div class="ep-ev-insight-card-body">
+                <span class="ep-ev-insight-card-lbl">Top Category</span>
+                <span class="ep-ev-insight-card-val">{{ insights.top_category }}</span>
+            </div>
+        </div>
+        <div class="ep-ev-insight-card">
+            <span class="ep-ev-insight-card-icon ep-ev-insight-cal"><i class="bi bi-calendar-week"></i></span>
+            <div class="ep-ev-insight-card-body">
+                <span class="ep-ev-insight-card-lbl">Upcoming Events</span>
+                <span class="ep-ev-insight-card-val">{{ insights.upcoming_week }} this week</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Event list -->
+    <div class="ep-ev-list-card">
+        <div class="ep-ev-list-head">
+            <h2 class="ep-ev-section-title ep-ev-section-title-inline">All Events</h2>
+            <span class="ep-ev-list-count">{{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }}</span>
+        </div>
+
+        {% for e in events %}
+        <article class="ep-ev-row">
+            <div class="ep-ev-row-banner">
+                {% include 'partials/event_banner.html' with event=e img_class='ep-ev-thumb' %}
+            </div>
+            <div class="ep-ev-row-main">
+                <div class="ep-ev-row-title">{{ e.title }}</div>
+                <div class="ep-ev-row-sub">
+                    <span class="ep-ev-row-loc"><i class="bi bi-geo-alt"></i> {{ e.city|default:e.venue|truncatechars:24 }}</span>
+                    <span class="ep-ev-row-date">{{ e.date|date:"d M Y" }} · {{ e.time|time:"g:i A" }}</span>
+                </div>
+            </div>
+            <div class="ep-ev-row-status">
+                <span class="ep-ev-status ep-ev-status-{{ e.status }}">{{ e.get_status_display }}</span>
+            </div>
+            <div class="ep-ev-row-capacity">
+                <div class="ep-ev-cap-label">{{ e.tickets_sold|default:0 }}/{{ e.total_capacity }}</div>
+                <div class="ep-ev-cap-bar"><div class="ep-ev-cap-fill" style="width:{% if e.total_capacity %}{% widthratio e.tickets_sold|default:0 e.total_capacity 100 %}{% else %}0{% endif %}%"></div></div>
+            </div>
+            <div class="ep-ev-row-revenue">
+                <span class="ep-ev-rev-val">₹{{ e.revenue|default:0|floatformat:0 }}</span>
+            </div>
+            <div class="ep-ev-row-actions">
+                <div class="dropdown">
+                    <button class="ep-saas-kebab" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm ep-ev-dropdown">
+                        <li><a class="dropdown-item" href="{% url 'events:detail' e.id %}"><i class="bi bi-eye me-2"></i>View Details</a></li>
+                        <li><a class="dropdown-item" href="{% url 'events:edit' e.id %}"><i class="bi bi-pencil me-2"></i>Edit Event</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:manage_bookings' %}?event={{ e.id }}"><i class="bi bi-people me-2"></i>Manage Attendees</a></li>
+                        <li><a class="dropdown-item" href="{% url 'volunteers:manage' e.id %}"><i class="bi bi-person-badge me-2"></i>Event Staff</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:manage_bookings' %}"><i class="bi bi-ticket me-2"></i>View Bookings</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:admin_statistics' %}"><i class="bi bi-bar-chart me-2"></i>Analytics</a></li>
+                        <li><a class="dropdown-item" href="{% url 'events:edit' e.id %}"><i class="bi bi-copy me-2"></i>Duplicate Event</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'events:delete' e.id %}" data-confirm="Cancel/delete this event?"><i class="bi bi-x-circle me-2"></i>Cancel Event</a></li>
+                    </ul>
+                </div>
+            </div>
+        </article>
+        {% empty %}
+        <div class="ep-saas-empty py-4">
+            <i class="bi bi-calendar-x d-block fs-2 text-muted mb-2"></i>
+            No events match your filters.
+        </div>
+        {% endfor %}
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="ep-ev-pagination">
+            <span class="ep-ev-page-info">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} events</span>
+            <nav class="ep-ev-page-nav">
+                {% if page_obj.has_previous %}
+                <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}" class="ep-ev-page-btn">Previous</a>
+                {% else %}
+                <span class="ep-ev-page-btn disabled">Previous</span>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <span class="ep-ev-page-num active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ num }}" class="ep-ev-page-num">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}" class="ep-ev-page-btn">Next</a>
+                {% else %}
+                <span class="ep-ev-page-btn disabled">Next</span>
+                {% endif %}
+            </nav>
+        </div>
+        {% elif page_obj.paginator.count %}
+        <div class="ep-ev-pagination">
+            <span class="ep-ev-page-info">Showing {{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Analytics: balanced 2-column -->
+    <section class="ep-ev-analytics-section">
+        <h2 class="ep-ev-section-title">Analytics</h2>
+        <div class="ep-ev-analytics-grid">
+            <div class="ep-ev-analytics-stack">
+                <div class="ep-saas-card ep-ev-metric-card">
+                    <div class="ep-saas-card-head"><h3>Monthly Event Creation</h3><span class="ep-saas-range">6 mo</span></div>
+                    <div class="ep-ev-chart-body">
+                        <div class="ep-ev-chart-stat d-none" id="chartCreationStat">
+                            <span class="ep-ev-chart-stat-val" id="chartCreationKpiVal">0</span>
+                            <span class="ep-ev-chart-stat-lbl" id="chartCreationKpiLbl">events created</span>
+                        </div>
+                        <div class="ep-ev-mini-chart" id="chartCreationWrap"><canvas id="chartEventCreation"></canvas></div>
+                    </div>
+                </div>
+                <div class="ep-saas-card ep-ev-metric-card">
+                    <div class="ep-saas-card-head"><h3>Top 5 Events</h3><span class="ep-saas-range">Bookings &amp; revenue</span></div>
+                    <div class="ep-ev-chart-body" id="chartTop5Wrap">
+                        <div class="ep-ev-mini-chart ep-ev-mini-chart-bar"><canvas id="chartTop5"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="ep-saas-card ep-ev-metric-card ep-ev-metric-tall ep-cat-rank-panel">
+                <div class="ep-saas-card-head"><h3>Revenue Distribution</h3><span class="ep-saas-range">By category</span></div>
+                <div class="ep-ev-chart-body ep-ev-chart-body-fill">
+                    {% include 'partials/category_rank_card.html' with container_id='evCatRank' %}
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
-<div class="ep-ent-card">
-    <div class="table-responsive">
-        <table class="ep-ent-table" id="eventsTable">
-            <thead><tr><th>Event</th><th>Organizer</th><th>Date</th><th>Status</th><th>Capacity</th><th></th></tr></thead>
-            <tbody>
-            {% for e in events %}
-            <tr>
-                <td><strong>{{ e.title }}</strong><br><small class="text-muted">{{ e.city }}</small></td>
-                <td>{{ e.organizer.username }}</td>
-                <td>{{ e.date }}</td>
-                <td><span class="badge ep-badge-status-{{ e.status }}">{{ e.get_status_display }}</span></td>
-                <td>{{ e.tickets_booked }}/{{ e.total_capacity }}</td>
-                <td><a href="{% url 'events:detail' e.id %}" class="btn btn-sm ep-btn-outline">View</a></td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+
+<!-- Mobile filter drawer -->
+<div class="offcanvas offcanvas-end ep-ev-offcanvas" tabindex="-1" id="eventFiltersDrawer">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Filter Events</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form method="get" class="ep-ev-filters-form d-flex flex-column gap-3">
+            <div>
+                <label class="ep-ev-filter-lbl">Search</label>
+                <input type="search" name="q" class="ep-ev-field-input w-100" placeholder="Name, venue, city…" value="{{ search }}">
+            </div>
+            <div>
+                <label class="ep-ev-filter-lbl">Category</label>
+                <select name="category" class="ep-ev-field-input w-100">
+                    <option value="">All</option>
+                    {% for c in categories %}<option value="{{ c.id }}" {% if category_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="ep-ev-filter-lbl">Organizer</label>
+                <select name="organizer" class="ep-ev-field-input w-100">
+                    <option value="">All</option>
+                    {% for o in organizers %}<option value="{{ o.id }}" {% if organizer_filter == o.id|stringformat:"s" %}selected{% endif %}>{{ o.username }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="ep-ev-filter-lbl">Status</label>
+                <select name="status" class="ep-ev-field-input w-100">
+                    <option value="">All</option>
+                    <option value="upcoming" {% if status_filter == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                    <option value="ongoing" {% if status_filter == 'ongoing' %}selected{% endif %}>Ongoing</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="ep-ev-filter-lbl">Date range</label>
+                <div class="ep-ev-date-range">
+                    <input type="date" name="date_from" class="ep-ev-field-input" value="{{ date_from }}">
+                    <span class="ep-ev-date-sep">–</span>
+                    <input type="date" name="date_to" class="ep-ev-field-input" value="{{ date_to }}">
+                </div>
+            </div>
+            <div>
+                <label class="ep-ev-filter-lbl">City</label>
+                <input type="text" name="city" class="ep-ev-field-input w-100" value="{{ city_filter }}">
+            </div>
+            <button type="submit" class="ep-logs-btn ep-logs-btn-primary w-100">Apply Filters</button>
+            <a href="{% url 'accounts:manage_events' %}" class="ep-logs-btn ep-logs-btn-ghost w-100 text-center">Reset</a>
+            <a href="{% url 'accounts:export_report' 'events' %}" class="ep-logs-btn ep-logs-btn-ghost w-100 text-center"><i class="bi bi-download"></i> Export</a>
+        </form>
     </div>
 </div>
 {% endblock %}
-{% block extra_js %}<script>$(function(){ $('#eventsTable').DataTable(); });</script>{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/category-rank.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { display: false },
+            y: { display: false, beginAtZero: true }
+        },
+        elements: { point: { radius: 0 }, line: { borderWidth: 2 } }
+    };
+
+    const creationLabels = {{ chart_creation_labels|safe }};
+    const creationValues = {{ chart_creation_values|safe }};
+    const statEl = document.getElementById('chartCreationStat');
+    const kpiVal = document.getElementById('chartCreationKpiVal');
+    const kpiLbl = document.getElementById('chartCreationKpiLbl');
+    const chartWrap = document.getElementById('chartCreationWrap');
+    const nonZero = creationValues.filter(v => Number(v) > 0);
+    const totalCreated = creationValues.reduce((s, v) => s + Number(v), 0);
+
+    if (nonZero.length <= 1) {
+        const lastLabel = creationLabels.length ? creationLabels[creationLabels.length - 1] : 'period';
+        if (kpiVal) kpiVal.textContent = totalCreated;
+        if (kpiLbl) kpiLbl.textContent = totalCreated === 1 ? 'event in ' + lastLabel : 'events in ' + lastLabel;
+        statEl?.classList.remove('d-none');
+        chartWrap?.classList.add('d-none');
+    } else if (document.getElementById('chartEventCreation')) {
+        new Chart(document.getElementById('chartEventCreation'), {
+            type: 'line',
+            data: {
+                labels: creationLabels,
+                datasets: [{
+                    data: creationValues,
+                    borderColor: '#6366F1',
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: 'rgba(99,102,241,0.1)'
+                }]
+            },
+            options: chartOpts
+        });
+    }
+
+    epRenderCategoryRank('evCatRank', {{ chart_cat_labels|safe }}, {{ chart_cat_values|safe }}, {
+        mode: 'revenue',
+        maxRows: 5,
+        filterZero: true
+    });
+
+    const top5Labels = {{ chart_top5_labels|safe }};
+    const top5Wrap = document.getElementById('chartTop5Wrap');
+    if (top5Labels.length && document.getElementById('chartTop5')) {
+        new Chart(document.getElementById('chartTop5'), {
+            type: 'bar',
+            data: {
+                labels: top5Labels,
+                datasets: [
+                    { label: 'Bookings', data: {{ chart_top5_bookings|safe }}, backgroundColor: '#8B5CF6', borderRadius: 4, maxBarThickness: 22 },
+                    { label: 'Revenue', data: {{ chart_top5_revenue|safe }}, backgroundColor: '#10B981', borderRadius: 4, maxBarThickness: 22 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 9 }, padding: 8 } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 5 } },
+                    y: { display: false, beginAtZero: true }
+                }
+            }
+        });
+    } else if (top5Wrap) {
+        top5Wrap.innerHTML = '<p class="ep-ev-chart-empty">No booking data yet.</p>';
+    }
+});
+</script>
+{% endblock %}
