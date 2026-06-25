@@ -1,5 +1,5 @@
 {% with ns=request.resolver_match.namespace|default:'' name=request.resolver_match.url_name|default:'' %}
-<aside class="ep-sidebar">
+<aside class="ep-sidebar{% if user.role == 'admin' %} ep-sidebar--accordion{% endif %}" id="epAppSidebar">
     {% include 'partials/sidebar_brand.html' %}
     <div class="ep-sidebar-user">
         <div class="ep-avatar-sm">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
@@ -8,7 +8,7 @@
             <div class="ep-badge-role-sm">{{ user.get_role_display }}</div>
         </div>
     </div>
-    <nav class="ep-sidebar-nav">
+    <nav class="ep-sidebar-nav{% if user.role == 'admin' %} ep-sidebar-nav--admin{% endif %}">
         {% if user.role != 'admin' %}
         <a href="{% url 'accounts:dashboard' %}"
            class="ep-nav-item{% if name == 'dashboard' or user.role == 'user' and name == 'user_dashboard' or user.role == 'organizer' and name == 'organizer_dashboard' %} active{% endif %}">
@@ -51,9 +51,6 @@
            class="ep-nav-item">
             <i class="bi bi-calendar-event"></i> My Events
         </a>
-        {% endif %}
-
-        {% if user.role == 'organizer' %}
         <a href="{% url 'bookings:scan_qr' %}"
            class="ep-nav-item{% if ns == 'bookings' and name == 'scan_qr' or ns == 'bookings' and name == 'checkin_result' %} active{% endif %}">
             <i class="bi bi-qr-code-scan"></i> Scan QR
@@ -71,9 +68,6 @@
             </span>
             Notifications
         </a>
-        {% endif %}
-
-        {% if user.role != 'admin' %}
         <a href="{% url 'accounts:profile' %}"
            class="ep-nav-item{% if ns == 'accounts' and name == 'profile' or ns == 'accounts' and name == 'change_password' %} active{% endif %}">
             <i class="bi bi-person"></i> Profile
@@ -84,4 +78,10 @@
         {% endif %}
     </nav>
 </aside>
+{% if user.role == 'admin' %}
+<div class="ep-sidebar-backdrop d-lg-none" id="epSidebarBackdrop" aria-hidden="true"></div>
+<button type="button" class="ep-sidebar-fab d-lg-none" id="epSidebarFab" aria-label="Open navigation">
+    <i class="bi bi-list"></i>
+</button>
+{% endif %}
 {% endwith %}

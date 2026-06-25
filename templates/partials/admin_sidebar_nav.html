@@ -1,64 +1,102 @@
-{# Admin sidebar fragment — included from app_sidebar.html inside {% if user.role == 'admin' %} #}
+{# Admin accordion sidebar — included from app_sidebar.html #}
 
-<div class="ep-nav-section-label">Overview</div>
-<a href="{% url 'accounts:admin_dashboard' %}"
-   class="ep-nav-item{% if name == 'admin_dashboard' %} active{% endif %}">
-    <i class="bi bi-speedometer2"></i> Dashboard
-</a>
-<a href="{% url 'accounts:admin_statistics' %}"
-   class="ep-nav-item{% if name == 'admin_statistics' %} active{% endif %}">
-    <i class="bi bi-bar-chart-line"></i> Statistics
-</a>
+<div class="ep-nav-accordion" id="epAdminNavAccordion" data-sidebar-accordion>
+    <a href="{% url 'accounts:admin_dashboard' %}"
+       class="ep-nav-direct{% if name == 'admin_dashboard' %} active{% endif %}">
+        <i class="bi bi-house-door"></i> Dashboard
+    </a>
 
-<div class="ep-nav-section-label">Events</div>
-<a href="{% url 'accounts:manage_events' %}"
-   class="ep-nav-item{% if name == 'manage_events' %} active{% endif %}">
-    <i class="bi bi-calendar3"></i> Events
-</a>
-<a href="{% url 'accounts:manage_categories' %}"
-   class="ep-nav-item{% if name == 'manage_categories' %} active{% endif %}">
-    <i class="bi bi-tags"></i> Categories
-</a>
-<a href="{% url 'accounts:manage_bookings' %}"
-   class="ep-nav-item{% if name == 'manage_bookings' %} active{% endif %}">
-    <i class="bi bi-ticket"></i> Bookings
-</a>
+    <div class="ep-nav-group{% if name == 'admin_statistics' %} is-open{% endif %}" data-nav-group="analytics">
+        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'admin_statistics' %}true{% else %}false{% endif %}">
+            <span class="ep-nav-group-label"><i class="bi bi-bar-chart-line"></i> Analytics</span>
+            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="ep-nav-group-panel">
+            <div class="ep-nav-submenu">
+                <a href="{% url 'accounts:admin_statistics' %}"
+                   class="ep-nav-subitem{% if name == 'admin_statistics' %} active{% endif %}">Statistics</a>
+            </div>
+        </div>
+    </div>
 
-<div class="ep-nav-section-label">Users</div>
-<a href="{% url 'accounts:manage_users' %}"
-   class="ep-nav-item{% if name == 'manage_users' and not request.GET.role %} active{% endif %}">
-    <i class="bi bi-people"></i> Users
-</a>
-<a href="{% url 'accounts:manage_users' %}?role=organizer"
-   class="ep-nav-item{% if name == 'manage_users' and request.GET.role == 'organizer' %} active{% endif %}">
-    <i class="bi bi-briefcase"></i> Organizers
-</a>
+    <div class="ep-nav-group{% if name == 'manage_events' or name == 'manage_categories' or name == 'manage_bookings' %} is-open{% endif %}" data-nav-group="events">
+        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'manage_events' or name == 'manage_categories' or name == 'manage_bookings' %}true{% else %}false{% endif %}">
+            <span class="ep-nav-group-label"><i class="bi bi-calendar-event"></i> Event Management</span>
+            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="ep-nav-group-panel">
+            <div class="ep-nav-submenu">
+                <a href="{% url 'accounts:manage_events' %}"
+                   class="ep-nav-subitem{% if name == 'manage_events' %} active{% endif %}">Events</a>
+                <a href="{% url 'accounts:manage_categories' %}"
+                   class="ep-nav-subitem{% if name == 'manage_categories' %} active{% endif %}">Categories</a>
+                <a href="{% url 'accounts:manage_bookings' %}"
+                   class="ep-nav-subitem{% if name == 'manage_bookings' %} active{% endif %}">Bookings</a>
+            </div>
+        </div>
+    </div>
 
-<div class="ep-nav-section-label">Finance</div>
-<a href="{% url 'accounts:manage_payments' %}"
-   class="ep-nav-item{% if name == 'manage_payments' %} active{% endif %}">
-    <i class="bi bi-credit-card"></i> Payments
-</a>
-<a href="{% url 'accounts:admin_statistics' %}#revenue"
-   class="ep-nav-item">
-    <i class="bi bi-graph-up-arrow"></i> Revenue
-</a>
+    <div class="ep-nav-group{% if name == 'manage_users' %} is-open{% endif %}" data-nav-group="users">
+        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'manage_users' %}true{% else %}false{% endif %}">
+            <span class="ep-nav-group-label"><i class="bi bi-people"></i> User Management</span>
+            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="ep-nav-group-panel">
+            <div class="ep-nav-submenu">
+                <a href="{% url 'accounts:manage_users' %}"
+                   class="ep-nav-subitem{% if name == 'manage_users' and not request.GET.role %} active{% endif %}">Users</a>
+                <a href="{% url 'accounts:manage_users' %}?role=organizer"
+                   class="ep-nav-subitem{% if name == 'manage_users' and request.GET.role == 'organizer' %} active{% endif %}">Organizers</a>
+            </div>
+        </div>
+    </div>
 
-<div class="ep-nav-section-label">Reports</div>
-<a href="{% url 'accounts:admin_reports' %}"
-   class="ep-nav-item{% if name == 'admin_reports' %} active{% endif %}">
-    <i class="bi bi-file-earmark-bar-graph"></i> Reports
-</a>
-<a href="{% url 'accounts:audit_logs' %}"
-   class="ep-nav-item{% if name == 'audit_logs' %} active{% endif %}">
-    <i class="bi bi-shield-check"></i> Audit Logs
-</a>
+    <div class="ep-nav-group{% if name == 'manage_payments' %} is-open{% endif %}" data-nav-group="finance">
+        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'manage_payments' %}true{% else %}false{% endif %}">
+            <span class="ep-nav-group-label"><i class="bi bi-wallet2"></i> Finance</span>
+            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="ep-nav-group-panel">
+            <div class="ep-nav-submenu">
+                <a href="{% url 'accounts:manage_payments' %}"
+                   class="ep-nav-subitem{% if name == 'manage_payments' %} active{% endif %}">Payments</a>
+                <a href="{% url 'accounts:admin_statistics' %}#revenue"
+                   class="ep-nav-subitem">Revenue</a>
+            </div>
+        </div>
+    </div>
 
-<div class="ep-nav-section-label ep-nav-section-settings">Settings</div>
-<a href="{% url 'accounts:profile' %}"
-   class="ep-nav-item{% if ns == 'accounts' and name == 'profile' or ns == 'accounts' and name == 'change_password' %} active{% endif %}">
-    <i class="bi bi-gear"></i> Profile Settings
-</a>
-<a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger">
-    <i class="bi bi-box-arrow-right"></i> Logout
-</a>
+    <div class="ep-nav-group{% if name == 'admin_reports' or name == 'audit_logs' %} is-open{% endif %}" data-nav-group="reports">
+        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'admin_reports' or name == 'audit_logs' %}true{% else %}false{% endif %}">
+            <span class="ep-nav-group-label"><i class="bi bi-file-earmark-bar-graph"></i> Reports</span>
+            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="ep-nav-group-panel">
+            <div class="ep-nav-submenu">
+                <a href="{% url 'accounts:admin_reports' %}"
+                   class="ep-nav-subitem{% if name == 'admin_reports' %} active{% endif %}">Reports</a>
+                <a href="{% url 'accounts:audit_logs' %}"
+                   class="ep-nav-subitem{% if name == 'audit_logs' %} active{% endif %}">Audit Logs</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-nav-group{% if ns == 'accounts' and name == 'profile' or name == 'change_password' %} is-open{% endif %}" data-nav-group="settings">
+        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if ns == 'accounts' and name == 'profile' or name == 'change_password' %}true{% else %}false{% endif %}">
+            <span class="ep-nav-group-label"><i class="bi bi-gear"></i> Settings</span>
+            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="ep-nav-group-panel">
+            <div class="ep-nav-submenu">
+                <a href="{% url 'accounts:profile' %}"
+                   class="ep-nav-subitem{% if ns == 'accounts' and name == 'profile' or ns == 'accounts' and name == 'change_password' %} active{% endif %}">Profile Settings</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ep-nav-admin-footer">
+    <a href="{% url 'accounts:logout' %}" class="ep-nav-item ep-nav-danger ep-nav-logout">
+        <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+</div>

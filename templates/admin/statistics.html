@@ -1,119 +1,297 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Statistics{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin{% endblock %}
-{% block content %}
-<div class="ep-saas-wrap ep-ent-animate">
-    <div class="ep-saas-page-head">
-        <nav class="ep-logs-crumb"><a href="{% url 'accounts:admin_dashboard' %}">Admin</a><span class="ep-logs-crumb-sep">/</span><span class="ep-logs-crumb-current">Statistics</span></nav>
-        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2">
-            <div>
-                <h1 class="ep-saas-page-title">Analytics & Statistics</h1>
-                <p class="ep-saas-page-sub">Deep-dive into platform performance</p>
-            </div>
-            <div class="d-flex gap-2 flex-wrap">
-                <a href="{% url 'accounts:export_report' 'bookings' %}" class="ep-logs-btn ep-logs-btn-ghost"><i class="bi bi-download"></i> Bookings CSV</a>
-                <a href="{% url 'accounts:export_report' 'payments' %}" class="ep-logs-btn ep-logs-btn-ghost"><i class="bi bi-download"></i> Payments CSV</a>
-                <a href="{% url 'accounts:export_report' 'users' %}" class="ep-logs-btn ep-logs-btn-primary"><i class="bi bi-download"></i> Users CSV</a>
-            </div>
-        </div>
-    </div>
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-analytics-v2{% endblock %}
 
-    <section class="ep-saas-kpi-row ep-saas-kpi-row-compact">
-        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">₹{{ kpis.revenue.value|floatformat:0 }}</div><div class="ep-saas-kpi-lbl">Total Revenue</div></div>
-        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">{{ kpis.bookings.value }}</div><div class="ep-saas-kpi-lbl">Total Bookings</div></div>
-        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">{{ tickets_sold }}</div><div class="ep-saas-kpi-lbl">Tickets Sold</div></div>
-        <div class="ep-saas-kpi ep-saas-kpi-sm"><div class="ep-saas-kpi-val">{{ kpis.users.value }}</div><div class="ep-saas-kpi-lbl">Total Users</div></div>
+{% block content %}
+<div class="ep-an-page ep-ent-animate">
+
+    {# Row 1 — Header #}
+    <header class="ep-an-header">
+        <div class="ep-an-header-text">
+            <nav class="ep-logs-crumb"><a href="{% url 'accounts:admin_dashboard' %}">Admin</a><span class="ep-logs-crumb-sep">/</span><span class="ep-logs-crumb-current">Statistics</span></nav>
+            <h1 class="ep-an-page-title">Analytics &amp; Statistics</h1>
+            <p class="ep-an-page-desc">Platform performance, revenue trends, and audience growth at a glance.</p>
+        </div>
+        <div class="ep-an-export-group">
+            <a href="{% url 'accounts:export_report' 'bookings' %}" class="ep-an-export-btn"><i class="bi bi-download"></i> Bookings</a>
+            <a href="{% url 'accounts:export_report' 'payments' %}" class="ep-an-export-btn"><i class="bi bi-download"></i> Payments</a>
+            <a href="{% url 'accounts:export_report' 'users' %}" class="ep-an-export-btn ep-an-export-btn-primary"><i class="bi bi-download"></i> Users</a>
+        </div>
+    </header>
+
+    {# Row 2 — KPIs #}
+    <section class="ep-an-kpis" aria-label="Key metrics">
+        <article class="ep-an-kpi">
+            <div class="ep-an-kpi-top">
+                <span class="ep-an-kpi-icon ep-an-kpi-icon-rev"><i class="bi bi-currency-rupee"></i></span>
+                <span class="ep-an-kpi-badge {% if kpis.revenue.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if kpis.revenue.up %}up{% else %}down{% endif %}"></i>{{ kpis.revenue.growth }}%</span>
+            </div>
+            <div class="ep-an-kpi-val">₹{{ kpis.revenue.value|floatformat:0 }}</div>
+            <div class="ep-an-kpi-lbl">Revenue</div>
+            <div class="ep-an-kpi-compare">₹{{ kpis.revenue.period|floatformat:0 }} this month</div>
+        </article>
+        <article class="ep-an-kpi">
+            <div class="ep-an-kpi-top">
+                <span class="ep-an-kpi-icon ep-an-kpi-icon-book"><i class="bi bi-ticket-perforated"></i></span>
+                <span class="ep-an-kpi-badge {% if kpis.bookings.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if kpis.bookings.up %}up{% else %}down{% endif %}"></i>{{ kpis.bookings.growth }}%</span>
+            </div>
+            <div class="ep-an-kpi-val">{{ kpis.bookings.value }}</div>
+            <div class="ep-an-kpi-lbl">Bookings</div>
+            <div class="ep-an-kpi-compare">{{ kpis.bookings.period }} new this month</div>
+        </article>
+        <article class="ep-an-kpi">
+            <div class="ep-an-kpi-top">
+                <span class="ep-an-kpi-icon ep-an-kpi-icon-ticket"><i class="bi bi-qr-code"></i></span>
+                <span class="ep-an-kpi-badge neutral"><i class="bi bi-dash"></i>total</span>
+            </div>
+            <div class="ep-an-kpi-val">{{ tickets_sold }}</div>
+            <div class="ep-an-kpi-lbl">Tickets Sold</div>
+            <div class="ep-an-kpi-compare">Confirmed &amp; attended</div>
+        </article>
+        <article class="ep-an-kpi">
+            <div class="ep-an-kpi-top">
+                <span class="ep-an-kpi-icon ep-an-kpi-icon-user"><i class="bi bi-people"></i></span>
+                <span class="ep-an-kpi-badge {% if kpis.users.up %}up{% else %}down{% endif %}"><i class="bi bi-arrow-{% if kpis.users.up %}up{% else %}down{% endif %}"></i>{{ kpis.users.growth }}%</span>
+            </div>
+            <div class="ep-an-kpi-val">{{ kpis.users.value }}</div>
+            <div class="ep-an-kpi-lbl">Users</div>
+            <div class="ep-an-kpi-compare">+{{ kpis.users.period }} joined this month</div>
+        </article>
     </section>
 
-    <div class="row g-3 mb-3">
-        <div class="col-lg-8" id="revenue">
-            <div class="ep-saas-card">
-                <div class="ep-saas-card-head"><h3>Revenue Analytics</h3><span class="ep-saas-range">12 months</span></div>
-                <div class="ep-saas-chart ep-saas-chart-lg"><canvas id="statRevenue"></canvas></div>
+    {# Row 3 — Revenue 70% + Booking 30% #}
+    <section class="ep-an-row ep-an-row-trends" id="revenue">
+        <div class="ep-an-card ep-an-card-wide">
+            <div class="ep-an-card-head">
+                <h2 class="ep-an-card-title">Revenue Trend</h2>
+                <span class="ep-an-pill">12 months</span>
+            </div>
+            <div class="ep-an-chart-box" data-chart="revenue">
+                <p class="ep-an-chart-empty d-none">No historical data available yet.</p>
+                <div class="ep-an-chart-canvas"><canvas id="chartRevenue"></canvas></div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="ep-saas-card ep-cat-rank-panel h-100">
-                <div class="ep-saas-card-head"><h3>Category Performance</h3></div>
+        <div class="ep-an-card ep-an-card-narrow">
+            <div class="ep-an-card-head">
+                <h2 class="ep-an-card-title">Booking Trend</h2>
+                <span class="ep-an-pill">12 months</span>
+            </div>
+            <div class="ep-an-chart-box" data-chart="bookings">
+                <p class="ep-an-chart-empty d-none">No historical data available yet.</p>
+                <div class="ep-an-chart-canvas"><canvas id="chartBookings"></canvas></div>
+            </div>
+        </div>
+    </section>
+
+    {# Row 4 — User Growth + Category Distribution #}
+    <section class="ep-an-row ep-an-row-half">
+        <div class="ep-an-card">
+            <div class="ep-an-card-head">
+                <h2 class="ep-an-card-title">User Growth</h2>
+                <span class="ep-an-pill">12 months</span>
+            </div>
+            <div class="ep-an-chart-box" data-chart="users">
+                <p class="ep-an-chart-empty d-none">No historical data available yet.</p>
+                <div class="ep-an-chart-canvas"><canvas id="chartUsers"></canvas></div>
+            </div>
+        </div>
+        <div class="ep-an-card ep-cat-rank-panel">
+            <div class="ep-an-card-head">
+                <h2 class="ep-an-card-title">Category Distribution</h2>
+                <span class="ep-an-pill">By events</span>
+            </div>
+            <div class="ep-an-card-body">
                 {% include 'partials/category_rank_card.html' with container_id='statCatRank' %}
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="ep-saas-card">
-                <div class="ep-saas-card-head"><h3>User Growth</h3></div>
-                <div class="ep-saas-chart"><canvas id="statUsers"></canvas></div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="ep-saas-card">
-                <div class="ep-saas-card-head"><h3>Booking Analytics</h3></div>
-                <div class="ep-saas-chart"><canvas id="statBookings"></canvas></div>
-            </div>
-        </div>
-    </div>
+    </section>
 
-    <div class="row g-3">
-        <div class="col-lg-7">
-            <div class="ep-saas-card ep-saas-table-card">
-                <div class="ep-saas-card-head"><h3>Top Performing Events</h3></div>
-                <div class="ep-saas-table-wrap">
-                    <table class="ep-saas-table">
-                        <thead class="ep-saas-thead-sticky"><tr><th>Event</th><th>Bookings</th><th>Revenue</th><th>Status</th></tr></thead>
-                        <tbody>
-                        {% for e in top_events %}
-                        <tr>
-                            <td><strong>{{ e.title|truncatechars:32 }}</strong></td>
-                            <td>{{ e.booking_count }}</td>
-                            <td>₹{{ e.revenue|default:0|floatformat:0 }}</td>
-                            <td><span class="ep-saas-badge ep-saas-badge-{{ e.status }}">{{ e.get_status_display }}</span></td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="4" class="ep-saas-empty">No event data</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+    {# Row 5 — Tables #}
+    <section class="ep-an-row ep-an-row-half">
+        <div class="ep-an-card ep-an-table-card">
+            <div class="ep-an-card-head">
+                <h2 class="ep-an-card-title">Top Performing Events</h2>
+                <span class="ep-an-pill">Top 5</span>
+            </div>
+            <div class="ep-an-table-scroll">
+                <table class="ep-an-table">
+                    <thead><tr><th>Event</th><th>Bookings</th><th>Revenue</th><th>Status</th></tr></thead>
+                    <tbody>
+                    {% for e in top_events|slice:":5" %}
+                    <tr>
+                        <td class="ep-an-table-primary">{{ e.title|truncatechars:28 }}</td>
+                        <td>{{ e.booking_count }}</td>
+                        <td class="ep-an-table-money">₹{{ e.revenue|default:0|floatformat:0 }}</td>
+                        <td><span class="ep-an-badge ep-an-badge-{{ e.status }}">{{ e.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="ep-an-table-empty">No events yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="ep-an-card ep-an-table-card">
+            <div class="ep-an-card-head">
+                <h2 class="ep-an-card-title">Organizer Performance</h2>
+                <span class="ep-an-pill">Top 5</span>
+            </div>
+            <div class="ep-an-table-scroll">
+                <table class="ep-an-table">
+                    <thead><tr><th>Organizer</th><th>Events</th><th>Bookings</th></tr></thead>
+                    <tbody>
+                    {% for o in organizers|slice:":5" %}
+                    <tr>
+                        <td>
+                            <div class="ep-an-user-cell">
+                                <span class="ep-an-avatar">{{ o.username|first|upper }}</span>
+                                <span class="ep-an-table-primary">{{ o.username }}</span>
+                            </div>
+                        </td>
+                        <td>{{ o.event_count }}</td>
+                        <td>{{ o.booking_count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="ep-an-table-empty">No organizers yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    {# Row 6 — Insights #}
+    <section class="ep-an-insights-card">
+        <div class="ep-an-card-head">
+            <h2 class="ep-an-section-title">Insights</h2>
+            <span class="ep-an-pill">Auto-generated</span>
+        </div>
+        <div class="ep-an-insights-grid">
+            <div class="ep-an-insight">
+                <span class="ep-an-insight-icon"><i class="bi bi-tags"></i></span>
+                <div>
+                    <span class="ep-an-insight-lbl">Most popular category</span>
+                    <span class="ep-an-insight-val" id="insightTopCategory">—</span>
+                </div>
+            </div>
+            <div class="ep-an-insight">
+                <span class="ep-an-insight-icon ep-an-insight-icon-rev"><i class="bi bi-trophy"></i></span>
+                <div>
+                    <span class="ep-an-insight-lbl">Highest revenue event</span>
+                    <span class="ep-an-insight-val">
+                        {% for e in top_events|dictsortreversed:"revenue"|slice:":1" %}
+                        {{ e.title|truncatechars:32 }}
+                        {% empty %}—{% endfor %}
+                    </span>
+                </div>
+            </div>
+            <div class="ep-an-insight">
+                <span class="ep-an-insight-icon ep-an-insight-icon-ticket"><i class="bi bi-receipt"></i></span>
+                <div>
+                    <span class="ep-an-insight-lbl">Average ticket price</span>
+                    <span class="ep-an-insight-val">{% if tickets_sold %}₹{% widthratio kpis.revenue.value tickets_sold 1 %}{% else %}—{% endif %}</span>
+                </div>
+            </div>
+            <div class="ep-an-insight">
+                <span class="ep-an-insight-icon ep-an-insight-icon-forecast"><i class="bi bi-graph-up-arrow"></i></span>
+                <div>
+                    <span class="ep-an-insight-lbl">Revenue forecast</span>
+                    <span class="ep-an-insight-val">{% if kpis.revenue.up %}Upward{% else %}Softening{% endif %} · {{ kpis.revenue.growth }}% MoM</span>
+                </div>
+            </div>
+            <div class="ep-an-insight ep-an-insight-wide">
+                <span class="ep-an-insight-icon ep-an-insight-icon-tip"><i class="bi bi-lightbulb"></i></span>
+                <div>
+                    <span class="ep-an-insight-lbl">Recommendation</span>
+                    <span class="ep-an-insight-val ep-an-insight-val-text">
+                        {% if kpis.revenue.up %}
+                        Revenue is trending up — double down on top categories and high-converting events.
+                        {% elif kpis.bookings.up %}
+                        Bookings are growing — optimize pricing and capacity on popular events.
+                        {% else %}
+                        Focus on promotional campaigns and featured listings to re-engage users.
+                        {% endif %}
+                    </span>
                 </div>
             </div>
         </div>
-        <div class="col-lg-5">
-            <div class="ep-saas-card ep-saas-table-card">
-                <div class="ep-saas-card-head"><h3>Organizer Performance</h3></div>
-                <div class="ep-saas-table-wrap">
-                    <table class="ep-saas-table">
-                        <thead class="ep-saas-thead-sticky"><tr><th>Organizer</th><th>Events</th><th>Bookings</th></tr></thead>
-                        <tbody>
-                        {% for o in organizers %}
-                        <tr>
-                            <td>
-                                <div class="ep-saas-user-cell">
-                                    <span class="ep-saas-avatar">{{ o.username|first|upper }}</span>
-                                    <span>{{ o.username }}</span>
-                                </div>
-                            </td>
-                            <td>{{ o.event_count }}</td>
-                            <td>{{ o.booking_count }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="ep-saas-empty">No organizers</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    </section>
+
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script src="{% static 'js/category-rank.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const o = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
-    new Chart(document.getElementById('statRevenue'), { type: 'line', data: { labels: {{ chart_revenue_labels|safe }}, datasets: [{ data: {{ chart_revenue_values|safe }}, borderColor: '#6366F1', fill: true, backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.35 }] }, options: o });
-    new Chart(document.getElementById('statBookings'), { type: 'bar', data: { labels: {{ chart_booking_labels|safe }}, datasets: [{ data: {{ chart_booking_values|safe }}, backgroundColor: '#8B5CF6', borderRadius: 6 }] }, options: o });
-    new Chart(document.getElementById('statUsers'), { type: 'line', data: { labels: {{ chart_user_labels|safe }}, datasets: [{ data: {{ chart_user_values|safe }}, borderColor: '#10B981', tension: 0.35 }] }, options: o });
-    epRenderCategoryRank('statCatRank', {{ chart_cat_labels|safe }}, {{ chart_cat_values|safe }}, { mode: 'events', maxRows: 6 });
+    const chartOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 8 } },
+            y: { beginAtZero: true, grid: { color: '#EEF2F6' }, ticks: { font: { size: 10 }, padding: 4 } }
+        }
+    };
+
+    function mountChart(box, labels, values, config) {
+        const empty = box.querySelector('.ep-an-chart-empty');
+        const canvasWrap = box.querySelector('.ep-an-chart-canvas');
+        const canvas = canvasWrap ? canvasWrap.querySelector('canvas') : null;
+        const hasData = labels && labels.length && values && values.some(function(v) { return Number(v) > 0; });
+
+        if (!hasData || !canvas) {
+            empty?.classList.remove('d-none');
+            canvasWrap?.classList.add('d-none');
+            return;
+        }
+        empty?.classList.add('d-none');
+        canvasWrap?.classList.remove('d-none');
+        new Chart(canvas, config(labels, values, chartOpts));
+    }
+
+    const revenueLabels = {{ chart_revenue_labels|safe }};
+    const revenueValues = {{ chart_revenue_values|safe }};
+    const bookingLabels = {{ chart_booking_labels|safe }};
+    const bookingValues = {{ chart_booking_values|safe }};
+    const userLabels = {{ chart_user_labels|safe }};
+    const userValues = {{ chart_user_values|safe }};
+    const catLabels = {{ chart_cat_labels|safe }};
+    const catValues = {{ chart_cat_values|safe }};
+
+    mountChart(document.querySelector('[data-chart="revenue"]'), revenueLabels, revenueValues, function(labels, values, opts) {
+        return {
+            type: 'line',
+            data: { labels: labels, datasets: [{ data: values, borderColor: '#4F46E5', borderWidth: 2, tension: 0.35, fill: true, backgroundColor: 'rgba(79,70,229,0.08)', pointRadius: 2, pointHoverRadius: 4 }] },
+            options: opts
+        };
+    });
+
+    mountChart(document.querySelector('[data-chart="bookings"]'), bookingLabels, bookingValues, function(labels, values, opts) {
+        return {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ data: values, backgroundColor: '#7C3AED', borderRadius: 4, maxBarThickness: 28 }] },
+            options: opts
+        };
+    });
+
+    mountChart(document.querySelector('[data-chart="users"]'), userLabels, userValues, function(labels, values, opts) {
+        return {
+            type: 'line',
+            data: { labels: labels, datasets: [{ data: values, borderColor: '#059669', borderWidth: 2, tension: 0.35, pointRadius: 2 }] },
+            options: opts
+        };
+    });
+
+    epRenderCategoryRank('statCatRank', catLabels, catValues, { mode: 'events', maxRows: 5, filterZero: true });
+
+    const topCatEl = document.getElementById('insightTopCategory');
+    if (topCatEl && catLabels.length && catValues.length) {
+        let best = 0;
+        catValues.forEach(function(v, i) { if (Number(v) > Number(catValues[best])) best = i; });
+        topCatEl.textContent = catLabels[best] || '—';
+    }
 });
 </script>
 {% endblock %}

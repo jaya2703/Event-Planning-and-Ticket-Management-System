@@ -1,190 +1,192 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Category Management{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-cat-admin{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-cat-v2{% endblock %}
 
 {% block content %}
-<div class="ep-cat-wrap ep-ent-animate">
+<div class="ep-cat2-page ep-ent-animate">
 
-    <header class="ep-cat-header">
-        <div>
+    <header class="ep-cat2-header">
+        <div class="ep-cat2-header-text">
             <nav class="ep-logs-crumb">
                 <a href="{% url 'accounts:admin_dashboard' %}">Admin</a>
                 <span class="ep-logs-crumb-sep">/</span>
                 <span class="ep-logs-crumb-current">Categories</span>
             </nav>
-            <h1 class="ep-cat-title">Category Management</h1>
-            <p class="ep-cat-subtitle">Organize and manage event categories used across the platform.</p>
+            <h1 class="ep-cat2-title">Category Management</h1>
+            <p class="ep-cat2-subtitle">Organize and manage event categories used across the platform.</p>
         </div>
-        <div class="ep-cat-header-actions">
-            <button type="button" class="ep-cat-add-btn" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+        <div class="ep-cat2-header-actions">
+            <button type="button" class="ep-cat2-btn ep-cat2-btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                 <i class="bi bi-plus-lg"></i> Add Category
             </button>
-            <button type="button" class="ep-logs-btn ep-logs-btn-ghost" id="epCatExportBtn">
+            <button type="button" class="ep-cat2-btn ep-cat2-btn-ghost" id="epCatExportBtn">
                 <i class="bi bi-download"></i> Export
             </button>
         </div>
     </header>
 
-    <section class="ep-cat-kpis">
-        <div class="ep-cat-kpi">
-            <div class="ep-cat-kpi-top">
-                <span class="ep-cat-kpi-icon ep-cat-kpi-icon-total"><i class="bi bi-tags"></i></span>
-                <span class="ep-cat-kpi-trend up"><i class="bi bi-layers"></i></span>
+    {# Row 1 — KPIs #}
+    <section class="ep-cat2-kpis" aria-label="Category metrics">
+        <article class="ep-cat2-kpi">
+            <div class="ep-cat2-kpi-top">
+                <span class="ep-cat2-kpi-icon ep-cat2-kpi-icon-total"><i class="bi bi-tags"></i></span>
+                <span class="ep-cat2-kpi-badge neutral"><i class="bi bi-layers"></i></span>
             </div>
-            <div class="ep-cat-kpi-val">{{ stats.total }}</div>
-            <div class="ep-cat-kpi-lbl">Total Categories</div>
-        </div>
-        <div class="ep-cat-kpi">
-            <div class="ep-cat-kpi-top">
-                <span class="ep-cat-kpi-icon ep-cat-kpi-icon-active"><i class="bi bi-check-circle"></i></span>
-                <span class="ep-cat-kpi-trend up">{% if stats.total %}{% widthratio stats.active stats.total 100 %}%{% else %}0%{% endif %}</span>
+            <div class="ep-cat2-kpi-val">{{ stats.total }}</div>
+            <div class="ep-cat2-kpi-lbl">Total Categories</div>
+        </article>
+        <article class="ep-cat2-kpi">
+            <div class="ep-cat2-kpi-top">
+                <span class="ep-cat2-kpi-icon ep-cat2-kpi-icon-active"><i class="bi bi-check-circle"></i></span>
+                <span class="ep-cat2-kpi-badge up">{% if stats.total %}{% widthratio stats.active stats.total 100 %}%{% else %}0%{% endif %}</span>
             </div>
-            <div class="ep-cat-kpi-val">{{ stats.active }}</div>
-            <div class="ep-cat-kpi-lbl">Active Categories</div>
-        </div>
-        <div class="ep-cat-kpi">
-            <div class="ep-cat-kpi-top">
-                <span class="ep-cat-kpi-icon ep-cat-kpi-icon-events"><i class="bi bi-calendar-event"></i></span>
-                <span class="ep-cat-kpi-trend neutral"><i class="bi bi-link-45deg"></i></span>
+            <div class="ep-cat2-kpi-val">{{ stats.active }}</div>
+            <div class="ep-cat2-kpi-lbl">Active Categories</div>
+        </article>
+        <article class="ep-cat2-kpi">
+            <div class="ep-cat2-kpi-top">
+                <span class="ep-cat2-kpi-icon ep-cat2-kpi-icon-events"><i class="bi bi-calendar-event"></i></span>
+                <span class="ep-cat2-kpi-badge neutral"><i class="bi bi-link-45deg"></i></span>
             </div>
-            <div class="ep-cat-kpi-val">{{ stats.events_total }}</div>
-            <div class="ep-cat-kpi-lbl">Events Assigned</div>
-        </div>
-        <div class="ep-cat-kpi">
-            <div class="ep-cat-kpi-top">
-                <span class="ep-cat-kpi-icon ep-cat-kpi-icon-top"><i class="bi bi-trophy"></i></span>
+            <div class="ep-cat2-kpi-val">{{ stats.events_total }}</div>
+            <div class="ep-cat2-kpi-lbl">Events Assigned</div>
+        </article>
+        <article class="ep-cat2-kpi">
+            <div class="ep-cat2-kpi-top">
+                <span class="ep-cat2-kpi-icon ep-cat2-kpi-icon-top"><i class="bi bi-trophy"></i></span>
             </div>
-            <div class="ep-cat-kpi-val ep-cat-kpi-val-text">{% if stats.most_used %}{{ stats.most_used.name|truncatechars:14 }}{% else %}—{% endif %}</div>
-            <div class="ep-cat-kpi-lbl">Most Used Category</div>
-        </div>
+            <div class="ep-cat2-kpi-val ep-cat2-kpi-val-text">{% if stats.most_used %}{{ stats.most_used.name|truncatechars:14 }}{% else %}—{% endif %}</div>
+            <div class="ep-cat2-kpi-lbl">Most Used Category</div>
+        </article>
     </section>
 
-    <section class="ep-cat-analytics">
-        <div class="ep-cat-analytics-card ep-cat-analytics-card--usage">
-            <div class="ep-cat-analytics-head">
-                <h2>Most Used Categories</h2>
-                <span class="ep-cat-analytics-badge">By event count</span>
-            </div>
-            <div class="ep-cat-usage-list">
-                {% for c in categories|dictsortreversed:"event_count"|slice:":6" %}
-                {% if c.event_count %}
-                <div class="ep-cat-usage-row">
-                    <div class="ep-cat-usage-row-head">
-                        <span class="ep-cat-usage-name"><i class="bi {{ c.icon }}"></i> {{ c.name }}</span>
-                        <span class="ep-cat-usage-count">{{ c.event_count }} event{{ c.event_count|pluralize }}</span>
+    {# Unified analytics panel #}
+    <section class="ep-cat2-analytics">
+        <div class="ep-cat2-analytics-head">
+            <h2 class="ep-cat2-analytics-title">Category Analytics</h2>
+            <span class="ep-cat2-pill">Top 5</span>
+        </div>
+        <div class="ep-cat2-analytics-body">
+            <div class="ep-cat2-analytics-perf">
+                <h3 class="ep-cat2-analytics-sub">Performance</h3>
+                <div class="ep-cat2-perf-list">
+                    {% for c in categories|dictsortreversed:"event_count"|slice:":5" %}
+                    {% if c.event_count %}
+                    <div class="ep-cat2-perf-row">
+                        <span class="ep-cat2-perf-icon"><i class="bi {{ c.icon }}"></i></span>
+                        <div class="ep-cat2-perf-body">
+                            <div class="ep-cat2-perf-head">
+                                <span class="ep-cat2-perf-name">{{ c.name }}</span>
+                                <span class="ep-cat2-perf-count">{{ c.event_count }} event{{ c.event_count|pluralize }}</span>
+                            </div>
+                            <div class="ep-cat2-perf-bar"><div class="ep-cat2-perf-fill" style="width:{% if stats.most_used and stats.most_used.event_count %}{% widthratio c.event_count stats.most_used.event_count 100 %}{% else %}0{% endif %}%"></div></div>
+                        </div>
+                        <span class="ep-cat2-perf-pct">{% if stats.events_total %}{% widthratio c.event_count stats.events_total 100 %}%{% else %}0%{% endif %}</span>
                     </div>
-                    <div class="ep-cat-usage-bar-track">
-                        <div class="ep-cat-usage-bar-fill" style="width:{% if stats.most_used and stats.most_used.event_count %}{% widthratio c.event_count stats.most_used.event_count 100 %}{% else %}0{% endif %}%"></div>
-                    </div>
-                    {% if stats.events_total %}
-                    <span class="ep-cat-usage-pct">{% widthratio c.event_count stats.events_total 100 %}% of all events</span>
+                    {% endif %}
+                    {% empty %}
+                    <p class="ep-cat2-empty-inline">No category usage data yet.</p>
+                    {% endfor %}
+                    {% if stats.total and not stats.active %}
+                    <p class="ep-cat2-empty-inline">Categories exist but none have events assigned yet.</p>
                     {% endif %}
                 </div>
-                {% endif %}
-                {% empty %}
-                <p class="ep-cat-analytics-empty">No category usage data yet.</p>
-                {% endfor %}
-                {% if stats.total and not stats.active %}
-                <p class="ep-cat-analytics-empty">Categories exist but none have events assigned yet.</p>
-                {% endif %}
             </div>
-        </div>
-
-        <div class="ep-cat-analytics-card ep-cat-analytics-card--stats">
-            <div class="ep-cat-analytics-head ep-cat-analytics-head--compact">
-                <h2>Category Usage Statistics</h2>
+            <div class="ep-cat2-analytics-insights">
+                <h3 class="ep-cat2-analytics-sub">Insights</h3>
+                <div class="ep-cat2-insight-grid">
+                    <div class="ep-cat2-kpi-block">
+                        <span class="ep-cat2-kpi-block-lbl">Utilization</span>
+                        <span class="ep-cat2-kpi-block-val">{% if stats.total %}{% widthratio stats.active stats.total 100 %}%{% else %}0%{% endif %}</span>
+                    </div>
+                    <div class="ep-cat2-kpi-block">
+                        <span class="ep-cat2-kpi-block-lbl">Active</span>
+                        <span class="ep-cat2-kpi-block-val">{{ stats.active }}<span class="ep-cat2-kpi-block-muted"> / {{ stats.total }}</span></span>
+                    </div>
+                    <div class="ep-cat2-kpi-block">
+                        <span class="ep-cat2-kpi-block-lbl">Unused</span>
+                        <span class="ep-cat2-kpi-block-val">{{ stats.empty }}</span>
+                    </div>
+                    <div class="ep-cat2-kpi-block">
+                        <span class="ep-cat2-kpi-block-lbl">Average</span>
+                        <span class="ep-cat2-kpi-block-val">{% if stats.total %}{% widthratio stats.events_total stats.total 1 %}{% else %}0{% endif %}</span>
+                    </div>
+                    <div class="ep-cat2-kpi-block ep-cat2-kpi-block-wide">
+                        <span class="ep-cat2-kpi-block-lbl">Leader</span>
+                        <span class="ep-cat2-kpi-block-val">{% if stats.most_used %}{{ stats.most_used.name|truncatechars:20 }}{% else %}—{% endif %}</span>
+                    </div>
+                </div>
             </div>
-            <ul class="ep-cat-stat-grid">
-                <li class="ep-cat-stat-tile">
-                    <span class="ep-cat-stat-lbl">Utilization rate</span>
-                    <strong class="ep-cat-stat-val">{% if stats.total %}{% widthratio stats.active stats.total 100 %}%{% else %}0%{% endif %}</strong>
-                    <span class="ep-cat-stat-sub">{{ stats.active }} of {{ stats.total }} in use</span>
-                </li>
-                <li class="ep-cat-stat-tile">
-                    <span class="ep-cat-stat-lbl">Empty categories</span>
-                    <strong class="ep-cat-stat-val">{{ stats.empty }}</strong>
-                    <span class="ep-cat-stat-sub">No events assigned</span>
-                </li>
-                <li class="ep-cat-stat-tile">
-                    <span class="ep-cat-stat-lbl">Avg. events / category</span>
-                    <strong class="ep-cat-stat-val">{% if stats.total %}{% widthratio stats.events_total stats.total 1 %}{% else %}0{% endif %}</strong>
-                    <span class="ep-cat-stat-sub">Across all categories</span>
-                </li>
-                <li class="ep-cat-stat-tile">
-                    <span class="ep-cat-stat-lbl">Leader share</span>
-                    <strong class="ep-cat-stat-val">{% if stats.most_used and stats.events_total %}{% widthratio stats.most_used.event_count stats.events_total 100 %}%{% else %}—{% endif %}</strong>
-                    <span class="ep-cat-stat-sub">{% if stats.most_used %}{{ stats.most_used.name }}{% else %}No leader{% endif %}</span>
-                </li>
-            </ul>
         </div>
     </section>
 
-    <section class="ep-cat-grid-panel">
-        <div class="ep-cat-grid-toolbar">
-            <h2 class="ep-cat-grid-title">All Categories</h2>
-            <div class="ep-cat-grid-tools">
-                <div class="ep-logs-filter-search ep-cat-search">
+    {# All Categories — single container #}
+    <section class="ep-cat2-table-section">
+        <div class="ep-cat2-table-toolbar">
+            <h2 class="ep-cat2-section-title">All Categories</h2>
+            <div class="ep-cat2-table-tools">
+                <div class="ep-cat2-search">
                     <i class="bi bi-search"></i>
                     <input type="search" id="epCatSearch" placeholder="Search categories…" aria-label="Search categories">
                 </div>
-                <select id="epCatFilter" class="ep-logs-filter-select ep-cat-select" aria-label="Filter">
+                <select id="epCatFilter" class="ep-cat2-select" aria-label="Filter">
                     <option value="all">All status</option>
                     <option value="active">Active only</option>
                     <option value="inactive">Unused only</option>
                 </select>
-                <select id="epCatSort" class="ep-logs-filter-select ep-cat-select" aria-label="Sort">
-                    <option value="name">Sort: Name A–Z</option>
-                    <option value="name-desc">Sort: Name Z–A</option>
-                    <option value="events">Sort: Most events</option>
-                    <option value="events-asc">Sort: Fewest events</option>
+                <select id="epCatSort" class="ep-cat2-select" aria-label="Sort">
+                    <option value="name">Name A–Z</option>
+                    <option value="name-desc">Name Z–A</option>
+                    <option value="events">Most events</option>
+                    <option value="events-asc">Fewest events</option>
                 </select>
             </div>
         </div>
 
-        <div class="ep-cat-table-card">
-            <div class="ep-cat-table-head">
-                <span>Category</span>
-                <span>Icon</span>
-                <span>Events</span>
-                <span>Share</span>
-                <span>Status</span>
-                <span></span>
+        <div class="ep-cat2-dt">
+            <div class="ep-cat2-dt-scroll">
+            <div class="ep-cat2-dt-head" aria-hidden="true">
+                <span class="ep-cat2-dt-col ep-cat2-dt-col-cat">Category</span>
+                <span class="ep-cat2-dt-col ep-cat2-dt-col-usage">Usage</span>
+                <span class="ep-cat2-dt-col ep-cat2-dt-col-share">Share</span>
+                <span class="ep-cat2-dt-col ep-cat2-dt-col-status">Status</span>
+                <span class="ep-cat2-dt-col ep-cat2-dt-col-actions"></span>
             </div>
-            <div class="ep-cat-table-body" id="epCatTableBody">
+
+            <div class="ep-cat2-dt-body" id="epCatTableBody">
                 {% for c in categories %}
-                <article class="ep-cat-row" data-name="{{ c.name|lower }}" data-events="{{ c.event_count }}" data-status="{% if c.event_count %}active{% else %}inactive{% endif %}">
-                    <div class="ep-cat-cell ep-cat-cell-main">
-                        <span class="ep-cat-row-icon"><i class="bi {{ c.icon }}"></i></span>
-                        <div>
-                            <div class="ep-cat-row-name">{{ c.name }}</div>
-                            <div class="ep-cat-row-desc">{% if c.event_count %}Used in {{ c.event_count }} event{{ c.event_count|pluralize }}{% else %}No events yet{% endif %}</div>
+                <article class="ep-cat2-dt-row ep-cat2-row" data-name="{{ c.name|lower }}" data-events="{{ c.event_count }}" data-status="{% if c.event_count %}active{% else %}inactive{% endif %}">
+                    <div class="ep-cat2-dt-col ep-cat2-dt-col-cat">
+                        <span class="ep-cat2-dt-icon"><i class="bi {{ c.icon }}"></i></span>
+                        <div class="ep-cat2-dt-cat-text">
+                            <span class="ep-cat2-dt-name ep-cat2-row-name">{{ c.name }}</span>
+                            <span class="ep-cat2-dt-desc">{% if c.event_count %}Used in {{ c.event_count }} event{{ c.event_count|pluralize }}{% else %}No events assigned{% endif %}</span>
+                            <code class="ep-cat2-icon-code d-none">{{ c.icon }}</code>
                         </div>
                     </div>
-                    <div class="ep-cat-cell"><code class="ep-cat-icon-code">{{ c.icon }}</code></div>
-                    <div class="ep-cat-cell">
-                        <span class="ep-cat-events-badge {% if c.event_count %}ep-cat-events-hot{% else %}ep-cat-events-zero{% endif %}">
-                            {{ c.event_count }}
-                        </span>
+                    <div class="ep-cat2-dt-col ep-cat2-dt-col-usage">
+                        <span class="ep-cat2-dt-usage-val">{{ c.event_count }}</span>
+                        <span class="ep-cat2-dt-usage-lbl">event{{ c.event_count|pluralize }}</span>
                     </div>
-                    <div class="ep-cat-cell">
+                    <div class="ep-cat2-dt-col ep-cat2-dt-col-share">
                         {% if stats.events_total and c.event_count %}
-                        <span class="ep-cat-share-badge">{% widthratio c.event_count stats.events_total 100 %}%</span>
+                        <span class="ep-cat2-dt-share">{% widthratio c.event_count stats.events_total 100 %}%</span>
                         {% else %}
-                        <span class="ep-cat-share-badge ep-cat-share-zero">0%</span>
+                        <span class="ep-cat2-dt-share ep-cat2-dt-share-zero">0%</span>
                         {% endif %}
                     </div>
-                    <div class="ep-cat-cell">
+                    <div class="ep-cat2-dt-col ep-cat2-dt-col-status">
                         {% if c.event_count %}
-                        <span class="ep-cat-status ep-cat-status-active">Active</span>
+                        <span class="ep-cat2-dt-badge ep-cat2-dt-badge-active">Active</span>
                         {% else %}
-                        <span class="ep-cat-status ep-cat-status-inactive">Unused</span>
+                        <span class="ep-cat2-dt-badge ep-cat2-dt-badge-unused">Unused</span>
                         {% endif %}
                     </div>
-                    <div class="ep-cat-cell ep-cat-cell-actions">
+                    <div class="ep-cat2-dt-col ep-cat2-dt-col-actions">
                         <div class="dropdown">
-                            <button class="ep-saas-kebab" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <button class="ep-cat2-dt-kebab" type="button" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots"></i></button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm ep-cat2-dt-menu">
                                 <li><a class="dropdown-item" href="{% url 'accounts:manage_events' %}?category={{ c.id }}"><i class="bi bi-eye me-2"></i>View events</a></li>
                                 <li><a class="dropdown-item ep-cat-edit-btn" href="#" data-name="{{ c.name }}" data-icon="{{ c.icon }}"><i class="bi bi-pencil me-2"></i>Duplicate in form</a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -194,25 +196,31 @@
                     </div>
                 </article>
                 {% empty %}
-                <div class="ep-cat-empty" id="epCatEmptyDefault">
-                    <div class="ep-cat-empty-icon"><i class="bi bi-tags"></i></div>
-                    <h3>No categories yet</h3>
-                    <p>Add your first category to organize events across the platform.</p>
-                    <button type="button" class="ep-cat-add-btn" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <div class="ep-cat2-dt-empty" id="epCatEmptyDefault">
+                    <div class="ep-cat2-dt-empty-art"><i class="bi bi-folder2-open"></i></div>
+                    <h3>No categories found</h3>
+                    <p>Create your first category to organize events across the platform.</p>
+                    <button type="button" class="ep-cat2-btn ep-cat2-btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                         <i class="bi bi-plus-lg"></i> Add Category
                     </button>
                 </div>
                 {% endfor %}
             </div>
-            <div class="ep-cat-empty d-none" id="epCatEmptyFilter">
-                <p>No categories match your search or filter.</p>
+
+            <div class="ep-cat2-dt-empty ep-cat2-dt-empty-filter d-none" id="epCatEmptyFilter">
+                <div class="ep-cat2-dt-empty-art"><i class="bi bi-search"></i></div>
+                <h3>No categories found</h3>
+                <p>Try adjusting your search or filter criteria.</p>
             </div>
-            <div class="ep-cat-pagination" id="epCatPagination">
-                <span class="ep-cat-page-info" id="epCatPageInfo">Showing 0 categories</span>
-                <nav class="ep-cat-page-nav" id="epCatPageNav"></nav>
             </div>
+
+            <footer class="ep-cat2-dt-footer" id="epCatPagination">
+                <span class="ep-cat2-dt-range" id="epCatPageInfo">Showing 0 of 0 categories</span>
+                <nav class="ep-cat2-dt-pager" id="epCatPageNav" aria-label="Category pagination"></nav>
+            </footer>
         </div>
     </section>
+
 </div>
 
 <!-- Add Category Modal -->
@@ -312,11 +320,11 @@ document.addEventListener('DOMContentLoaded', function() {
     modalEl?.addEventListener('hidden.bs.modal', resetForm);
 
     document.getElementById('epCatExportBtn')?.addEventListener('click', function() {
-        const rows = document.querySelectorAll('.ep-cat-row');
+        const rows = document.querySelectorAll('.ep-cat2-dt-row');
         const lines = ['Name,Icon,Events,Status'];
         rows.forEach(r => {
-            const name = r.querySelector('.ep-cat-row-name')?.textContent.trim();
-            const icon = r.querySelector('.ep-cat-icon-code')?.textContent.trim();
+            const name = r.querySelector('.ep-cat2-row-name')?.textContent.trim();
+            const icon = r.querySelector('.ep-cat2-icon-code')?.textContent.trim();
             const events = r.dataset.events;
             const status = r.dataset.status;
             lines.push([name, icon, events, status].join(','));
@@ -339,7 +347,68 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyFilter = document.getElementById('epCatEmptyFilter');
 
     function getRows() {
-        return Array.from(body?.querySelectorAll('.ep-cat-row') || []);
+        return Array.from(body?.querySelectorAll('.ep-cat2-dt-row') || []);
+    }
+
+    function buildPageNumbers(current, total) {
+        if (total <= 0) return [];
+        if (total === 1) return [1];
+        if (total <= 5) {
+            return Array.from({ length: total }, function(_, i) { return i + 1; });
+        }
+        const pages = new Set([1, total]);
+        for (let i = current - 1; i <= current + 1; i++) {
+            if (i >= 1 && i <= total) pages.add(i);
+        }
+        const sorted = Array.from(pages).sort(function(a, b) { return a - b; });
+        const result = [];
+        let prev = 0;
+        sorted.forEach(function(p) {
+            if (prev && p - prev > 1) result.push('…');
+            result.push(p);
+            prev = p;
+        });
+        return result;
+    }
+
+    function renderPager(pages, total) {
+        if (!pageNav) return;
+        pageNav.innerHTML = '';
+
+        const prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'ep-cat2-dt-page-btn' + (currentPage <= 1 || !total ? ' is-disabled' : '');
+        prev.textContent = 'Previous';
+        prev.disabled = currentPage <= 1 || !total;
+        prev.onclick = function() { if (currentPage > 1) { currentPage--; applyFilters(); } };
+        pageNav.appendChild(prev);
+
+        const pageNums = total ? buildPageNumbers(currentPage, pages) : [1];
+        pageNums.forEach(function(n) {
+            if (n === '…') {
+                const ell = document.createElement('span');
+                ell.className = 'ep-cat2-dt-ellipsis';
+                ell.textContent = '…';
+                pageNav.appendChild(ell);
+                return;
+            }
+            const el = document.createElement(n === currentPage ? 'span' : 'button');
+            el.className = 'ep-cat2-dt-page-num' + (n === currentPage ? ' is-active' : '');
+            el.textContent = n;
+            if (n !== currentPage) {
+                el.type = 'button';
+                el.onclick = function() { currentPage = n; applyFilters(); };
+            }
+            pageNav.appendChild(el);
+        });
+
+        const next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'ep-cat2-dt-page-btn' + (currentPage >= pages || !total ? ' is-disabled' : '');
+        next.textContent = 'Next';
+        next.disabled = currentPage >= pages || !total;
+        next.onclick = function() { if (currentPage < pages) { currentPage++; applyFilters(); } };
+        pageNav.appendChild(next);
     }
 
     function applyFilters() {
@@ -347,14 +416,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const filt = filterEl?.value || 'all';
         const sort = sortEl?.value || 'name';
         let rows = getRows();
+        const allCount = rows.length;
 
-        rows = rows.filter(r => {
+        rows = rows.filter(function(r) {
             const matchQ = !q || r.dataset.name.includes(q) || r.textContent.toLowerCase().includes(q);
             const matchF = filt === 'all' || r.dataset.status === (filt === 'active' ? 'active' : 'inactive');
             return matchQ && matchF;
         });
 
-        rows.sort((a, b) => {
+        rows.sort(function(a, b) {
             if (sort === 'events') return Number(b.dataset.events) - Number(a.dataset.events);
             if (sort === 'events-asc') return Number(a.dataset.events) - Number(b.dataset.events);
             if (sort === 'name-desc') return b.dataset.name.localeCompare(a.dataset.name);
@@ -362,54 +432,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const all = getRows();
-        all.forEach(r => { r.style.display = 'none'; r.classList.remove('ep-cat-row-visible'); });
+        all.forEach(function(r) { r.style.display = 'none'; r.classList.remove('ep-cat2-row-visible'); });
 
         const total = rows.length;
         const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
         if (currentPage > pages) currentPage = pages;
         const start = (currentPage - 1) * PAGE_SIZE;
         const pageRows = rows.slice(start, start + PAGE_SIZE);
-        pageRows.forEach(r => { r.style.display = ''; r.classList.add('ep-cat-row-visible'); });
+        pageRows.forEach(function(r) { r.style.display = ''; r.classList.add('ep-cat2-row-visible'); });
 
         if (emptyFilter) {
-            emptyFilter.classList.toggle('d-none', total > 0 || !all.length);
+            emptyFilter.classList.toggle('d-none', total > 0 || !allCount);
         }
-        if (pageInfo) {
-            if (!total) pageInfo.textContent = all.length ? 'No matches' : 'No categories';
-            else pageInfo.textContent = 'Showing ' + (start + 1) + '–' + Math.min(start + PAGE_SIZE, total) + ' of ' + total;
+        if (body) {
+            body.classList.toggle('d-none', allCount > 0 && total === 0);
         }
-        const pagEl = document.getElementById('epCatPagination');
-        if (pagEl) pagEl.style.display = all.length ? '' : 'none';
 
-        if (pageNav) {
-            pageNav.innerHTML = '';
-            if (pages <= 1) return;
-            const prev = document.createElement('button');
-            prev.className = 'ep-cat-page-btn' + (currentPage === 1 ? ' disabled' : '');
-            prev.textContent = 'Previous';
-            prev.disabled = currentPage === 1;
-            prev.onclick = () => { currentPage--; applyFilters(); };
-            pageNav.appendChild(prev);
-            for (let i = 1; i <= pages; i++) {
-                const btn = document.createElement(i === currentPage ? 'span' : 'button');
-                btn.className = 'ep-cat-page-num' + (i === currentPage ? ' active' : '');
-                btn.textContent = i;
-                if (i !== currentPage) btn.onclick = () => { currentPage = i; applyFilters(); };
-                pageNav.appendChild(btn);
+        if (pageInfo) {
+            if (!total) {
+                pageInfo.textContent = allCount ? 'No categories found' : 'Showing 0 of 0 categories';
+            } else {
+                pageInfo.textContent = 'Showing ' + (start + 1) + '–' + Math.min(start + PAGE_SIZE, total) + ' of ' + total + ' categor' + (total === 1 ? 'y' : 'ies');
             }
-            const next = document.createElement('button');
-            next.className = 'ep-cat-page-btn' + (currentPage === pages ? ' disabled' : '');
-            next.textContent = 'Next';
-            next.disabled = currentPage === pages;
-            next.onclick = () => { currentPage++; applyFilters(); };
-            pageNav.appendChild(next);
         }
+
+        renderPager(pages, total);
     }
 
-    searchEl?.addEventListener('input', () => { currentPage = 1; applyFilters(); });
-    filterEl?.addEventListener('change', () => { currentPage = 1; applyFilters(); });
-    sortEl?.addEventListener('change', () => { currentPage = 1; applyFilters(); });
-    if (getRows().length) applyFilters();
+    searchEl?.addEventListener('input', function() { currentPage = 1; applyFilters(); });
+    filterEl?.addEventListener('change', function() { currentPage = 1; applyFilters(); });
+    sortEl?.addEventListener('change', function() { currentPage = 1; applyFilters(); });
+    applyFilters();
 });
 </script>
 {% endblock %}
