@@ -36,20 +36,10 @@
         </div>
     </div>
 
-    <div class="ep-nav-group{% if name == 'manage_users' %} is-open{% endif %}" data-nav-group="users">
-        <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'manage_users' %}true{% else %}false{% endif %}">
-            <span class="ep-nav-group-label"><i class="bi bi-people"></i> User Management</span>
-            <i class="bi bi-chevron-down ep-nav-chevron" aria-hidden="true"></i>
-        </button>
-        <div class="ep-nav-group-panel">
-            <div class="ep-nav-submenu">
-                <a href="{% url 'accounts:manage_users' %}"
-                   class="ep-nav-subitem{% if name == 'manage_users' and not request.GET.role %} active{% endif %}">Users</a>
-                <a href="{% url 'accounts:manage_users' %}?role=organizer"
-                   class="ep-nav-subitem{% if name == 'manage_users' and request.GET.role == 'organizer' %} active{% endif %}">Organizers</a>
-            </div>
-        </div>
-    </div>
+    <a href="{% url 'accounts:manage_users' %}"
+       class="ep-nav-direct{% if name == 'manage_users' %} active{% endif %}">
+        <i class="bi bi-people"></i> User Management
+    </a>
 
     <div class="ep-nav-group{% if name == 'manage_payments' %} is-open{% endif %}" data-nav-group="finance">
         <button type="button" class="ep-nav-group-btn" aria-expanded="{% if name == 'manage_payments' %}true{% else %}false{% endif %}">
@@ -60,8 +50,6 @@
             <div class="ep-nav-submenu">
                 <a href="{% url 'accounts:manage_payments' %}"
                    class="ep-nav-subitem{% if name == 'manage_payments' %} active{% endif %}">Payments</a>
-                <a href="{% url 'accounts:admin_statistics' %}#revenue"
-                   class="ep-nav-subitem">Revenue</a>
             </div>
         </div>
     </div>

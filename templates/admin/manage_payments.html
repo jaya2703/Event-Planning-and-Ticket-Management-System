@@ -1,26 +1,590 @@
 {% extends 'base.html' %}
-{% block title %}Payments{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% load static %}
+{% block title %}Finance Dashboard{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-payments-admin{% endblock %}
+
 {% block content %}
-<div class="ep-ent-header"><div><h1>Payment Management</h1><p>Transaction monitoring</p></div>
-<a href="{% url 'accounts:export_report' 'payments' %}" class="btn ep-btn-primary btn-sm">Export CSV</a></div>
-<div class="ep-ent-card">
-    <table class="ep-ent-table" id="payTable">
-        <thead><tr><th>TX ID</th><th>User</th><th>Event</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>
-        {% for p in payments %}
-        <tr>
-            <td><code>{{ p.payment_id|stringformat:"s"|slice:":8" }}</code></td>
-            <td>{{ p.booking.user.username }}</td>
-            <td>{{ p.booking.event.title|truncatechars:25 }}</td>
-            <td>₹{{ p.amount }}</td>
-            <td>{{ p.payment_method|title }}</td>
-            <td><span class="badge {% if p.status == 'success' %}bg-success{% elif p.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">{{ p.status|title }}</span></td>
-            <td>{{ p.created_at|date:"M d, Y H:i" }}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+<div class="ep-saas-wrap ep-ent-animate p-4" style="max-width: 1440px; margin: 0 auto;">
+    <!-- Modern Finance Header -->
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 flex-wrap gap-3" style="margin-bottom: 24px !important;">
+        <div>
+            <nav class="ep-logs-crumb mb-1" aria-label="Breadcrumb">
+                <a href="{% url 'accounts:admin_dashboard' %}">Admin</a>
+                <span class="ep-logs-crumb-sep">/</span>
+                <span class="ep-logs-crumb-current">Finance Dashboard</span>
+            </nav>
+            <h1 class="ep-bk-title m-0 fw-bold" style="font-size: 1.75rem; letter-spacing: -0.02em;">Finance Dashboard</h1>
+            <p class="ep-bk-subtitle text-muted small m-0">Monitor payments, settlements and revenue.</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <a href="{% url 'accounts:export_report' 'payments' %}" class="btn btn-sm btn-outline-secondary px-3 py-2" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-filetype-csv me-1"></i> Export CSV</a>
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-2" onclick="window.print()" style="border-radius: 8px; font-weight: 500;"><i class="bi bi-filetype-pdf me-1"></i> Export PDF</button>
+        </div>
+    </header>
+
+    <!-- Top KPI Row (8 Compact Glass Cards) -->
+    <div class="row row-cols-2 row-cols-sm-4 row-cols-lg-8 g-3 mb-4" style="margin-bottom: 24px !important;">
+        <!-- KPI 1: Total Revenue -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Total Rev</span>
+                    <span class="text-success" style="font-size: 0.85rem;"><i class="bi bi-currency-rupee"></i></span>
+                </div>
+                <div class="fw-bold text-success" style="font-size: 1.15rem; line-height: 1.2;">₹{{ kpis.total_revenue|floatformat:0 }}</div>
+            </div>
+        </div>
+        <!-- KPI 2: Today's Revenue -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Today's Rev</span>
+                    <span class="text-primary" style="font-size: 0.85rem;"><i class="bi bi-calendar-check"></i></span>
+                </div>
+                <div class="fw-bold text-primary" style="font-size: 1.15rem; line-height: 1.2;">₹{{ kpis.today_revenue|floatformat:0 }}</div>
+            </div>
+        </div>
+        <!-- KPI 3: Successful Payments -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Successful</span>
+                    <span class="text-success" style="font-size: 0.85rem;"><i class="bi bi-check-circle"></i></span>
+                </div>
+                <div class="fw-bold text-dark" style="font-size: 1.15rem; line-height: 1.2;">{{ kpis.successful_payments }}</div>
+            </div>
+        </div>
+        <!-- KPI 4: Pending Payments -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Pending</span>
+                    <span class="text-warning" style="font-size: 0.85rem;"><i class="bi bi-hourglass-split"></i></span>
+                </div>
+                <div class="fw-bold text-dark" style="font-size: 1.15rem; line-height: 1.2;">{{ kpis.pending_payments }}</div>
+            </div>
+        </div>
+        <!-- KPI 5: Failed Payments -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Failed</span>
+                    <span class="text-danger" style="font-size: 0.85rem;"><i class="bi bi-x-circle"></i></span>
+                </div>
+                <div class="fw-bold text-danger" style="font-size: 1.15rem; line-height: 1.2;">{{ kpis.failed_payments }}</div>
+            </div>
+        </div>
+        <!-- KPI 6: Refunds -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Refunds</span>
+                    <span class="text-info" style="font-size: 0.85rem;"><i class="bi bi-arrow-counterclockwise"></i></span>
+                </div>
+                <div class="fw-bold text-info" style="font-size: 1.15rem; line-height: 1.2;">₹{{ kpis.refunds|floatformat:0 }}</div>
+            </div>
+        </div>
+        <!-- KPI 7: Average Order Value -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Avg Ticket</span>
+                    <span class="text-secondary" style="font-size: 0.85rem;"><i class="bi bi-tag"></i></span>
+                </div>
+                <div class="fw-bold text-dark" style="font-size: 1.15rem; line-height: 1.2;">₹{{ kpis.aov|floatformat:0 }}</div>
+            </div>
+        </div>
+        <!-- KPI 8: Total Transactions -->
+        <div class="col">
+            <div class="card h-100 border-0 p-3" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Total Txns</span>
+                    <span class="text-secondary" style="font-size: 0.85rem;"><i class="bi bi-hash"></i></span>
+                </div>
+                <div class="fw-bold text-dark" style="font-size: 1.15rem; line-height: 1.2;">{{ kpis.total_transactions }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments List & Main Table Card -->
+    <div class="card border-0 mb-4" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff; margin-bottom: 24px !important;">
+        <!-- Single Search controls -->
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <!-- Search field -->
+            <div class="position-relative flex-grow-1" style="max-width: 380px;">
+                <i class="bi bi-search position-absolute top-50 start-3 translate-middle-y text-muted ms-2" style="font-size: 0.85rem;"></i>
+                <input type="text" id="paymentSearchField" class="form-control form-control-sm ps-5 py-2" placeholder="Search by Transaction ID, User, Event, Payment Method..." style="border-radius: 8px; font-size: 0.82rem;">
+            </div>
+            
+            <div class="d-flex gap-2">
+                <span class="text-muted small align-self-center">Live Filtering</span>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="paymentsUnifiedTable" style="min-width: 950px; font-size: 0.82rem;">
+                <thead class="table-light sticky-top" style="z-index: 10; border-bottom: 2px solid #E2E8F0;">
+                    <tr>
+                        <th class="ps-4">Transaction ID</th>
+                        <th>User</th>
+                        <th>Event</th>
+                        <th>Amount</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th class="pe-4" style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td class="ps-4">
+                            <code class="text-dark small" style="font-family: ui-monospace, monospace; font-size: 0.78rem;">
+                                {{ p.payment_id }}
+                            </code>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ p.booking.user.get_full_name|default:p.booking.user.username }}</div>
+                            <div class="text-muted small" style="font-size: 0.68rem;">{{ p.booking.user.email }}</div>
+                        </td>
+                        <td>
+                            <div class="text-truncate fw-semibold text-dark" style="max-width: 240px;" title="{{ p.booking.event.title }}">
+                                {{ p.booking.event.title }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="fw-bold {% if p.status == 'success' %}text-success{% else %}text-muted{% endif %}">
+                                ₹{{ p.amount }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-capitalize text-muted small"><i class="bi bi-credit-card me-1"></i>{{ p.payment_method }}</span>
+                        </td>
+                        <td>
+                            {% if p.is_refunded %}
+                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-size: 0.68rem; border-radius: 50px;">Refunded</span>
+                            {% elif p.status == 'success' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.68rem; border-radius: 50px;">Success</span>
+                            {% elif p.status == 'failed' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size: 0.68rem; border-radius: 50px;">Failed</span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1" style="font-size: 0.68rem; border-radius: 50px;">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ p.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="pe-4 text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-link btn-sm p-1 text-muted" type="button" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li><a class="dropdown-item" href="#" onclick="Swal.fire('Transaction details', 'Transaction ID: {{ p.payment_id }}<br>Amount: ₹{{ p.amount }}<br>Method: {{ p.payment_method }}<br>Status: {{ p.status|upper }}', 'info')"><i class="bi bi-eye me-2 text-muted"></i>View details</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="Swal.fire('Invoice receipt', 'Simulating payment receipt download...', 'success')"><i class="bi bi-receipt me-2 text-muted"></i>Download receipt</a></li>
+                                    {% if p.status == 'success' and not p.is_refunded %}
+                                    <li><a class="dropdown-item" href="{% url 'bookings:detail' p.booking.id %}"><i class="bi bi-arrow-counterclockwise me-2 text-muted"></i>Refund payment</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <div class="mb-2"><i class="bi bi-wallet2" style="font-size: 2.5rem;"></i></div>
+                            <h5 class="fw-semibold">No Transactions Found</h5>
+                            <p class="text-muted small">No payment transactions recorded.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Custom Pagination Footer -->
+        <div class="ep-bk-pagination py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2 border-top">
+            <span id="paymentsUnifiedPageInfo" class="text-muted small">Showing 1–10 of 10 transactions</span>
+            <nav id="paymentsUnifiedPageNav" class="d-flex align-items-center gap-1">
+                <!-- Will be dynamically populated by JS -->
+            </nav>
+        </div>
+    </div>
+
+    <!-- Analytics Section (Row 1 to Row 4) -->
+    <div class="d-flex flex-column gap-4" style="gap: 24px !important;">
+        <!-- Row 1: Revenue Trend (Line Chart) (65%) & Payment Methods Distribution (Donut) (35%) -->
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 h-100" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Revenue Trend (Last 12 Months)</h3>
+                    </div>
+                    <div class="p-4">
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="chartTrendLine"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 h-100" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Payment Methods Distribution</h3>
+                    </div>
+                    <div class="p-4 d-flex flex-column justify-content-center align-items-center">
+                        <div style="height: 190px; width: 100%; position: relative;">
+                            <canvas id="chartMethodsDonut"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Revenue by Category (Horizontal Bar) (50%) & Revenue by Event (Horizontal Bar) (50%) -->
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card border-0 h-100" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Revenue by Category</h3>
+                    </div>
+                    <div class="p-4">
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="chartCategoryBar"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 h-100" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Revenue by Event (Top 5 Events)</h3>
+                    </div>
+                    <div class="p-4">
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="chartEventBar"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Payment Status Distribution (50%) & Top Revenue Events Table (50%) -->
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card border-0 h-100" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Payment Status Distribution</h3>
+                    </div>
+                    <div class="p-4 d-flex justify-content-center align-items-center">
+                        <div style="height: 200px; width: 100%; position: relative;">
+                            <canvas id="chartStatusDonut"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 h-100 d-flex flex-column" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom flex-shrink-0">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Top Revenue Events</h3>
+                    </div>
+                    <div class="p-0 border-top overflow-auto flex-grow-1">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.78rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Event</th>
+                                    <th class="text-end">Ticket Sales</th>
+                                    <th class="text-end pe-4">Earnings</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for e in top_events %}
+                                <tr>
+                                    <td class="ps-4 fw-semibold text-dark text-truncate" style="max-width: 220px;">{{ e.title }}</td>
+                                    <td class="text-end text-muted">{{ e.bookings_count }}</td>
+                                    <td class="text-end fw-bold text-success pe-4">₹{{ e.rev|floatformat:0 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">No high revenue events recorded.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Recent Transactions Timeline (65%) & Highest Revenue Event Card (35%) -->
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 h-100 d-flex flex-column" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom flex-shrink-0">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Recent Transactions Timeline</h3>
+                    </div>
+                    <div class="p-4 flex-grow-1 overflow-auto" style="max-height: 320px;">
+                        <div class="position-relative timeline-container" style="padding-left: 10px;">
+                            {% for p in recent_transactions %}
+                            <div class="d-flex gap-3 mb-3 position-relative timeline-item">
+                                <div class="timeline-avatar flex-shrink-0">
+                                    <span class="ep-saas-avatar" style="width: 28px; height: 28px; font-size: 0.7rem;">
+                                        {{ p.booking.user.username|first|upper }}
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1 card border-0 bg-light p-2.5" style="border-radius: 8px; font-size: 0.8rem; padding: 10px 12px;">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                        <div>
+                                            <span class="fw-bold text-dark">{{ p.booking.user.get_full_name|default:p.booking.user.username }}</span>
+                                            <span class="text-muted small">paid</span>
+                                            <span class="fw-bold text-success">₹{{ p.amount }}</span>
+                                            <span class="text-muted small">for</span>
+                                            <span class="fw-semibold text-dark text-truncate d-inline-block" style="max-width: 180px; vertical-align: bottom;">{{ p.booking.event.title }}</span>
+                                        </div>
+                                        <div class="text-muted small" style="font-size: 0.68rem;">
+                                            <span>{{ p.created_at|timesince }} ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4 text-muted small">No transactions timeline data.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card border-0 h-100 d-flex flex-column justify-content-between" style="border-radius: 18px; border: 1px solid #e2e8f0 !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: #ffffff;">
+                    <div class="card-head p-3 border-bottom">
+                        <h3 class="m-0 fw-bold" style="font-size: 0.88rem; color: #0f172a;">Highest Revenue Event</h3>
+                    </div>
+                    <div class="p-4 flex-grow-1 d-flex flex-column justify-content-center text-center">
+                        {% if highest_revenue_event %}
+                        <div class="mb-3 text-success" style="font-size: 2.5rem;"><i class="bi bi-trophy"></i></div>
+                        <h4 class="fw-bold text-dark text-truncate mb-2" style="font-size: 1.15rem;" title="{{ highest_revenue_event.title }}">
+                            {{ highest_revenue_event.title }}
+                        </h4>
+                        <div class="text-muted small mb-3">Generated peak sales of</div>
+                        <div class="fw-bold text-success" style="font-size: 1.75rem;">₹{{ highest_revenue_event.rev|floatformat:0 }}</div>
+                        {% else %}
+                        <div class="text-muted small">No events recorded.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
-{% block extra_js %}<script>$(function(){ $('#payTable').DataTable({ order: [[6, 'desc']] }); });</script>{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Initialize Unified Transactions Table in DataTables
+    const table = $('#paymentsUnifiedTable').DataTable({
+        dom: 't',
+        pageLength: 10,
+        ordering: true,
+        order: [[6, 'desc']] // Order by Date descending
+    });
+
+    // Custom Live Search box binder
+    const searchInput = document.getElementById('paymentSearchField');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            table.search(this.value).draw();
+        });
+    }
+
+    // Custom Pagination helper
+    function updatePagination() {
+        const info = table.page.info();
+        const infoText = `Showing ${info.start + 1}–${info.end} of ${info.recordsTotal} transactions`;
+        document.getElementById('paymentsUnifiedPageInfo').textContent = infoText;
+
+        const nav = document.getElementById('paymentsUnifiedPageNav');
+        nav.innerHTML = '';
+
+        // Previous button
+        const prevBtn = document.createElement('button');
+        prevBtn.className = `btn btn-xs btn-outline-secondary ${info.page === 0 ? 'disabled' : ''}`;
+        prevBtn.style.fontSize = '0.72rem';
+        prevBtn.style.borderRadius = '6px';
+        prevBtn.textContent = 'Previous';
+        prevBtn.disabled = info.page === 0;
+        prevBtn.addEventListener('click', () => {
+            table.page('previous').draw('page');
+        });
+        nav.appendChild(prevBtn);
+
+        // Page numbers
+        for (let i = 0; i < info.pages; i++) {
+            if (i === 0 || i === info.pages - 1 || (i >= info.page - 1 && i <= info.page + 1)) {
+                const pageNum = document.createElement('button');
+                pageNum.className = `btn btn-xs ${info.page === i ? 'btn-primary active' : 'btn-outline-secondary'}`;
+                pageNum.style.fontSize = '0.72rem';
+                pageNum.style.borderRadius = '6px';
+                pageNum.textContent = i + 1;
+                pageNum.addEventListener('click', () => {
+                    table.page(i).draw('page');
+                });
+                nav.appendChild(pageNum);
+            } else if (i === 1 || i === info.pages - 2) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'text-muted px-1 small';
+                ellipsis.textContent = '...';
+                nav.appendChild(ellipsis);
+            }
+        }
+
+        // Next button
+        const nextBtn = document.createElement('button');
+        nextBtn.className = `btn btn-xs btn-outline-secondary ${info.page === info.pages - 1 ? 'disabled' : ''}`;
+        nextBtn.style.fontSize = '0.72rem';
+        nextBtn.style.borderRadius = '6px';
+        nextBtn.textContent = 'Next';
+        nextBtn.disabled = info.page === info.pages - 1;
+        nextBtn.addEventListener('click', () => {
+            table.page('next').draw('page');
+        });
+        nav.appendChild(nextBtn);
+    }
+
+    table.on('draw', updatePagination);
+    updatePagination();
+
+    // Chart Options
+    const chartOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#94A3B8' } },
+            y: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 9 }, color: '#94A3B8' } }
+        }
+    };
+
+    // 1. Revenue Trend Line Chart
+    if (document.getElementById('chartTrendLine')) {
+        new Chart(document.getElementById('chartTrendLine'), {
+            type: 'line',
+            data: {
+                labels: {{ chart_trend_labels|safe }},
+                datasets: [{
+                    data: {{ chart_trend_values|safe }},
+                    borderColor: '#10B981',
+                    borderWidth: 2,
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: 'rgba(16,185,129,0.03)',
+                    pointRadius: 3,
+                    pointBackgroundColor: '#10B981'
+                }]
+            },
+            options: chartOpts
+        });
+    }
+
+    // 2. Methods Donut Chart
+    if (document.getElementById('chartMethodsDonut')) {
+        new Chart(document.getElementById('chartMethodsDonut'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ chart_method_labels|safe }},
+                datasets: [{
+                    data: {{ chart_method_values|safe }},
+                    backgroundColor: ['#6366F1', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 6, font: { size: 9 }, color: '#64748B', padding: 8 }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Category Horizontal Bar Chart
+    if (document.getElementById('chartCategoryBar')) {
+        new Chart(document.getElementById('chartCategoryBar'), {
+            type: 'bar',
+            data: {
+                labels: {{ chart_cat_labels|safe }},
+                datasets: [{
+                    data: {{ chart_cat_values|safe }},
+                    backgroundColor: '#6366F1',
+                    borderRadius: 4,
+                    barThickness: 10
+                }]
+            },
+            options: {
+                ...chartOpts,
+                indexAxis: 'y',
+                scales: {
+                    x: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 9 }, color: '#94A3B8' } },
+                    y: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#475569' } }
+                }
+            }
+        });
+    }
+
+    // 4. Events Horizontal Bar Chart
+    if (document.getElementById('chartEventBar')) {
+        new Chart(document.getElementById('chartEventBar'), {
+            type: 'bar',
+            data: {
+                labels: {{ chart_event_labels|safe }},
+                datasets: [{
+                    data: {{ chart_event_values|safe }},
+                    backgroundColor: '#8B5CF6',
+                    borderRadius: 4,
+                    barThickness: 10
+                }]
+            },
+            options: {
+                ...chartOpts,
+                indexAxis: 'y',
+                scales: {
+                    x: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 9 }, color: '#94A3B8' } },
+                    y: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#475569' } }
+                }
+            }
+        });
+    }
+
+    // 5. Status Donut Chart
+    if (document.getElementById('chartStatusDonut')) {
+        new Chart(document.getElementById('chartStatusDonut'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ chart_status_labels|safe }},
+                datasets: [{
+                    data: {{ chart_status_values|safe }},
+                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#3B82F6'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 6, font: { size: 9 }, color: '#64748B', padding: 8 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

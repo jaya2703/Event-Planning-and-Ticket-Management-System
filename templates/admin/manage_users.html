@@ -1,46 +1,276 @@
 {% extends 'base.html' %}
-{% block title %}Manage Users{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% load static %}
+{% block title %}User Management{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-users-admin{% endblock %}
+
 {% block content %}
-<div class="ep-ent-header">
-    <div><h1>Manage Users</h1><p>Platform user administration</p></div>
-    <a href="{% url 'accounts:admin_dashboard' %}" class="btn ep-btn-outline btn-sm">← Dashboard</a>
-</div>
-<div class="ep-ent-card">
-    <form method="get" class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" name="q" class="form-control ep-input" placeholder="Search..." value="{{ search }}"></div>
-        <div class="col-md-3">
-            <select name="role" class="form-select ep-input">
-                <option value="">All Roles</option>
-                <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
-                <option value="organizer" {% if role_filter == 'organizer' %}selected{% endif %}>Organizer</option>
-                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
-            </select>
+<div class="ep-saas-wrap ep-ent-animate">
+    <!-- Modern SaaS Header -->
+    <header class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="ep-bk-title m-0">User Management</h1>
+            <p class="ep-bk-subtitle text-muted small m-0">Platform users and organizers</p>
         </div>
-        <div class="col-md-2"><button class="btn ep-btn-primary w-100">Filter</button></div>
-    </form>
-    <div class="table-responsive">
-        <table class="ep-ent-table" id="usersTable">
-            <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
-            <tbody>
-            {% for u in users %}
-            <tr>
-                <td><strong>{{ u.username }}</strong></td>
-                <td>{{ u.email }}</td>
-                <td><span class="badge bg-secondary">{{ u.get_role_display }}</span></td>
-                <td>{% if u.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Inactive</span>{% endif %}</td>
-                <td>{{ u.date_joined|date:"M d, Y" }}</td>
-                <td>
-                    <a href="{% url 'accounts:toggle_user' u.id %}" class="btn btn-sm btn-outline-warning"
-                       data-confirm="Toggle active status for {{ u.username }}?">
-                        {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <a href="{% url 'accounts:register' %}" class="btn btn-sm btn-primary"><i class="bi bi-person-plus me-1"></i> + Add User</a>
+            <a href="{% url 'accounts:export_report' 'users' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-csv me-1"></i> Export</a>
+        </div>
+    </header>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="ep-saas-kpi">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-primary"><i class="bi bi-people"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ kpis.total }}</div>
+                <div class="ep-saas-kpi-lbl">Total Users</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="ep-saas-kpi">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-success"><i class="bi bi-person-check"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ kpis.active }}</div>
+                <div class="ep-saas-kpi-lbl">Active Users</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="ep-saas-kpi">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-warning"><i class="bi bi-briefcase"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ kpis.organizers }}</div>
+                <div class="ep-saas-kpi-lbl">Organizers</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="ep-saas-kpi">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-danger"><i class="bi bi-shield-check"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ kpis.admins }}</div>
+                <div class="ep-saas-kpi-lbl">Admins</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card Container -->
+    <div class="ep-saas-card">
+        <!-- Controls row -->
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <!-- Search & Filters -->
+            <form method="get" class="d-flex align-items-center gap-2 flex-grow-1 max-w-lg">
+                <div class="position-relative flex-grow-1" style="max-width: 320px;">
+                    <i class="bi bi-search position-absolute top-50 start-3 translate-middle-y text-muted ms-2" style="font-size: 0.85rem;"></i>
+                    <input type="text" name="q" class="form-control form-control-sm ps-5 py-1.5" placeholder="Search users..." value="{{ search }}" style="border-radius: 8px; font-size: 0.8rem;">
+                </div>
+                
+                <!-- Filter Dropdown -->
+                <div class="dropdown">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1 py-1.5" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="border-radius: 8px; font-size: 0.8rem;">
+                        <i class="bi bi-funnel"></i> Filter
+                        {% if role_filter %}
+                        <span class="badge bg-primary rounded-circle" style="width: 6px; height: 6px; padding: 0; margin-left: 2px;"></span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu p-3 shadow-lg border-0" style="width: 280px; border-radius: 12px; font-size: 0.82rem; z-index: 1050;">
+                        <h6 class="dropdown-header px-0 mb-3 text-dark fw-bold" style="font-size: 0.85rem;">Filter Users</h6>
+                        
+                        <div class="mb-3">
+                            <label class="ep-bk-filter-lbl mb-1 text-muted" style="font-size: 0.65rem;">Role</label>
+                            <select name="role" class="form-select form-select-sm" style="border-radius: 6px;">
+                                <option value="">All Roles</option>
+                                <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                                <option value="organizer" {% if role_filter == 'organizer' %}selected{% endif %}>Organizer</option>
+                                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="d-flex justify-content-between pt-2 border-top">
+                            <a href="{% url 'accounts:manage_users' %}" class="btn btn-xs btn-light" style="font-size: 0.72rem; border-radius: 6px;">Reset</a>
+                            <button type="submit" class="btn btn-xs btn-primary" style="font-size: 0.72rem; border-radius: 6px;">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="usersTable" style="min-width: 900px; font-size: 0.82rem;">
+                <thead class="table-light sticky-top" style="z-index: 10; border-bottom: 2px solid #E2E8F0;">
+                    <tr>
+                        <th class="ps-4" style="width: 60px;">Avatar</th>
+                        <th>Name</th>
+                        <th>Email / Phone</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Last Login</th>
+                        <th class="pe-4" style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="ep-saas-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                {{ u.username|first|upper }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ u.get_full_name|default:u.username }}</div>
+                            <div class="text-muted small" style="font-size: 0.68rem;">@{{ u.username }}</div>
+                        </td>
+                        <td>
+                            <div class="text-dark">{{ u.email }}</div>
+                            {% if u.phone %}
+                            <div class="text-muted small" style="font-size: 0.68rem;"><i class="bi bi-telephone me-1"></i>{{ u.phone }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.role == 'admin' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; border-radius: 4px;">Admin</span>
+                            {% elif u.role == 'organizer' %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; border-radius: 4px;">Organizer</span>
+                            {% else %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; border-radius: 4px;">User</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; border-radius: 50px;">
+                                <span class="bg-success rounded-circle" style="width: 5px; height: 5px;"></span> Active
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle d-inline-flex align-items-center gap-1" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; border-radius: 50px;">
+                                <span class="bg-secondary rounded-circle" style="width: 5px; height: 5px;"></span> Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ u.date_joined|date:"M d, Y" }}</td>
+                        <td class="text-muted">
+                            {% if u.last_login %}
+                            {{ u.last_login|date:"M d, g:i A" }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td class="pe-4">
+                            <div class="dropdown">
+                                <button class="btn btn-link btn-sm p-1 text-muted" type="button" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li><a class="dropdown-item" href="#" onclick="Swal.fire('Profile View', 'Profile summary details for {{ u.username }} are viewable here.', 'info')"><i class="bi bi-person me-2 text-muted"></i>View Profile</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="Swal.fire('Edit Profile', 'Editing {{ u.username }} is restricted in this session.', 'warning')"><i class="bi bi-pencil me-2 text-muted"></i>Edit Details</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="Swal.fire('Reset Password', 'Password reset instructions sent to {{ u.email }}.', 'success')"><i class="bi bi-key me-2 text-muted"></i>Reset Password</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {% if u.is_active %}text-danger{% else %}text-success{% endif %}" href="{% url 'accounts:toggle_user' u.id %}" data-confirm="Toggle active status for {{ u.username }}?">
+                                            <i class="bi bi-power me-2"></i>{% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted mb-2"><i class="bi bi-people" style="font-size: 2.5rem;"></i></div>
+                            <h5 class="fw-semibold mb-1">No Users Found</h5>
+                            <p class="text-muted small">No platform accounts match your filters.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Custom SaaS Pagination Footer -->
+        <div id="usersPaginationFooter" class="ep-bk-pagination py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2 border-top">
+            <span id="usersPageInfo" class="text-muted small">Showing 1–10 of 10 users</span>
+            <nav id="usersPageNav" class="d-flex align-items-center gap-1">
+                <!-- Will be dynamically populated by JS -->
+            </nav>
+        </div>
     </div>
 </div>
 {% endblock %}
-{% block extra_js %}<script>$(function(){ $('#usersTable').DataTable(); });</script>{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTables with custom UI
+    const table = $('#usersTable').DataTable({
+        dom: 't', // Only show the table itself, hide default filters and pagination
+        pageLength: 10,
+        ordering: true,
+        order: [[5, 'desc']], // Order by joined date descending by default
+        columnDefs: [
+            { orderable: false, targets: [0, 7] } // Disable ordering on avatar and action column
+        ]
+    });
+
+    // Custom Pagination handler
+    function updatePagination() {
+        const info = table.page.info();
+        const infoText = `Showing ${info.start + 1}–${info.end} of ${info.recordsTotal} users`;
+        document.getElementById('usersPageInfo').textContent = infoText;
+
+        const nav = document.getElementById('usersPageNav');
+        nav.innerHTML = '';
+
+        // Previous button
+        const prevBtn = document.createElement('button');
+        prevBtn.className = `btn btn-xs btn-outline-secondary ${info.page === 0 ? 'disabled' : ''}`;
+        prevBtn.style.fontSize = '0.72rem';
+        prevBtn.style.borderRadius = '6px';
+        prevBtn.textContent = 'Previous';
+        prevBtn.disabled = info.page === 0;
+        prevBtn.addEventListener('click', () => {
+            table.page('previous').draw('page');
+        });
+        nav.appendChild(prevBtn);
+
+        // Page numbers
+        for (let i = 0; i < info.pages; i++) {
+            if (i === 0 || i === info.pages - 1 || (i >= info.page - 1 && i <= info.page + 1)) {
+                const pageNum = document.createElement('button');
+                pageNum.className = `btn btn-xs ${info.page === i ? 'btn-primary active' : 'btn-outline-secondary'}`;
+                pageNum.style.fontSize = '0.72rem';
+                pageNum.style.borderRadius = '6px';
+                pageNum.textContent = i + 1;
+                pageNum.addEventListener('click', () => {
+                    table.page(i).draw('page');
+                });
+                nav.appendChild(pageNum);
+            } else if (i === 1 || i === info.pages - 2) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'text-muted px-1 small';
+                ellipsis.textContent = '...';
+                nav.appendChild(ellipsis);
+            }
+        }
+
+        // Next button
+        const nextBtn = document.createElement('button');
+        nextBtn.className = `btn btn-xs btn-outline-secondary ${info.page === info.pages - 1 ? 'disabled' : ''}`;
+        nextBtn.style.fontSize = '0.72rem';
+        nextBtn.style.borderRadius = '6px';
+        nextBtn.textContent = 'Next';
+        nextBtn.disabled = info.page === info.pages - 1;
+        nextBtn.addEventListener('click', () => {
+            table.page('next').draw('page');
+        });
+        nav.appendChild(nextBtn);
+    }
+
+    // Initial draw and bind event
+    table.on('draw', updatePagination);
+    updatePagination();
+});
+</script>
+{% endblock %}

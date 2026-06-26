@@ -1,202 +1,269 @@
 {% extends 'base.html' %}
-{% block title %}Analytics & Logs{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-logs-page{% endblock %}
+{% load static %}
+{% block title %}Activity Center &amp; Audit Logs{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-logs-page{% endblock %}
+
 {% block content %}
-<div class="ep-logs-wrap ep-ent-animate">
-    <!-- Compact SaaS top bar -->
-    <div class="ep-logs-topbar">
-        <div class="ep-logs-context">
-            <nav class="ep-logs-crumb" aria-label="Breadcrumb">
+<div class="ep-saas-wrap ep-ent-animate">
+    <!-- Modern Header -->
+    <header class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <nav class="ep-logs-crumb mb-1" aria-label="Breadcrumb">
                 <a href="{% url 'accounts:admin_dashboard' %}">Admin</a>
                 <span class="ep-logs-crumb-sep">/</span>
-                <span class="ep-logs-crumb-current">Analytics &amp; Logs</span>
+                <span class="ep-logs-crumb-current">Audit Logs</span>
             </nav>
-            <p class="ep-logs-sub">Platform activity overview</p>
+            <h1 class="ep-bk-title m-0">Audit Logs</h1>
+            <p class="ep-bk-subtitle text-muted small m-0">Track and analyze all administrative and authentication activities.</p>
         </div>
-        <div class="ep-logs-actions">
-            <a href="{% url 'accounts:export_report' 'audit' %}" class="ep-logs-btn ep-logs-btn-ghost">
-                <i class="bi bi-download"></i><span>Audit CSV</span>
-            </a>
-            <a href="{% url 'accounts:export_report' 'logins' %}" class="ep-logs-btn ep-logs-btn-primary">
-                <i class="bi bi-download"></i><span>Logins CSV</span>
-            </a>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <a href="{% url 'accounts:export_report' 'audit' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-csv me-1"></i> Export Audit</a>
+            <a href="{% url 'accounts:export_report' 'logins' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-csv me-1"></i> Export Logins</a>
+        </div>
+    </header>
+
+    <!-- Summary Row (4 KPI Cards) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="ep-saas-kpi h-100">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-primary"><i class="bi bi-shield-shaded"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ stats.total_audits }}</div>
+                <div class="ep-saas-kpi-lbl">Total Activities</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="ep-saas-kpi h-100">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-success"><i class="bi bi-lightning"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ stats.logs_today }}</div>
+                <div class="ep-saas-kpi-lbl">Today's Activities</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="ep-saas-kpi h-100">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-danger"><i class="bi bi-exclamation-octagon"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val text-danger">{{ stats.failed_actions }}</div>
+                <div class="ep-saas-kpi-lbl">Failed Actions</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="ep-saas-kpi h-100">
+                <div class="ep-saas-kpi-top">
+                    <span class="ep-saas-kpi-icon bg-light text-warning"><i class="bi bi-people"></i></span>
+                </div>
+                <div class="ep-saas-kpi-val">{{ stats.unique_users }}</div>
+                <div class="ep-saas-kpi-lbl">Unique Users</div>
+            </div>
         </div>
     </div>
 
-    <!-- Compact admin nav -->
-    <div class="ep-logs-nav">
-        <a href="{% url 'accounts:admin_dashboard' %}" class="ep-logs-nav-item">Overview</a>
-        <a href="{% url 'accounts:manage_users' %}" class="ep-logs-nav-item">Users</a>
-        <a href="{% url 'accounts:manage_events' %}" class="ep-logs-nav-item">Events</a>
-        <a href="{% url 'accounts:manage_bookings' %}" class="ep-logs-nav-item">Bookings</a>
-        <a href="{% url 'accounts:manage_payments' %}" class="ep-logs-nav-item">Payments</a>
-        <a href="{% url 'accounts:audit_logs' %}" class="ep-logs-nav-item active">Logs</a>
-    </div>
-
-    <!-- Dense KPI strip -->
-    <div class="ep-logs-kpi-strip">
-        <div class="ep-logs-kpi">
-            <span class="ep-logs-kpi-label">Audit events</span>
-            <span class="ep-logs-kpi-value">{{ stats.total_audits }}</span>
-        </div>
-        <div class="ep-logs-kpi">
-            <span class="ep-logs-kpi-label">Login sessions</span>
-            <span class="ep-logs-kpi-value">{{ stats.total_logins }}</span>
-        </div>
-        <div class="ep-logs-kpi">
-            <span class="ep-logs-kpi-label">Logins today</span>
-            <span class="ep-logs-kpi-value ep-logs-kpi-accent">{{ stats.logins_today }}</span>
-        </div>
-        <div class="ep-logs-kpi">
-            <span class="ep-logs-kpi-label">Active users · 7d</span>
-            <span class="ep-logs-kpi-value">{{ stats.active_users_week }}</span>
-        </div>
-    </div>
-
-    <div class="row g-3 ep-logs-main">
-        <!-- Primary: filters + table -->
-        <div class="col-xl-9">
-            <div class="ep-logs-panel">
-                <div class="ep-logs-panel-toolbar">
-                    <div class="ep-logs-tabs">
+    <!-- Main Content Grid -->
+    <div class="row g-3">
+        <!-- Timeline Feed (Left 65%) -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="ep-saas-card mb-4 d-flex flex-column">
+                <!-- Toolbar with Tabs & Search -->
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="nav nav-pills" id="logTabs" style="font-size: 0.8rem;">
                         <a href="?tab=audit{% if search %}&q={{ search }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}"
-                           class="ep-logs-tab{% if active_tab != 'logins' %} active{% endif %}">Audit trail</a>
+                           class="nav-link py-1 px-3 {% if active_tab != 'logins' %}active{% endif %}" style="border-radius: 6px;">Audit Trail</a>
                         <a href="?tab=logins{% if search %}&q={{ search }}{% endif %}"
-                           class="ep-logs-tab{% if active_tab == 'logins' %} active{% endif %}">Login sessions</a>
+                           class="nav-link py-1 px-3 {% if active_tab == 'logins' %}active{% endif %}" style="border-radius: 6px;">Login Sessions</a>
                     </div>
-                    <form method="get" class="ep-logs-filter-form">
+
+                    <!-- Search / Popup Filter Form -->
+                    <form method="get" class="d-flex align-items-center gap-2">
                         <input type="hidden" name="tab" value="{{ active_tab }}">
-                        <div class="ep-logs-filter-search">
-                            <i class="bi bi-search"></i>
-                            <input type="text" name="q" placeholder="Search user, IP, action…" value="{{ search }}">
+                        
+                        <div class="position-relative" style="width: 200px;">
+                            <i class="bi bi-search position-absolute top-50 start-3 translate-middle-y text-muted ms-2" style="font-size: 0.8rem;"></i>
+                            <input type="text" name="q" class="form-control form-control-sm ps-5" placeholder="Search logs..." value="{{ search }}" style="border-radius: 8px; font-size: 0.78rem;">
                         </div>
+
                         {% if active_tab != 'logins' %}
-                        <select name="action" class="ep-logs-filter-select">
-                            <option value="">All actions</option>
-                            {% for action in action_types %}
-                            <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>{{ action }}</option>
-                            {% endfor %}
-                        </select>
-                        {% endif %}
-                        <button type="submit" class="ep-logs-btn ep-logs-btn-ghost ep-logs-btn-sm">Filter</button>
-                        {% if search or action_filter %}
-                        <a href="{% url 'accounts:audit_logs' %}?tab={{ active_tab }}" class="ep-logs-btn ep-logs-btn-ghost ep-logs-btn-sm">Reset</a>
+                        <!-- Popup Filter Trigger -->
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle py-1.5" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="border-radius: 8px; font-size: 0.78rem;">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                            <div class="dropdown-menu p-3 shadow-lg border-0" style="width: 250px; border-radius: 12px; font-size: 0.8rem;">
+                                <h6 class="dropdown-header px-0 mb-2 text-dark fw-bold" style="font-size: 0.8rem;">Filter Actions</h6>
+                                <div class="mb-3">
+                                    <label class="small text-muted mb-1">Action Type</label>
+                                    <select name="action" class="form-select form-select-sm" style="border-radius: 6px;">
+                                        <option value="">All actions</option>
+                                        {% for action in action_types %}
+                                        <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>{{ action }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="d-flex justify-content-between pt-2 border-top">
+                                    <a href="{% url 'accounts:audit_logs' %}?tab={{ active_tab }}" class="btn btn-xs btn-light" style="border-radius: 6px;">Reset</a>
+                                    <button type="submit" class="btn btn-xs btn-primary" style="border-radius: 6px;">Apply</button>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
                     </form>
                 </div>
 
-                {% if active_tab != 'logins' %}
-                <div class="ep-logs-panel-meta">
-                    <span>{{ logs|length }} records</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="ep-ent-table ep-audit-table ep-logs-table" id="auditTable">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Action</th>
-                                <th>Details</th>
-                                <th>IP</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for log in logs %}
-                        <tr>
-                            <td>
-                                <div class="ep-audit-user">
-                                    <span class="ep-audit-avatar ep-audit-avatar-sm">{% if log.user %}{{ log.user.username|first|upper }}{% else %}?{% endif %}</span>
-                                    <div>
-                                        <div class="ep-logs-cell-primary">{{ log.user.username|default:"System" }}</div>
-                                        {% if log.user %}<div class="ep-logs-cell-muted">{{ log.user.get_role_display }}</div>{% endif %}
+                <!-- Custom Timeline container -->
+                <div class="p-4 flex-grow-1" style="max-height: 700px; overflow-y: auto;">
+                    {% if active_tab != 'logins' %}
+                        <!-- Audit Timeline -->
+                        <div class="position-relative timeline-container">
+                            {% for log in logs %}
+                            <div class="d-flex gap-3 mb-4 timeline-item position-relative">
+                                <!-- Line connection in CSS -->
+                                <div class="timeline-avatar flex-shrink-0">
+                                    <span class="ep-saas-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                        {% if log.user %}{{ log.user.username|first|upper }}{% else %}S{% endif %}
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1 card border-0 bg-light p-3" style="border-radius: 10px;">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-dark" style="font-size: 0.82rem;">{{ log.user.username|default:"System" }}</span>
+                                            <span class="badge bg-secondary-subtle text-secondary small" style="font-size: 0.65rem;">
+                                                {{ log.user.get_role_display|default:"System" }}
+                                            </span>
+                                            <span class="badge {% if 'fail' in log.action or 'deny' in log.action %}bg-danger-subtle text-danger{% elif 'toggle' in log.action %}bg-warning-subtle text-warning{% else %}bg-primary-subtle text-primary{% endif %} text-lowercase" style="font-size: 0.65rem; border-radius: 4px;">
+                                                {{ log.action }}
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 text-muted small" style="font-size: 0.68rem;">
+                                            <span><i class="bi bi-clock me-1"></i>{{ log.created_at|date:"M d, g:i A" }} ({{ log.created_at|timesince }} ago)</span>
+                                            <span class="badge {% if 'fail' in log.action or 'deny' in log.action %}bg-danger text-white{% elif 'toggle' in log.action %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}" style="font-size: 0.58rem; border-radius: 3px;">
+                                                {% if 'fail' in log.action or 'deny' in log.action %}High{% elif 'toggle' in log.action %}Medium{% else %}Low{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-dark small mb-2" style="font-size: 0.8rem; line-height: 1.45;">{{ log.details|default:"—" }}</div>
+                                    <div class="d-flex justify-content-between align-items-center text-muted small mt-2 pt-2 border-top" style="font-size: 0.68rem;">
+                                        <span>IP: <code class="small text-muted">{{ log.ip_address|default:"—" }}</code></span>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-xs p-0 text-muted" type="button" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.75rem;">
+                                                <li><a class="dropdown-item" href="#" onclick="Swal.fire('Log Details', 'Action: {{ log.action }}<br>Time: {{ log.created_at }}<br>Details: {{ log.details }}', 'info')"><i class="bi bi-info-circle me-1"></i>View Raw Log</a></li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
-                            </td>
-                            <td>
-                                <span class="ep-audit-badge ep-audit-badge-{% if 'login' in log.action %}login{% elif 'toggle' in log.action %}security{% elif 'payment' in log.action or 'refund' in log.action %}payment{% else %}default{% endif %}">
-                                    {{ log.action }}
-                                </span>
-                            </td>
-                            <td class="ep-logs-cell-muted">{{ log.details|default:"—"|truncatechars:48 }}</td>
-                            <td><code class="ep-audit-ip">{{ log.ip_address|default:"—" }}</code></td>
-                            <td>
-                                <div class="ep-logs-cell-primary">{{ log.created_at|date:"M d, g:i A" }}</div>
-                                <div class="ep-logs-cell-muted">{{ log.created_at|timesince }} ago</div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td class="text-muted text-center py-4">No audit events found</td>
-                            <td>—</td><td>—</td><td>—</td><td>—</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="ep-logs-panel-meta">
-                    <span>{{ logins|length }} records</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="ep-ent-table ep-audit-table ep-logs-table" id="loginTable">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>IP</th>
-                                <th>Device</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for entry in logins %}
-                        <tr>
-                            <td>
-                                <div class="ep-audit-user">
-                                    <span class="ep-audit-avatar ep-audit-avatar-sm">{{ entry.user.username|first|upper }}</span>
-                                    <div>
-                                        <div class="ep-logs-cell-primary">{{ entry.user.username }}</div>
-                                        <div class="ep-logs-cell-muted">{{ entry.user.get_role_display }}</div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-shield-slash d-block mb-2" style="font-size: 2.5rem;"></i>
+                                <h5 class="fw-semibold">No audit events found</h5>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <!-- Login History Timeline -->
+                        <div class="position-relative timeline-container">
+                            {% for entry in logins %}
+                            <div class="d-flex gap-3 mb-4 timeline-item position-relative">
+                                <div class="timeline-avatar flex-shrink-0">
+                                    <span class="ep-saas-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                        {{ entry.user.username|first|upper }}
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1 card border-0 bg-light p-3" style="border-radius: 10px;">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-dark" style="font-size: 0.82rem;">{{ entry.user.username }}</span>
+                                            <span class="badge bg-secondary-subtle text-secondary small" style="font-size: 0.65rem;">
+                                                {{ entry.user.get_role_display }}
+                                            </span>
+                                            <span class="badge bg-success-subtle text-success" style="font-size: 0.65rem; border-radius: 4px;">
+                                                login
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small" style="font-size: 0.68rem;">
+                                            <span><i class="bi bi-clock me-1"></i>{{ entry.logged_in_at|date:"M d, g:i A" }} ({{ entry.logged_in_at|timesince }} ago)</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-dark small mb-2 text-truncate" style="font-size: 0.8rem;" title="{{ entry.user_agent }}">
+                                        Device: <span class="text-muted">{{ entry.user_agent|default:"Unknown" }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center text-muted small mt-2 pt-2 border-top" style="font-size: 0.68rem;">
+                                        <span>IP: <code class="small text-muted">{{ entry.ip_address }}</code></span>
                                     </div>
                                 </div>
-                            </td>
-                            <td><code class="ep-audit-ip">{{ entry.ip_address }}</code></td>
-                            <td class="ep-logs-cell-muted" title="{{ entry.user_agent }}">{{ entry.user_agent|default:"Unknown"|truncatechars:36 }}</td>
-                            <td>
-                                <div class="ep-logs-cell-primary">{{ entry.logged_in_at|date:"M d, g:i A" }}</div>
-                                <div class="ep-logs-cell-muted">{{ entry.logged_in_at|timesince }} ago</div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td class="text-muted text-center py-4">No login sessions recorded</td>
-                            <td>—</td><td>—</td><td>—</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-box-arrow-in-right d-block mb-2" style="font-size: 2.5rem;"></i>
+                                <h5 class="fw-semibold">No login sessions recorded</h5>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
 
-        <!-- Sidebar: activity charts -->
-        <div class="col-xl-3">
-            <div class="ep-logs-chart-card">
-                <div class="ep-logs-chart-head">
-                    <span class="ep-logs-chart-title">Login activity</span>
-                    <span class="ep-logs-chart-range">7 days</span>
+        <!-- Sidebar Widgets (Right 35%) -->
+        <div class="col-xl-4 col-lg-5 d-flex flex-column gap-3">
+            <!-- Activity Heatmap -->
+            <div class="ep-saas-card">
+                <div class="ep-saas-card-head py-3 px-4">
+                    <h3 class="m-0">Audit Activities (7 Days)</h3>
                 </div>
-                <div class="ep-logs-chart-body">
-                    <canvas id="loginActivityChart" height="140"></canvas>
+                <div class="p-4 border-top">
+                    <div style="height: 140px; position: relative;">
+                        <canvas id="chartAuditHeatmap"></canvas>
+                    </div>
                 </div>
             </div>
-            <div class="ep-logs-chart-card">
-                <div class="ep-logs-chart-head">
-                    <span class="ep-logs-chart-title">Audit events</span>
-                    <span class="ep-logs-chart-range">7 days</span>
+
+            <!-- Login Count and Stats -->
+            <div class="ep-saas-card">
+                <div class="ep-saas-card-head py-3 px-4">
+                    <h3 class="m-0">Activity Overview</h3>
                 </div>
-                <div class="ep-logs-chart-body">
-                    <canvas id="auditActivityChart" height="140"></canvas>
+                <div class="list-group list-group-flush border-top small">
+                    <div class="list-group-item p-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>Today's Logins</span>
+                        <span class="fw-bold text-dark">{{ stats.logins_today }}</span>
+                    </div>
+                    <div class="list-group-item p-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="bi bi-award me-2 text-warning"></i>Most Active User</span>
+                        <span class="fw-bold text-dark">
+                            {% if most_active_user %}@{{ most_active_user.username }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+                    <div class="list-group-item p-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="bi bi-globe2 me-2 text-info"></i>Top Active IP</span>
+                        <span class="fw-semibold text-dark"><code class="small text-dark">{{ top_ip }}</code></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Errors -->
+            <div class="ep-saas-card">
+                <div class="ep-saas-card-head py-3 px-4">
+                    <h3 class="m-0">Recent Security Alerts</h3>
+                </div>
+                <div class="p-0 border-top">
+                    <div class="list-group list-group-flush">
+                        {% for err in recent_errors %}
+                        <div class="list-group-item p-3 border-0 border-bottom bg-danger-subtle bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-danger text-white" style="font-size: 0.62rem;">{{ err.action }}</span>
+                                <span class="text-muted small" style="font-size: 0.65rem;">{{ err.created_at|timesince }} ago</span>
+                            </div>
+                            <div class="text-dark small" style="font-size: 0.78rem;">{{ err.details|truncatechars:80 }}</div>
+                            <code class="small text-muted mt-1 d-block" style="font-size: 0.68rem;">IP: {{ err.ip_address }}</code>
+                        </div>
+                        {% empty %}
+                        <div class="p-4 text-center text-muted small">No security alerts triggered recently.</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,65 +273,37 @@
 
 {% block extra_js %}
 <script>
-$(function () {
-    function initAuditTable(selector) {
-        const table = $(selector);
-        if (!table.length) return;
-        const colCount = table.find('thead th').length;
-        const firstRowCells = table.find('tbody tr:first td').length;
-        if (firstRowCells === colCount) {
-            table.DataTable({
-                order: [[colCount - 1, 'desc']],
-                pageLength: 12,
-                dom: '<"ep-dt-top"f>rt<"ep-dt-bottom"ip>',
-                language: { search: '', searchPlaceholder: 'Filter rows…' }
-            });
-        }
-    }
-    initAuditTable('#auditTable');
-    initAuditTable('#loginTable');
-
+document.addEventListener('DOMContentLoaded', function() {
+    // 7 Days Chart Configuration
     const chartDefaults = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#94A3B8' } },
-            y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { size: 11 }, color: '#94A3B8', precision: 0 } }
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#94A3B8' } },
+            y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, color: '#94A3B8', precision: 0 } }
         }
     };
-    const labels = {{ login_chart_labels|safe }};
-
-    new Chart(document.getElementById('loginActivityChart'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: {{ login_chart_values|safe }},
-                backgroundColor: 'rgba(99,102,241,0.75)',
-                borderRadius: 4,
-                barThickness: 14
-            }]
-        },
-        options: chartDefaults
-    });
-
-    new Chart(document.getElementById('auditActivityChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: {{ audit_chart_values|safe }},
-                borderColor: '#8B5CF6',
-                backgroundColor: 'rgba(139,92,246,0.08)',
-                fill: true,
-                tension: 0.35,
-                pointRadius: 3,
-                pointBackgroundColor: '#8B5CF6'
-            }]
-        },
-        options: chartDefaults
-    });
+    
+    if (document.getElementById('chartAuditHeatmap')) {
+        const labels = {{ login_chart_labels|safe }};
+        new Chart(document.getElementById('chartAuditHeatmap'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: {{ audit_chart_values|safe }},
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139,92,246,0.03)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#8B5CF6'
+                }]
+            },
+            options: chartDefaults
+        });
+    }
 });
 </script>
 {% endblock %}

@@ -2729,3 +2729,122 @@ body.ep-sidebar-open { overflow: hidden; }
         padding-left: 2.25rem;
     }
 }
+
+/* ─── REDESIGNED SaaS ADMIN PANEL OVERRIDES & ADDITIONS ──────────────── */
+.ep-saas-admin .ep-saas-kpi {
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ep-saas-admin .ep-saas-kpi:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    transform: translateY(-1px);
+}
+.ep-saas-admin .ep-saas-kpi-val {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+}
+.ep-saas-admin .ep-saas-kpi-lbl {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+.ep-saas-admin .ep-saas-card {
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    background: #ffffff;
+    overflow: hidden;
+}
+.ep-saas-admin .ep-saas-card-head {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1.25rem 1.5rem;
+}
+.ep-saas-admin .ep-saas-card-head h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+/* Timeline Custom Styles for Audit Logs & Payments */
+.ep-saas-admin .timeline-container {
+    padding-left: 10px;
+    position: relative;
+}
+.ep-saas-admin .timeline-container::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: 23px;
+    width: 2px;
+    background: #e2e8f0;
+    z-index: 1;
+}
+.ep-saas-admin .timeline-item {
+    position: relative;
+    z-index: 2;
+}
+.ep-saas-admin .timeline-avatar {
+    z-index: 3;
+    background: #fff;
+    border-radius: 50%;
+}
+
+/* Table Style Tweaks */
+.ep-saas-admin .table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.ep-saas-admin .table thead th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #fafbfc;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+.ep-saas-admin .table tbody td {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 0.8rem;
+}
+.ep-saas-admin .table tbody tr:hover td {
+    background-color: #fafbff;
+}
+
+/* Custom Button overrides */
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+    border-radius: 6px;
+    line-height: 1.2;
+}
+
+/* Consistent spacing override for Payments Layout */
+.ep-payments-admin .card {
+    border-radius: 18px !important;
+}
+.ep-payments-admin .row {
+    margin-right: -12px;
+    margin-left: -12px;
+}
+.ep-payments-admin .col,
+.ep-payments-admin .col-lg-4,
+.ep-payments-admin .col-lg-6,
+.ep-payments-admin .col-lg-8 {
+    padding-right: 12px;
+    padding-left: 12px;
+}
