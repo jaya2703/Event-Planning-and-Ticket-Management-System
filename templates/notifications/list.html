@@ -1,57 +1,670 @@
 {% extends 'base.html' %}
 {% block title %}Notifications{% endblock %}
 {% block content %}
-<div class="container em-container ep-page-wrap">
-    <a href="{% url 'accounts:dashboard' %}" class="ep-back-link">
-        <i class="bi bi-arrow-left"></i> Back to Dashboard
-    </a>
+<div class="ep-notifications-page py-4">
 
-    <div class="ep-notify-page-header mb-4">
-        <div class="ep-notify-page-icon">
-            <i class="bi bi-bell-fill"></i>
-            {% if sidebar_unread_notifications %}
-            <span class="ep-notify-page-badge">{{ sidebar_unread_notifications }}</span>
+    <!-- Custom Style Overrides for premium SaaS Dashboard theme (Stripe, Linear, Vercel) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        .ep-notifications-page {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ─── HEADER ─── */
+        .ep-notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .ep-notifications-title {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+        .ep-notifications-subtitle {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+            margin-top: 0.25rem;
+        }
+        .ep-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .ep-unread-badge-header {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #7c3aed;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* ─── BUTTONS ─── */
+        .ep-btn-mark-all {
+            background: #ffffff;
+            color: #475569;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            height: 36px;
+            padding: 0 0.85rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .ep-btn-mark-all:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+        .ep-empty-btn {
+            background: #7c3aed;
+            color: #ffffff !important;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            padding: 0.5rem 1.25rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(124, 58, 237, 0.15);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 36px;
+        }
+        .ep-empty-btn:hover {
+            background: #6d28d9;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+        }
+
+        /* ─── STATISTICS ROW (Compact KPI Cards, Height 80px Max) ─── */
+        .ep-kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 991.98px) {
+            .ep-kpi-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 575.98px) {
+            .ep-kpi-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .ep-kpi-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            height: 72px; /* 80px max */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+            transition: border-color 0.2s ease;
+        }
+        .ep-kpi-card:hover {
+            border-color: #cbd5e1;
+        }
+        .ep-kpi-icon-wrap {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #f5f3ff;
+            color: #7c3aed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+        .ep-kpi-icon-wrap.success {
+            background: #ecfdf5;
+            color: #10b981;
+        }
+        .ep-kpi-icon-wrap.danger {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+        .ep-kpi-icon-wrap.primary {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+        .ep-kpi-content {
+            display: flex;
+            flex-direction: column;
+        }
+        .ep-kpi-label {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .ep-kpi-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        /* ─── FILTER TABS ─── */
+        .ep-filter-tabs {
+            display: flex;
+            gap: 0.35rem;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .ep-filter-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .ep-filter-tab {
+            background: transparent;
+            border: none;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #64748b;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .ep-filter-tab:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+        .ep-filter-tab.active {
+            color: #ffffff;
+            background: #7c3aed; /* Theme purple */
+        }
+
+        /* ─── DATE GROUPING SECTIONS ─── */
+        .ep-group-section {
+            margin-bottom: 2rem;
+        }
+        .ep-group-header {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+
+        /* ─── COMPACT NOTIFICATION CARDS (70-90px Height) ─── */
+        .ep-notification-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #7c3aed; /* Default left accent */
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            height: 80px; /* 70-90px max */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+            margin-bottom: 0.5rem;
+        }
+        .ep-notification-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+            border-color: #cbd5e1;
+        }
+
+        /* Border colors based on status */
+        .ep-notification-card[data-type="booking_success"],
+        .ep-notification-card[data-type="waitlist_upgraded"] {
+            border-left-color: #10b981; /* Green */
+        }
+        .ep-notification-card[data-type="payment_success"],
+        .ep-notification-card[data-type="refund"] {
+            border-left-color: #3b82f6; /* Blue */
+        }
+        .ep-notification-card[data-type="payment_failed"],
+        .ep-notification-card[data-type="event_cancelled"] {
+            border-left-color: #ef4444; /* Red */
+        }
+        .ep-notification-card[data-type="event_reminder"] {
+            border-left-color: #f59e0b; /* Orange */
+        }
+
+        .ep-notif-icon-wrap {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .ep-notif-info-block {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .ep-notif-msg {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: #1e293b;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ep-notif-time {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-top: 0.15rem;
+        }
+
+        /* Unread card state */
+        .ep-notification-card.unread {
+            background: #faf5ff; /* Subtle purple-tint highlight */
+            border-color: #ddd6fe;
+        }
+        .ep-unread-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #7c3aed; /* Purple unread dot */
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        /* ─── EMPTY STATE (Centered) ─── */
+        .ep-empty-state {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 4.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            margin-top: 1.5rem;
+        }
+        .ep-empty-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #f5f3ff;
+            color: #7c3aed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            margin-bottom: 1.25rem;
+        }
+        .ep-empty-title {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+        }
+        .ep-empty-subtitle {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 0.875rem;
+            color: #64748b;
+            max-width: 320px;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+    </style>
+
+    <!-- ─── TOP SECTION (Compact Page Header) ─── -->
+    <header class="ep-notifications-header">
+        <div>
+            <h1 class="ep-notifications-title">Notifications</h1>
+            <p class="ep-notifications-subtitle">Stay updated with your bookings, payments and event activity</p>
+        </div>
+        <div class="ep-header-actions">
+            {% if unread_count_before and unread_count_before > 0 %}
+            <span class="ep-unread-badge-header" id="header-unread-badge">{{ unread_count_before }} Unread</span>
+            <button class="ep-btn-mark-all" id="mark-all-read-btn">
+                Mark All Read
+            </button>
+            {% else %}
+            <span class="ep-unread-badge-header" id="header-unread-badge" style="display: none;">0 Unread</span>
+            <button class="ep-btn-mark-all" id="mark-all-read-btn" disabled style="opacity: 0.5; cursor: default;">
+                Mark All Read
+            </button>
             {% endif %}
         </div>
-        <div>
-            <h2 class="fw-bold mb-1">Notifications</h2>
-            <p class="text-muted mb-0">All your booking and payment updates</p>
+    </header>
+
+    {% if notifications %}
+    <!-- ─── STATISTICS ROW (Compact KPI Cards) ─── -->
+    <div class="ep-kpi-row">
+        <div class="ep-kpi-card">
+            <div class="ep-kpi-icon-wrap">
+                <i class="bi bi-bell"></i>
+            </div>
+            <div class="ep-kpi-content">
+                <span class="ep-kpi-label">Total Notifications</span>
+                <span class="ep-kpi-number" id="kpi-total">{{ notifications|length }}</span>
+            </div>
+        </div>
+        <div class="ep-kpi-card">
+            <div class="ep-kpi-icon-wrap primary">
+                <i class="bi bi-envelope"></i>
+            </div>
+            <div class="ep-kpi-content">
+                <span class="ep-kpi-label">Unread</span>
+                <span class="ep-kpi-number" id="kpi-unread">{{ unread_count_before|default:0 }}</span>
+            </div>
+        </div>
+        <div class="ep-kpi-card">
+            <div class="ep-kpi-icon-wrap success">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="ep-kpi-content">
+                <span class="ep-kpi-label">Booking Updates</span>
+                <span class="ep-kpi-number" id="kpi-bookings">0</span>
+            </div>
+        </div>
+        <div class="ep-kpi-card">
+            <div class="ep-kpi-icon-wrap danger">
+                <i class="bi bi-credit-card"></i>
+            </div>
+            <div class="ep-kpi-content">
+                <span class="ep-kpi-label">Payment Updates</span>
+                <span class="ep-kpi-number" id="kpi-payments">0</span>
+            </div>
         </div>
     </div>
 
-    {% if notifications %}
-    <div class="ep-card ep-notify-list">
+    <!-- ─── FILTER TABS ─── -->
+    <div class="ep-filter-tabs">
+        <button class="ep-filter-tab active" data-filter="all">All</button>
+        <button class="ep-filter-tab" data-filter="unread">Unread</button>
+        <button class="ep-filter-tab" data-filter="bookings">Bookings</button>
+        <button class="ep-filter-tab" data-filter="payments">Payments</button>
+        <button class="ep-filter-tab" data-filter="cancellations">Cancellations</button>
+    </div>
+
+    <!-- ─── TEMPORARY RENDER CONTAINER (For Date Grouping via JS) ─── -->
+    <div id="notifications-raw-list" style="display: none;">
         {% for notif in notifications %}
-        <div class="ep-notif-full {% if not notif.is_read %}ep-notif-unread{% endif %}">
-            <div class="ep-notif-icon">
-                {% if 'Payment' in notif.message or 'payment' in notif.message %}
-                <i class="bi bi-credit-card"></i>
-                {% elif 'cancel' in notif.message|lower %}
-                <i class="bi bi-x-circle"></i>
-                {% elif 'confirmed' in notif.message|lower or 'booked' in notif.message|lower %}
-                <i class="bi bi-check-circle"></i>
+        <div class="ep-notification-card {% if not notif.is_read %}unread{% endif %}" 
+             data-read="{% if notif.is_read %}true{% else %}false{% endif %}" 
+             data-type="{{ notif.notification_type|default:'general' }}" 
+             data-date="{{ notif.created_at|date:'Y-m-d' }}">
+            
+            <!-- Icon -->
+            <div class="ep-notif-icon-wrap">
+                {% if notif.notification_type == 'booking_success' or notif.notification_type == 'waitlist_upgraded' %}
+                    <i class="bi bi-check-circle text-success"></i>
+                {% elif notif.notification_type == 'payment_success' or notif.notification_type == 'refund' %}
+                    <i class="bi bi-credit-card text-primary"></i>
+                {% elif notif.notification_type == 'payment_failed' or notif.notification_type == 'event_cancelled' %}
+                    <i class="bi bi-x-circle text-danger"></i>
+                {% elif notif.notification_type == 'event_reminder' %}
+                    <i class="bi bi-calendar-event text-warning"></i>
                 {% else %}
-                <i class="bi bi-bell"></i>
+                    <i class="bi bi-bell text-secondary"></i>
                 {% endif %}
             </div>
-            <div class="flex-grow-1">
-                <p class="mb-1 fw-medium">{{ notif.message }}</p>
-                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+
+            <!-- Content Block -->
+            <div class="ep-notif-info-block">
+                <p class="ep-notif-msg">{{ notif.message }}</p>
+                <div class="ep-notif-time">{{ notif.created_at|timesince }} ago</div>
             </div>
+
+            <!-- Unread Status Dot overlay -->
             {% if not notif.is_read %}
-            <span class="ep-notif-new-pill">New</span>
+            <div class="ep-unread-dot"></div>
             {% endif %}
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="ep-card text-center py-5 ep-notify-empty">
-        <div class="ep-notify-empty-icon">
+
+    <!-- ─── CHRONOLOGICAL DATE GROUPS ─── -->
+    <div id="group-today" class="ep-group-section">
+        <div class="ep-group-header">Today</div>
+        <div id="group-today-list"></div>
+    </div>
+
+    <div id="group-yesterday" class="ep-group-section">
+        <div class="ep-group-header">Yesterday</div>
+        <div id="group-yesterday-list"></div>
+    </div>
+
+    <div id="group-earlier" class="ep-group-section">
+        <div class="ep-group-header">Earlier</div>
+        <div id="group-earlier-list"></div>
+    </div>
+
+    <!-- ─── SUB-EMPTY STATE (Hidden initially, shown when filter filters out all items) ─── -->
+    <div class="ep-empty-state" id="ep-filter-empty-state" style="display: none;">
+        <div class="ep-empty-icon-wrap">
             <i class="bi bi-bell-slash"></i>
         </div>
-        <h5 class="text-muted mt-3 mb-1">No notifications</h5>
-        <p class="text-muted mb-0">You are all caught up!</p>
+        <h3 class="ep-empty-title">No notifications found</h3>
+        <p class="ep-empty-subtitle">No alerts match your selected category filter.</p>
+    </div>
+
+    {% else %}
+    <!-- ─── EMPTY STATE (Centered) ─── -->
+    <div class="ep-empty-state">
+        <div class="ep-empty-icon-wrap">
+            <i class="bi bi-bell"></i>
+        </div>
+        <h3 class="ep-empty-title">No notifications</h3>
+        <p class="ep-empty-subtitle">You're all caught up.</p>
+        <a href="{% url 'events:list' %}" class="ep-empty-btn">Browse Events</a>
     </div>
     {% endif %}
+
 </div>
+
+<!-- Client-side Calculation & DOM Organization Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const listContainer = document.getElementById('notifications-raw-list');
+        if (!listContainer) return;
+
+        const cards = Array.from(listContainer.querySelectorAll('.ep-notification-card'));
+        if (!cards.length) return;
+
+        // 1. Calculate KPI Metrics
+        let bookingsCount = 0;
+        let paymentsCount = 0;
+
+        cards.forEach(card => {
+            const type = card.getAttribute('data-type');
+            const msg = card.querySelector('.ep-notif-msg').textContent.toLowerCase();
+
+            if (type.includes('booking') || type.includes('waitlist') || msg.includes('booking') || msg.includes('booked')) {
+                bookingsCount++;
+            } else if (type.includes('payment') || type.includes('refund') || msg.includes('payment') || msg.includes('refund')) {
+                paymentsCount++;
+            }
+        });
+
+        document.getElementById('kpi-bookings').textContent = bookingsCount;
+        document.getElementById('kpi-payments').textContent = paymentsCount;
+
+        // 2. Chronological Grouping
+        const todayStr = getLocalDateString(new Date());
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDateString(yesterday);
+
+        const todayGroup = document.getElementById('group-today-list');
+        const yesterdayGroup = document.getElementById('group-yesterday-list');
+        const earlierGroup = document.getElementById('group-earlier-list');
+
+        let hasToday = false;
+        let hasYesterday = false;
+        let hasEarlier = false;
+
+        cards.forEach(card => {
+            const dateStr = card.getAttribute('data-date'); // YYYY-MM-DD
+            if (dateStr === todayStr) {
+                todayGroup.appendChild(card);
+                hasToday = true;
+            } else if (dateStr === yesterdayStr) {
+                yesterdayGroup.appendChild(card);
+                hasYesterday = true;
+            } else {
+                earlierGroup.appendChild(card);
+                hasEarlier = true;
+            }
+        });
+
+        // Hide empty group divs
+        if (!hasToday) document.getElementById('group-today').style.display = 'none';
+        if (!hasYesterday) document.getElementById('group-yesterday').style.display = 'none';
+        if (!hasEarlier) document.getElementById('group-earlier').style.display = 'none';
+
+        // Remove raw template list
+        listContainer.remove();
+
+        // 3. Mark All Read Button Event
+        const markAllBtn = document.getElementById('mark-all-read-btn');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', function() {
+                const unreadCards = document.querySelectorAll('.ep-notification-card.unread');
+                unreadCards.forEach(card => {
+                    card.classList.remove('unread');
+                    card.setAttribute('data-read', 'true');
+                    const dot = card.querySelector('.ep-unread-dot');
+                    if (dot) dot.remove();
+                });
+
+                document.getElementById('kpi-unread').textContent = '0';
+                
+                const headerBadge = document.getElementById('header-unread-badge');
+                if (headerBadge) {
+                    headerBadge.textContent = '0 Unread';
+                    headerBadge.style.display = 'none';
+                }
+
+                markAllBtn.disabled = true;
+                markAllBtn.classList.add('opacity-50');
+                markAllBtn.style.cursor = 'default';
+                markAllBtn.style.opacity = '0.5';
+
+                // Re-apply filter if on unread tab
+                const activeTab = document.querySelector('.ep-filter-tab.active');
+                if (activeTab && activeTab.getAttribute('data-filter') === 'unread') {
+                    applyFilter('unread');
+                }
+            });
+        }
+
+        // 4. Tab Filtering
+        const tabs = document.querySelectorAll('.ep-filter-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filter = this.getAttribute('data-filter');
+                applyFilter(filter);
+            });
+        });
+
+        function applyFilter(filter) {
+            const groups = ['today', 'yesterday', 'earlier'];
+            let anyVisible = false;
+
+            groups.forEach(g => {
+                const groupEl = document.getElementById(`group-${g}`);
+                const listEl = document.getElementById(`group-${g}-list`);
+                if (!groupEl || !listEl) return;
+
+                const groupCards = listEl.querySelectorAll('.ep-notification-card');
+                let visibleInGroup = 0;
+
+                groupCards.forEach(card => {
+                    const read = card.getAttribute('data-read');
+                    const type = card.getAttribute('data-type');
+                    const msg = card.querySelector('.ep-notif-msg').textContent.toLowerCase();
+
+                    let show = false;
+                    if (filter === 'all') {
+                        show = true;
+                    } else if (filter === 'unread') {
+                        show = (read === 'false');
+                    } else if (filter === 'bookings') {
+                        show = type.includes('booking') || type.includes('waitlist') || msg.includes('booking') || msg.includes('booked');
+                    } else if (filter === 'payments') {
+                        show = type.includes('payment') || type.includes('refund') || msg.includes('payment') || msg.includes('refund');
+                    } else if (filter === 'cancellations') {
+                        show = type.includes('cancelled') || msg.includes('cancel') || msg.includes('cancelled');
+                    }
+
+                    if (show) {
+                        card.style.setProperty('display', 'flex', 'important');
+                        visibleInGroup++;
+                        anyVisible = true;
+                    } else {
+                        card.style.setProperty('display', 'none', 'important');
+                    }
+                });
+
+                // Toggle group visibility
+                const originallyHasItems = listEl.children.length > 0;
+                if (originallyHasItems && visibleInGroup > 0) {
+                    groupEl.style.display = 'block';
+                } else {
+                    groupEl.style.display = 'none';
+                }
+            });
+
+            // Toggle sub-empty state
+            const emptyEl = document.getElementById('ep-filter-empty-state');
+            if (anyVisible) {
+                emptyEl.style.display = 'none';
+            } else {
+                emptyEl.style.display = 'flex';
+            }
+        }
+    });
+
+    // Helper to get local date string YYYY-MM-DD
+    function getLocalDateString(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+</script>
 {% endblock %}

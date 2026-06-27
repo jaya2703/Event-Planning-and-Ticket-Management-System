@@ -209,18 +209,66 @@ def user_dashboard_view(request):
     """User dashboard - shows bookings, recommended events etc."""
     from bookings.models import Booking
     from django.utils import timezone
+    from payments.models import Payment
+    from accounts.models import AuditLog
 
     my_bookings = Booking.objects.filter(user=request.user).order_by('-booked_at')
     recommended_events = get_recommended_events(request.user)
     wishlist_ids = set(Wishlist.objects.filter(user=request.user).values_list('event_id', flat=True))
 
+    # 1. Greeting
+    hour = timezone.localtime().hour
+    if hour < 12:
+        greeting = 'Good Morning'
+    elif hour < 17:
+        greeting = 'Good Afternoon'
+    else:
+        greeting = 'Good Evening'
+
+    # 2. Profile completion calculation
+    profile_completion = 25
+    u = request.user
+    if u.first_name or u.last_name:
+        profile_completion += 25
+    if u.phone:
+        profile_completion += 15
+    if u.profile_picture:
+        profile_completion += 15
+    if u.bio:
+        profile_completion += 10
+    if u.interests:
+        profile_completion += 10
+
+    # 3. Gamification and Finance Metrics
+    reward_points = my_bookings.filter(status='confirmed').count() * 100
+    money_spent = Payment.objects.filter(booking__user=request.user, status='success').aggregate(t=Sum('amount'))['t'] or 0
+    attended_count = my_bookings.filter(status='attended').count()
+    
+    # 4. Favorite Category
+    fav_category_row = my_bookings.filter(
+        status__in=['confirmed', 'attended'], event__category__isnull=False
+    ).values('event__category__name').annotate(count=Count('id')).order_by('-count').first()
+    fav_category = fav_category_row['event__category__name'] if fav_category_row else '—'
+
+    # 5. Timeline Activities & Recent Notifications
+    recent_activities = AuditLog.objects.filter(user=request.user).order_by('-created_at')[:4]
+    recent_notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:3]
+
     context = {
         'my_bookings': my_bookings,
         'my_bookings_count': my_bookings.count(),
         'recommended_events': recommended_events,
-        'upcoming_bookings': my_bookings.filter(status='confirmed', event__status='upcoming')[:3],
+        'upcoming_bookings': my_bookings.filter(status='confirmed', event__date__gte=timezone.localtime().date()).order_by('event__date')[:3],
         'wishlist_count': len(wishlist_ids),
         'wishlist_ids': wishlist_ids,
+        'greeting': greeting,
+        'profile_completion': profile_completion,
+        'reward_points': reward_points,
+        'money_spent': money_spent,
+        'attended_count': attended_count,
+        'fav_category': fav_category,
+        'recent_activities': recent_activities,
+        'recent_notifications': recent_notifications,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 
@@ -240,8 +288,44 @@ def toggle_wishlist(request, event_id):
 
 @login_required
 def wishlist_view(request):
+    sort_option = request.GET.get('sort', 'date_nearest')
     items = Wishlist.objects.filter(user=request.user).select_related('event', 'event__category')
-    return render(request, 'accounts/wishlist.html', {'items': items})
+    
+    from django.utils import timezone
+    from django.db.models import Case, When, Value, BooleanField
+    
+    today = timezone.now().date()
+    
+    # Annotate past events so they can be positioned at the bottom
+    items = items.annotate(
+        is_past=Case(
+            When(event__date__lt=today, then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField(),
+        )
+    )
+    
+    # Order by is_past first (upcoming/current first, past last), then the selected sort option
+    if sort_option == 'date_nearest':
+        items = items.order_by('is_past', 'event__date', 'event__time')
+    elif sort_option == 'date_latest':
+        items = items.order_by('is_past', '-event__date', '-event__time')
+    elif sort_option == 'name_az':
+        items = items.order_by('is_past', 'event__title')
+    elif sort_option == 'name_za':
+        items = items.order_by('is_past', '-event__title')
+    elif sort_option == 'price_low':
+        items = items.order_by('is_past', 'event__ticket_price')
+    elif sort_option == 'price_high':
+        items = items.order_by('is_past', '-event__ticket_price')
+    else:
+        items = items.order_by('is_past', 'event__date', 'event__time')
+        sort_option = 'date_nearest'
+
+    return render(request, 'accounts/wishlist.html', {
+        'items': items,
+        'sort_option': sort_option,
+    })
 
 
 def get_recommended_events(user):

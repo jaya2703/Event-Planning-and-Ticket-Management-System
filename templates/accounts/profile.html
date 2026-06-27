@@ -1,74 +1,415 @@
 {% extends 'base.html' %}
 {% block title %}My Profile{% endblock %}
 {% block content %}
-<div class="container em-container ep-page-wrap">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="ep-card p-4 text-center mb-4">
-                {% if user.profile_picture %}
-                    <img src="{{ user.profile_picture.url }}" class="rounded-circle mb-3" width="100" height="100" style="object-fit:cover;">
-                {% else %}
-                    <div class="ep-avatar-lg mx-auto mb-3">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-                {% endif %}
-                <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
-                <span class="badge ep-badge-role">{{ user.get_role_display }}</span>
-                <p class="text-muted small mt-2">{{ user.email }}</p>
-            </div>
-            <div class="ep-card p-3">
-                <h6 class="fw-bold mb-3">Quick Links</h6>
-                {% if user.role == 'user' %}
-                <a href="{% url 'bookings:history' %}" class="btn ep-btn-outline w-100 mb-2">
-                    <i class="bi bi-ticket me-2"></i>My Bookings
-                </a>
-                {% elif user.role == 'admin' %}
-                <a href="{% url 'accounts:manage_bookings' %}" class="btn ep-btn-outline w-100 mb-2">
-                    <i class="bi bi-ticket me-2"></i>All Bookings
-                </a>
-                {% endif %}
-                <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-key me-2"></i>Change Password
-                </a>
-            </div>
+<div class="ep-profile-page py-4">
+
+    <!-- Custom Style Overrides for premium SaaS Dashboard theme (Stripe, Linear, Vercel) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        .ep-profile-page {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* ─── HEADER ─── */
+        .ep-profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .ep-profile-title {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+        .ep-profile-subtitle {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+            margin-top: 0.25rem;
+        }
+
+        /* ─── BUTTONS ─── */
+        .ep-card-btn-primary {
+            background: #7c3aed; /* Theme purple */
+            color: #ffffff !important;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            height: 36px;
+            padding: 0 1rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(124, 58, 237, 0.15);
+            cursor: pointer;
+        }
+        .ep-card-btn-primary:hover {
+            background: #6d28d9;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+        }
+        .ep-card-btn-secondary {
+            background: #ffffff;
+            color: #475569;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.82rem;
+            height: 36px;
+            padding: 0 0.85rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .ep-card-btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+        .ep-card-btn-danger-outline {
+            background: #ffffff;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.82rem;
+            height: 36px;
+            padding: 0 0.85rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .ep-card-btn-danger-outline:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+
+        /* ─── LAYOUT COLUMNS (35% / 65% Desktop Ratio) ─── */
+        .ep-profile-layout {
+            display: flex;
+            gap: 2rem;
+        }
+        .ep-profile-left {
+            width: 35%;
+            flex: 0 0 35%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .ep-profile-right {
+            width: 65%;
+            flex: 0 0 65%;
+        }
+        @media (max-width: 991.98px) {
+            .ep-profile-layout {
+                flex-direction: column;
+            }
+            .ep-profile-left, .ep-profile-right {
+                width: 100%;
+                flex: 0 0 100%;
+            }
+        }
+
+        /* ─── CARDS & COMPONENTS ─── */
+        .ep-profile-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+        .ep-avatar-lg {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #f5f3ff;
+            color: #7c3aed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            border: 2px solid #ddd6fe;
+        }
+        .ep-badge-role {
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: #f3f4f6;
+            color: #475569 !important;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            display: inline-block;
+        }
+
+        /* Security Card Specifics */
+        .ep-security-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .ep-security-desc {
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        /* ─── FORM & STICKY FOOTER ─── */
+        .ep-form-card {
+            padding: 1.5rem 1.5rem 0 1.5rem; /* bottom padding handled by footer */
+            position: relative;
+        }
+        .ep-input {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            padding: 0.65rem 0.85rem !important;
+            font-size: 0.9rem !important;
+            background: #ffffff !important;
+            transition: all 0.2s;
+            height: 40px;
+        }
+        .ep-input:focus {
+            border-color: #7c3aed !important;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12) !important;
+        }
+        textarea.ep-input {
+            height: auto !important;
+        }
+        .ep-form-sticky-footer {
+            position: sticky;
+            bottom: 0;
+            background: #ffffff;
+            border-top: 1px solid #e5e7eb;
+            padding: 1.25rem 1.5rem;
+            margin: 2rem -1.5rem 0 -1.5rem; /* pull to card edges */
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            z-index: 10;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+        }
+    </style>
+
+    <!-- ─── TOP SECTION (Compact Page Header) ─── -->
+    <header class="ep-profile-header">
+        <div>
+            <h1 class="ep-profile-title">My Profile</h1>
+            <p class="ep-profile-subtitle">Manage your account information and preferences</p>
         </div>
-        <div class="col-md-8">
-            <div class="ep-card p-4">
-                <h5 class="fw-bold mb-4">Edit Profile</h5>
-                <form method="post" enctype="multipart/form-data" novalidate>
+        <div>
+            <button type="button" class="btn ep-card-btn-primary" onclick="document.getElementById('profile-form').submit();">
+                Save Changes
+            </button>
+        </div>
+    </header>
+
+    <!-- ─── MAIN LAYOUT ─── -->
+    <div class="ep-profile-layout">
+        
+        <!-- Left Column (35%) -->
+        <div class="ep-profile-left">
+            
+            <!-- Profile Overview Card -->
+            <div class="ep-profile-card text-center p-4">
+                <div class="d-flex justify-content-center mb-3">
+                    {% if user.profile_picture %}
+                        <img id="profile-avatar-img" src="{{ user.profile_picture.url }}" class="rounded-circle" width="100" height="100" style="object-fit:cover;">
+                        <div id="profile-avatar-initials" class="ep-avatar-lg mx-auto" style="display: none;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+                    {% else %}
+                        <img id="profile-avatar-img" class="rounded-circle" width="100" height="100" style="object-fit:cover; display: none;">
+                        <div id="profile-avatar-initials" class="ep-avatar-lg mx-auto">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+                    {% endif %}
+                </div>
+                
+                <h5 class="fw-bold mb-1 text-dark">{{ user.get_full_name|default:user.username }}</h5>
+                <div class="mb-2"><span class="badge ep-badge-role">{{ user.get_role_display }}</span></div>
+                <p class="text-muted small mb-3">{{ user.email }}</p>
+                
+                <!-- Custom Upload Photo Buttons -->
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn ep-card-btn-secondary btn-sm" id="upload-photo-btn" onclick="document.getElementById('profile-file-input').click();" style="{% if user.profile_picture %}display: none;{% endif %}">
+                        Upload Photo
+                    </button>
+                    <button type="button" class="btn ep-card-btn-secondary btn-sm" id="change-photo-btn" onclick="document.getElementById('profile-file-input').click();" style="{% if not user.profile_picture %}display: none;{% endif %}">
+                        Change Photo
+                    </button>
+                    <button type="button" class="btn ep-card-btn-danger-outline btn-sm" id="remove-photo-btn" style="{% if not user.profile_picture %}display: none;{% endif %}">
+                        Remove Photo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Security Settings Card -->
+            <div class="ep-profile-card p-4">
+                <h5 class="ep-security-title mb-2">Security</h5>
+                <p class="ep-security-desc mb-3">Update your password to keep your account secure.</p>
+                <a href="{% url 'accounts:change_password' %}" class="btn ep-card-btn-secondary w-100 justify-content-center">
+                    Change Password
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Right Column (65%) -->
+        <div class="ep-profile-right">
+            
+            <div class="ep-profile-card ep-form-card">
+                <h5 class="fw-bold mb-4 text-dark">Account Details</h5>
+                
+                <form id="profile-form" method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
+                    
+                    <!-- Hidden input fields to handle profile picture upload/clear standard Django logic -->
+                    <input type="file" name="profile_picture" id="profile-file-input" class="form-control" accept="image/*" style="display: none;">
+                    <input type="checkbox" name="profile_picture-clear" id="profile-picture-clear-checkbox" style="display: none;">
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger py-2 px-3 small mb-4">
+                        Please correct the errors in the fields below.
+                    </div>
+                    {% endif %}
+
                     <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">First Name</label>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted small mb-1">First Name</label>
                             <input type="text" name="first_name" class="form-control ep-input" value="{{ form.first_name.value|default:'' }}">
+                            {% if form.first_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.first_name.errors.as_text }}</div>
+                            {% endif %}
                         </div>
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">Last Name</label>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted small mb-1">Last Name</label>
                             <input type="text" name="last_name" class="form-control ep-input" value="{{ form.last_name.value|default:'' }}">
+                            {% if form.last_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.last_name.errors.as_text }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Email</label>
+                            <label class="form-label fw-semibold text-muted small mb-1">Email Address</label>
                             <input type="email" name="email" class="form-control ep-input" value="{{ form.email.value|default:'' }}">
+                            {% if form.email.errors %}
+                            <div class="text-danger small mt-1">{{ form.email.errors.as_text }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Phone</label>
+                            <label class="form-label fw-semibold text-muted small mb-1">Phone Number</label>
                             <input type="tel" name="phone" class="form-control ep-input" value="{{ form.phone.value|default:'' }}">
+                            {% if form.phone.errors %}
+                            <div class="text-danger small mt-1">{{ form.phone.errors.as_text }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Bio</label>
-                            <textarea name="bio" class="form-control ep-input" rows="3" placeholder="Tell us about yourself...">{{ form.bio.value|default:'' }}</textarea>
+                            <label class="form-label fw-semibold text-muted small mb-1">Biography</label>
+                            <textarea name="bio" class="form-control ep-input" rows="4" placeholder="Tell us about yourself...">{{ form.bio.value|default:'' }}</textarea>
+                            {% if form.bio.errors %}
+                            <div class="text-danger small mt-1">{{ form.bio.errors.as_text }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Interests <small class="text-muted">(comma separated)</small></label>
+                            <label class="form-label fw-semibold text-muted small mb-1">Interests <span class="text-muted fw-normal">(comma separated)</span></label>
                             <input type="text" name="interests" class="form-control ep-input" value="{{ form.interests.value|default:'' }}" placeholder="e.g. music, sports, technology">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Profile Picture</label>
-                            <input type="file" name="profile_picture" class="form-control ep-input" accept="image/*">
+                            {% if form.interests.errors %}
+                            <div class="text-danger small mt-1">{{ form.interests.errors.as_text }}</div>
+                            {% endif %}
                         </div>
                     </div>
-                    <button type="submit" class="btn ep-btn-primary mt-4">Save Changes</button>
+
+                    <!-- Sticky Footer (Inside the Form Card) -->
+                    <div class="ep-form-sticky-footer">
+                        <a href="{% url 'accounts:profile' %}" class="btn ep-card-btn-secondary">Cancel</a>
+                        <button type="submit" class="btn ep-card-btn-primary">Save Changes</button>
+                    </div>
                 </form>
             </div>
+
         </div>
+
     </div>
+
 </div>
+
+<!-- Client-side script to handle profile picture upload/replace/clear -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile picture interactivity
+        const fileInput = document.getElementById('profile-file-input');
+        const profileImg = document.getElementById('profile-avatar-img');
+        const initialsAvatar = document.getElementById('profile-avatar-initials');
+        const uploadBtn = document.getElementById('upload-photo-btn');
+        const changeBtn = document.getElementById('change-photo-btn');
+        const removeBtn = document.getElementById('remove-photo-btn');
+        const clearCheckbox = document.getElementById('profile-picture-clear-checkbox');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (profileImg) {
+                            profileImg.src = e.target.result;
+                            profileImg.style.display = 'block';
+                        }
+                        if (initialsAvatar) {
+                            initialsAvatar.style.display = 'none';
+                        }
+                        if (clearCheckbox) {
+                            clearCheckbox.checked = false; // Uncheck django clear checkbox
+                        }
+
+                        // Toggle upload/change buttons state
+                        if (uploadBtn) uploadBtn.style.display = 'none';
+                        if (changeBtn) changeBtn.style.display = 'inline-flex';
+                        if (removeBtn) removeBtn.style.display = 'inline-flex';
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (clearCheckbox) {
+                    clearCheckbox.checked = true; // Check django clear checkbox
+                }
+                if (fileInput) {
+                    fileInput.value = ''; // Reset input selection
+                }
+                if (profileImg) {
+                    profileImg.style.display = 'none';
+                }
+                if (initialsAvatar) {
+                    initialsAvatar.style.display = 'flex';
+                }
+
+                // Toggle upload/change buttons state
+                if (uploadBtn) uploadBtn.style.display = 'inline-flex';
+                if (changeBtn) changeBtn.style.display = 'none';
+                if (removeBtn) removeBtn.style.display = 'none';
+            });
+        }
+    });
+</script>
 {% endblock %}

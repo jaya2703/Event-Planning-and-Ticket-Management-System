@@ -2,7 +2,11 @@
 <aside class="ep-sidebar{% if user.role == 'admin' %} ep-sidebar--accordion{% endif %}" id="epAppSidebar">
     {% include 'partials/sidebar_brand.html' %}
     <div class="ep-sidebar-user">
+        {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" alt="Profile" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; flex-shrink: 0;">
+        {% else %}
         <div class="ep-avatar-sm">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+        {% endif %}
         <div>
             <div class="fw-semibold small text-white">{{ user.get_full_name|default:user.username }}</div>
             <div class="ep-badge-role-sm">{{ user.get_role_display }}</div>

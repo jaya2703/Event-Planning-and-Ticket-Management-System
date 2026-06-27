@@ -31,9 +31,9 @@ class CustomUser(AbstractUser):
     
     # Profile picture - optional
     profile_picture = models.ImageField(
-        upload_to='profile_pics/',  # Saved in media/profile_pics/
-        blank=True,
-        null=True
+        upload_to='profile_pictures/',
+        null=True,
+        blank=True
     )
     
     # Phone number - optional

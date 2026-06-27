@@ -9,7 +9,11 @@
         <div class="ep-settings-hero-content">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
                 <div class="d-flex align-items-center gap-4">
+                    {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="Profile" class="ep-settings-avatar" style="object-fit: cover;">
+                    {% else %}
                     <div class="ep-settings-avatar">{{ user.username|first|upper }}</div>
+                    {% endif %}
                     <div>
                         <p class="ep-settings-eyebrow mb-1">Administrator</p>
                         <h1 class="ep-settings-title mb-2">Profile Settings</h1>
