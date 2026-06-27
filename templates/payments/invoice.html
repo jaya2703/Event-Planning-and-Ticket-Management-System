@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - {{ invoice_number }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 30px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .invoice-card {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            padding: 40px;
+        }
+        .invoice-header {
+            border-bottom: 2px solid #dfe6e9;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .table th {
+            background-color: #f8f9fa;
+        }
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .invoice-card {
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-card">
+        <div class="invoice-header d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="text-primary fw-bold">EventPro</h2>
+                <p class="text-muted small mb-0">Premium SaaS Event Operations</p>
+            </div>
+            <div class="text-end">
+                <h4 class="mb-1">INVOICE</h4>
+                <p class="text-muted small mb-0">No: <strong>{{ invoice_number }}</strong></p>
+                <p class="text-muted small mb-0">Date: <strong>{{ booking.booked_at|date:"Y-m-d" }}</strong></p>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-6">
+                <p class="text-muted small mb-1">Billed To:</p>
+                <strong>{{ booking.user.get_full_name }}</strong>
+                <p class="text-muted small mb-0">{{ booking.user.email }}</p>
+            </div>
+            <div class="col-6 text-end">
+                <p class="text-muted small mb-1">Organizer Workspace:</p>
+                <strong>{{ booking.event.organization.name|default:"EventPro Platform" }}</strong>
+                <p class="text-muted small mb-0">Owner: {{ booking.event.organizer.get_full_name }}</p>
+            </div>
+        </div>
+
+        <table class="table table-bordered mb-4">
+            <thead>
+                <tr>
+                    <th>Item Description</th>
+                    <th class="text-end">Unit Price</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Total Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <strong>{{ booking.event.title }}</strong><br>
+                        <span class="text-muted small">Tier: {{ booking.ticket_tier.name|default:"General Access" }}</span>
+                    </td>
+                    <td class="text-end">₹{{ booking.ticket_tier.price|default:booking.event.ticket_price|floatformat:2 }}</td>
+                    <td class="text-center">{{ booking.quantity }}</td>
+                    <td class="text-end">
+                        {% if booking.promo_code %}
+                        <s>₹{% widthratio booking.ticket_tier.price|default:booking.event.ticket_price 1 booking.quantity %}.00</s><br>
+                        <span class="text-success small">Discount applied</span>
+                        {% endif %}
+                        ₹{{ booking.total_price|floatformat:2 }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-6">
+                <div class="border rounded p-3 bg-light text-muted small">
+                    <p class="fw-bold text-dark mb-1">Payment Status: {{ payment.get_status_display|upper|default:"CONFIRMED" }}</p>
+                    Method: {{ payment.payment_method|upper|default:"FREE COMPLIMENTARY" }}<br>
+                    Transaction: {{ payment.payment_id|default:"N/A" }}
+                </div>
+            </div>
+            <div class="col-6 text-end">
+                <p class="mb-1 text-muted small">Total Due:</p>
+                <h3 class="text-primary fw-bold">₹{{ booking.total_price|floatformat:2 }}</h3>
+            </div>
+        </div>
+
+        <div class="text-center mt-5 no-print">
+            <button onclick="window.print()" class="btn ep-btn-primary"><i class="bi bi-printer me-1"></i>Print Invoice</button>
+        </div>
+    </div>
+</body>
+</html>

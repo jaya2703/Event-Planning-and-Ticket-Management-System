@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'payments',
     'notifications',
     'volunteers',
+    'networking',
 ]
 
 MIDDLEWARE = [

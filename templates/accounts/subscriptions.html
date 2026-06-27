@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Workspace Subscription Tiers{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header ep-ent-animate">
+    <div>
+        <h1>Workspace Subscriptions</h1>
+        <p>Choose the optimal pricing tier for your organization's events capacity and branding options.</p>
+    </div>
+</div>
+
+<div class="ep-ent-card ep-ent-animate mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Current Subscription status</h5>
+            <p class="text-muted small mb-0">Your organization is currently on the <strong>{{ org.get_subscription_tier_display }} Plan</strong>.</p>
+        </div>
+        <div>
+            <span class="badge bg-success text-white py-2 px-3">Status: {{ org.get_subscription_status_display }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <!-- Free Tier -->
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm {% if org.subscription_tier == 'free' %}border-primary{% endif %}">
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="card-title fw-bold">Free Plan</h3>
+                    <h4 class="text-primary fw-bold">₹0<span class="fs-6 text-muted font-monospace"> /mo</span></h4>
+                    <hr>
+                    <ul class="text-start small text-muted list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Up to 3 Active Events</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Max 100 capacity per event</li>
+                        <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i>No Custom Branding colors</li>
+                        <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i>No Custom Domain mappings</li>
+                    </ul>
+                </div>
+                <div>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="tier" value="free">
+                        <button type="submit" class="btn w-100 {% if org.subscription_tier == 'free' %}btn-secondary disabled{% else %}ep-btn-outline{% endif %}">
+                            {% if org.subscription_tier == 'free' %}Current Plan{% else %}Downgrade{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pro Tier -->
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm {% if org.subscription_tier == 'pro' %}border-primary{% endif %}">
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="card-title fw-bold">Pro Plan</h3>
+                    <h4 class="text-primary fw-bold">₹4,999<span class="fs-6 text-muted font-monospace"> /mo</span></h4>
+                    <hr>
+                    <ul class="text-start small text-muted list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Up to 15 Active Events</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Max 1,000 capacity per event</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Custom branding colors</li>
+                        <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i>No Custom Domain mappings</li>
+                    </ul>
+                </div>
+                <div>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="tier" value="pro">
+                        <button type="submit" class="btn w-100 {% if org.subscription_tier == 'pro' %}btn-secondary disabled{% else %}ep-btn-primary{% endif %}">
+                            {% if org.subscription_tier == 'pro' %}Current Plan{% else %}Upgrade to Pro{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enterprise Tier -->
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm {% if org.subscription_tier == 'enterprise' %}border-primary{% endif %}">
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="card-title fw-bold">Enterprise</h3>
+                    <h4 class="text-primary fw-bold">Custom<span class="fs-6 text-muted font-monospace"> /mo</span></h4>
+                    <hr>
+                    <ul class="text-start small text-muted list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Unlimited Active Events</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Unlimited Event Capacity</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Custom branding and logo</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Custom domain ready</li>
+                    </ul>
+                </div>
+                <div>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="tier" value="enterprise">
+                        <button type="submit" class="btn w-100 {% if org.subscription_tier == 'enterprise' %}btn-secondary disabled{% else %}ep-btn-primary{% endif %}">
+                            {% if org.subscription_tier == 'enterprise' %}Current Plan{% else %}Contact Sales / Upgrade{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

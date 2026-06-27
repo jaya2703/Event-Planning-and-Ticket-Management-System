@@ -141,23 +141,42 @@ def admin_dashboard_view(request):
 
 @login_required
 def organizer_dashboard_view(request):
-    """Organizer dashboard"""
-    if request.user.role not in ['organizer', 'admin']:
+    """Organizer SaaS dashboard"""
+    staff_roles = ['organizer', 'event_manager', 'finance', 'marketing', 'staff', 'volunteer', 'admin']
+    if request.user.role not in staff_roles:
         messages.error(request, "Access denied.")
         return redirect('accounts:dashboard')
     
     from django.utils import timezone
     import json
-    from bookings.models import Booking
+    from bookings.models import Booking, Refund
     from payments.models import Payment
-    my_events = Event.objects.filter(organizer=request.user).select_related('category')
-    my_bookings = Booking.objects.filter(event__organizer=request.user).select_related('user', 'event')
-    my_revenue = Payment.objects.filter(
-        booking__event__organizer=request.user, status='success'
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    from accounts.models import AuditLog
+    
+    org = request.user.organization
+    if org:
+        my_events = Event.objects.filter(organization=org).select_related('category')
+        my_bookings = Booking.objects.filter(event__organization=org).select_related('user', 'event')
+        my_revenue = Payment.objects.filter(
+            booking__event__organization=org, status='success'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        pending_refunds_count = Refund.objects.filter(booking__event__organization=org, status='pending').count()
+        recent_activity = AuditLog.objects.filter(user__organization=org)[:5]
+    else:
+        my_events = Event.objects.filter(organizer=request.user).select_related('category')
+        my_bookings = Booking.objects.filter(event__organizer=request.user).select_related('user', 'event')
+        my_revenue = Payment.objects.filter(
+            booking__event__organizer=request.user, status='success'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        pending_refunds_count = Refund.objects.filter(booking__event__organizer=request.user, status='pending').count()
+        recent_activity = AuditLog.objects.filter(user=request.user)[:5]
 
     from volunteers.models import EventVolunteer
-    vol_qs = EventVolunteer.objects.filter(event__organizer=request.user)
+    if org:
+        vol_qs = EventVolunteer.objects.filter(event__organization=org)
+    else:
+        vol_qs = EventVolunteer.objects.filter(event__organizer=request.user)
+        
     volunteer_stats = {
         'total': vol_qs.count(),
         'assigned': vol_qs.filter(status='assigned').count(),
@@ -189,7 +208,13 @@ def organizer_dashboard_view(request):
         booking_labels.append(day.strftime('%d %b'))
         booking_values.append(my_bookings.filter(booked_at__date__gte=day, booked_at__date__lt=day + timedelta(days=7)).count())
 
+    # SaaS stats
+    registrations_today = my_bookings.filter(booked_at__date=timezone.now().date(), status__in=['confirmed', 'attended', 'pending_payment']).count()
+    checkins_today = my_bookings.filter(is_checked_in=True, checked_in_at__date=timezone.now().date()).count()
+    active_events_count = my_events.filter(status__in=['draft', 'published', 'upcoming', 'ongoing']).count()
+
     context = {
+        'org': org,
         'my_events': my_events,
         'my_events_count': my_events.count(),
         'my_bookings_count': my_bookings.filter(status__in=['confirmed', 'attended']).aggregate(t=Sum('quantity'))['t'] or 0,
@@ -200,6 +225,11 @@ def organizer_dashboard_view(request):
         'event_analytics': event_analytics,
         'chart_booking_labels': json.dumps(booking_labels),
         'chart_booking_values': json.dumps(booking_values),
+        'registrations_today': registrations_today,
+        'checkins_today': checkins_today,
+        'active_events_count': active_events_count,
+        'pending_refunds_count': pending_refunds_count,
+        'recent_activity': recent_activity,
     }
     return render(request, 'dashboard/organizer_dashboard.html', context)
 
@@ -209,66 +239,18 @@ def user_dashboard_view(request):
     """User dashboard - shows bookings, recommended events etc."""
     from bookings.models import Booking
     from django.utils import timezone
-    from payments.models import Payment
-    from accounts.models import AuditLog
 
     my_bookings = Booking.objects.filter(user=request.user).order_by('-booked_at')
     recommended_events = get_recommended_events(request.user)
     wishlist_ids = set(Wishlist.objects.filter(user=request.user).values_list('event_id', flat=True))
 
-    # 1. Greeting
-    hour = timezone.localtime().hour
-    if hour < 12:
-        greeting = 'Good Morning'
-    elif hour < 17:
-        greeting = 'Good Afternoon'
-    else:
-        greeting = 'Good Evening'
-
-    # 2. Profile completion calculation
-    profile_completion = 25
-    u = request.user
-    if u.first_name or u.last_name:
-        profile_completion += 25
-    if u.phone:
-        profile_completion += 15
-    if u.profile_picture:
-        profile_completion += 15
-    if u.bio:
-        profile_completion += 10
-    if u.interests:
-        profile_completion += 10
-
-    # 3. Gamification and Finance Metrics
-    reward_points = my_bookings.filter(status='confirmed').count() * 100
-    money_spent = Payment.objects.filter(booking__user=request.user, status='success').aggregate(t=Sum('amount'))['t'] or 0
-    attended_count = my_bookings.filter(status='attended').count()
-    
-    # 4. Favorite Category
-    fav_category_row = my_bookings.filter(
-        status__in=['confirmed', 'attended'], event__category__isnull=False
-    ).values('event__category__name').annotate(count=Count('id')).order_by('-count').first()
-    fav_category = fav_category_row['event__category__name'] if fav_category_row else '—'
-
-    # 5. Timeline Activities & Recent Notifications
-    recent_activities = AuditLog.objects.filter(user=request.user).order_by('-created_at')[:4]
-    recent_notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:3]
-
     context = {
         'my_bookings': my_bookings,
         'my_bookings_count': my_bookings.count(),
         'recommended_events': recommended_events,
-        'upcoming_bookings': my_bookings.filter(status='confirmed', event__date__gte=timezone.localtime().date()).order_by('event__date')[:3],
+        'upcoming_bookings': my_bookings.filter(status='confirmed', event__status='upcoming')[:3],
         'wishlist_count': len(wishlist_ids),
         'wishlist_ids': wishlist_ids,
-        'greeting': greeting,
-        'profile_completion': profile_completion,
-        'reward_points': reward_points,
-        'money_spent': money_spent,
-        'attended_count': attended_count,
-        'fav_category': fav_category,
-        'recent_activities': recent_activities,
-        'recent_notifications': recent_notifications,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 
@@ -288,44 +270,8 @@ def toggle_wishlist(request, event_id):
 
 @login_required
 def wishlist_view(request):
-    sort_option = request.GET.get('sort', 'date_nearest')
     items = Wishlist.objects.filter(user=request.user).select_related('event', 'event__category')
-    
-    from django.utils import timezone
-    from django.db.models import Case, When, Value, BooleanField
-    
-    today = timezone.now().date()
-    
-    # Annotate past events so they can be positioned at the bottom
-    items = items.annotate(
-        is_past=Case(
-            When(event__date__lt=today, then=Value(True)),
-            default=Value(False),
-            output_field=BooleanField(),
-        )
-    )
-    
-    # Order by is_past first (upcoming/current first, past last), then the selected sort option
-    if sort_option == 'date_nearest':
-        items = items.order_by('is_past', 'event__date', 'event__time')
-    elif sort_option == 'date_latest':
-        items = items.order_by('is_past', '-event__date', '-event__time')
-    elif sort_option == 'name_az':
-        items = items.order_by('is_past', 'event__title')
-    elif sort_option == 'name_za':
-        items = items.order_by('is_past', '-event__title')
-    elif sort_option == 'price_low':
-        items = items.order_by('is_past', 'event__ticket_price')
-    elif sort_option == 'price_high':
-        items = items.order_by('is_past', '-event__ticket_price')
-    else:
-        items = items.order_by('is_past', 'event__date', 'event__time')
-        sort_option = 'date_nearest'
-
-    return render(request, 'accounts/wishlist.html', {
-        'items': items,
-        'sort_option': sort_option,
-    })
+    return render(request, 'accounts/wishlist.html', {'items': items})
 
 
 def get_recommended_events(user):
@@ -425,3 +371,170 @@ def mark_notification_read(request, notification_id):
     except Notification.DoesNotExist:
         pass
     return redirect('accounts:dashboard')
+
+
+from django.utils.text import slugify
+from .models import Organization, ApiKey
+
+@login_required
+def workspace_settings(request):
+    """Workspace branding settings (SaaS customization)."""
+    if request.user.role not in ['organizer', 'admin']:
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    if not org:
+        org, _ = Organization.objects.get_or_create(
+            owner=request.user,
+            defaults={'name': f"{request.user.username}'s Workspace", 'slug': slugify(request.user.username)}
+        )
+        request.user.organization = org
+        request.user.save()
+        
+    if request.method == 'POST':
+        name = request.POST.get('name', org.name).strip()
+        branding_color = request.POST.get('branding_color', org.branding_color).strip()
+        custom_domain = request.POST.get('custom_domain', '').strip()
+        logo = request.FILES.get('logo')
+        
+        from .services import check_subscription_limits
+        if custom_domain and not check_subscription_limits(org, 'custom_domain'):
+            messages.error(request, "Custom domains are only available on the Enterprise tier.")
+            custom_domain = None
+            
+        if branding_color and not check_subscription_limits(org, 'custom_branding'):
+            messages.error(request, "Custom branding colors are only available on the Pro/Enterprise tiers.")
+            branding_color = '#6c5ce7'
+            
+        org.name = name
+        org.branding_color = branding_color
+        if custom_domain:
+            org.custom_domain = custom_domain
+        if logo:
+            org.logo = logo
+        org.save()
+        messages.success(request, "Workspace settings updated!")
+        return redirect('accounts:workspace_settings')
+        
+    return render(request, 'accounts/workspace_settings.html', {'org': org})
+
+
+@login_required
+def list_members(request):
+    """List team members of the Organization workspace."""
+    if request.user.role not in ['organizer', 'admin', 'event_manager']:
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    members = CustomUser.objects.filter(organization=org) if org else []
+    return render(request, 'accounts/members.html', {'members': members, 'org': org})
+
+
+@login_required
+def invite_member(request):
+    """Invite a new team member with specific SaaS role."""
+    if request.user.role not in ['organizer', 'admin']:
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        role = request.POST.get('role', 'staff')
+        
+        if not username or not email:
+            messages.error(request, "Username and Email are required.")
+        else:
+            user, created = CustomUser.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': username,
+                    'role': role,
+                    'organization': org
+                }
+            )
+            if created:
+                user.set_password('welcome123')
+                user.save()
+                messages.success(request, f"Invited {username} to workspace as {user.get_role_display()}!")
+            else:
+                user.organization = org
+                user.role = role
+                user.save()
+                messages.success(request, f"Updated {username}'s role to {user.get_role_display()} in workspace.")
+                
+    return redirect('accounts:list_members')
+
+
+@login_required
+def generate_api_key(request):
+    """Generate integration API keys."""
+    if request.user.role not in ['organizer', 'admin']:
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    if request.method == 'POST':
+        import uuid
+        key_name = request.POST.get('name', 'Default Key').strip()
+        key_str = f"ep_live_{uuid.uuid4().hex}"
+        ApiKey.objects.create(organization=org, name=key_name, key=key_str)
+        messages.success(request, f"API key generated: {key_str}")
+        
+    keys = ApiKey.objects.filter(organization=org) if org else []
+    return render(request, 'accounts/api_keys.html', {'keys': keys})
+
+
+@login_required
+def campaign_manager(request):
+    """Send and track scheduled email and notification campaigns."""
+    if request.user.role not in ['organizer', 'admin', 'marketing']:
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    events = Event.objects.filter(organization=org) if org else []
+    
+    if request.method == 'POST':
+        event_id = request.POST.get('event_id')
+        subject = request.POST.get('subject', '').strip()
+        body = request.POST.get('body', '').strip()
+        method = request.POST.get('method', 'email')
+        
+        event = get_object_or_404(Event, id=event_id)
+        bookings = event.bookings.filter(status='confirmed').select_related('user')
+        
+        count = 0
+        for b in bookings:
+            if method == 'email':
+                print(f"[CAMPAIGN EMAIL] Sent to {b.user.email} | Subject: {subject} | Body: {body[:50]}...")
+            elif method == 'push':
+                notify(b.user, f"📢 {subject}: {body[:80]}...", 'general')
+            count += 1
+            
+        messages.success(request, f"Campaign '{subject}' sent successfully to {count} attendees via {method}!")
+        
+    return render(request, 'accounts/campaigns.html', {'events': events})
+
+
+@login_required
+def subscription_plans(request):
+    """Manage SaaS Workspace subscription tiers."""
+    if request.user.role not in ['organizer', 'admin']:
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    if request.method == 'POST':
+        tier = request.POST.get('tier', 'free')
+        if tier in ['free', 'pro', 'enterprise']:
+            org.subscription_tier = tier
+            org.subscription_status = 'active'
+            org.save()
+            messages.success(request, f"Workspace plan upgraded to {tier.upper()} successfully!")
+            
+    return render(request, 'accounts/subscriptions.html', {'org': org})
+

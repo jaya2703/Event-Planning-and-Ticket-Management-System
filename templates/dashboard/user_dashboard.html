@@ -1,350 +1,103 @@
 {% extends 'base.html' %}
-{% load static %}
-{% block title %}Attendee Dashboard{% endblock %}
-{% block body_class %}ep-site ep-dashboard-layout ep-enterprise ep-saas-admin ep-users-admin{% endblock %}
-
+{% block title %}My Dashboard{% endblock %}
 {% block content %}
-<div class="ep-saas-wrap ep-ent-animate p-4" style="max-width: 1400px; margin: 0 auto; background: #fafbfc;">
-    
-    <!-- ─── 1. GREETING HEADER ────────────────────────────────────────────── -->
-    <header class="mb-4 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-3" style="margin-bottom: 24px !important;">
-        <div>
-            <h1 class="fw-bold text-dark m-0" style="font-size: 1.75rem; letter-spacing: -0.02em; font-family: 'Poppins', sans-serif;">
-                Good Afternoon, {{ user.first_name|default:user.username }}
-            </h1>
-            <p class="text-muted small m-0 mt-1" style="font-size: 0.88rem;">Here is what is happening with your events today.</p>
-        </div>
-        <div class="d-flex gap-3 align-items-center">
-            <!-- Browse Events Primary Link -->
-            <a href="{% url 'events:list' %}" class="btn px-4 py-2 d-flex align-items-center gap-2 text-white" style="border-radius: 10px; font-weight: 600; font-size: 0.88rem; background: #6D5DF6; border: none; box-shadow: 0 2px 4px rgba(109,93,246,0.15); transition: background 0.2s;">
-                <i class="bi bi-search"></i> Browse Events
-            </a>
-            <!-- Notification Bell Icon -->
-            <a href="{% url 'notifications:list' %}" class="btn btn-light position-relative p-2 d-flex align-items-center justify-content-center border" style="border-radius: 50%; width: 40px; height: 40px; background: #ffffff; border-color: #e2e8f0 !important;" title="Notifications">
-                <i class="bi bi-bell text-muted" style="font-size: 1.1rem;"></i>
-                {% if sidebar_unread_notifications %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
-                    {{ sidebar_unread_notifications }}
-                </span>
-                {% endif %}
-            </a>
-            <!-- Avatar Link -->
-            <a href="{% url 'accounts:profile' %}" class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold" style="width: 40px; height: 40px; background: #6D5DF6; text-decoration: none; font-size: 0.9rem; border: 1px solid #e2e8f0; overflow: hidden;" title="View Profile">
-                {% if user.profile_picture %}
-                <img src="{{ user.profile_picture.url }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
-                {% else %}
-                {{ user.username|first|upper }}
-                {% endif %}
-            </a>
-        </div>
-    </header>
+<div class="ep-dash-header">
+    <div>
+        <h1 class="ep-dash-title">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+        <p class="ep-dash-subtitle">Here is a summary of your activity</p>
+    </div>
+    <div class="ep-dash-header-actions">
+        <a href="{% url 'notifications:list' %}" class="ep-dash-notify-btn" title="Notifications">
+            <i class="bi bi-bell{% if sidebar_unread_notifications %}-fill{% endif %}"></i>
+            {% if sidebar_unread_notifications %}
+            <span class="ep-dash-notify-badge">{{ sidebar_unread_notifications }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'events:list' %}" class="btn ep-btn-primary ep-dash-action">
+            <i class="bi bi-search me-1"></i> Browse Events
+        </a>
+    </div>
+</div>
 
-    <!-- ─── 2. STATISTICS CARDS (4) ──────────────────────────────────────── -->
-    <div class="row g-4 mb-4" style="margin-bottom: 24px !important;">
-        <!-- Card 1: Total Bookings -->
-        <div class="col-md-3 col-sm-6">
-            <div class="card h-100 p-3" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Total Bookings</span>
-                    <span class="text-primary" style="font-size: 1.1rem; display: inline-flex;"><i class="bi bi-ticket-perforated"></i></span>
-                </div>
-                <div class="fw-bold text-dark" style="font-size: 1.5rem; line-height: 1.2;">{{ my_bookings_count }}</div>
-            </div>
-        </div>
-        <!-- Card 2: Upcoming Events -->
-        <div class="col-md-3 col-sm-6">
-            <div class="card h-100 p-3" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Upcoming Events</span>
-                    <span class="text-success" style="font-size: 1.1rem; display: inline-flex;"><i class="bi bi-calendar-check"></i></span>
-                </div>
-                <div class="fw-bold text-dark" style="font-size: 1.5rem; line-height: 1.2;">{{ upcoming_bookings|length }}</div>
-            </div>
-        </div>
-        <!-- Card 3: Wishlist -->
-        <div class="col-md-3 col-sm-6">
-            <div class="card h-100 p-3" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Wishlist</span>
-                    <span class="text-danger" style="font-size: 1.1rem; display: inline-flex;"><i class="bi bi-heart"></i></span>
-                </div>
-                <div class="fw-bold text-dark" style="font-size: 1.5rem; line-height: 1.2;">{{ wishlist_count }}</div>
-            </div>
-        </div>
-        <!-- Card 4: Recommended Events -->
-        <div class="col-md-3 col-sm-6">
-            <div class="card h-100 p-3" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Recommended Events</span>
-                    <span class="text-warning" style="font-size: 1.1rem; display: inline-flex;"><i class="bi bi-stars"></i></span>
-                </div>
-                <div class="fw-bold text-dark" style="font-size: 1.5rem; line-height: 1.2;">{{ recommended_events|length }}</div>
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-4">
+        <div class="ep-stat-card ep-stat-blue">
+            <div class="ep-stat-icon"><i class="bi bi-ticket-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ my_bookings_count }}</div>
+                <div class="ep-stat-label">Total Bookings</div>
             </div>
         </div>
     </div>
-
-    <!-- ─── 3. MAIN CONTENT (Conditional Grid Layout) ────────────────────── -->
-    {% if upcoming_bookings %}
-    <div class="row g-4 mb-4 align-items-start" style="margin-bottom: 24px !important;">
-        <!-- LEFT: Upcoming Bookings (8 columns) -->
-        <div class="col-xl-8 col-lg-7">
-            <div class="card border-0" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff;">
-                <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #FAFBFC; border-top-left-radius: 16px; border-top-right-radius: 16px;">
-                    <h3 class="m-0 fw-bold" style="font-size: 0.95rem; color: #0f172a;"><i class="bi bi-calendar-event text-primary me-2"></i>Upcoming Bookings</h3>
-                    <a href="{% url 'bookings:history' %}" class="btn btn-xs btn-outline-secondary px-3 py-1.5" style="font-weight: 600; border-radius: 6px; font-size: 0.75rem;">View History</a>
-                </div>
-                <div class="p-4 d-flex flex-column gap-3">
-                    {% for booking in upcoming_bookings %}
-                    <div class="p-3 border" style="border-radius: 12px; background: #ffffff; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; border-color: #e2e8f0 !important;">
-                        
-                        <!-- Left Info Block: Image + Metadata -->
-                        <div class="d-flex align-items-center gap-3 flex-grow-1" style="min-width: 280px;">
-                            <!-- Event Image -->
-                            <div style="width: 72px; height: 72px; border-radius: 8px; overflow: hidden; background: #f1f5f9; flex-shrink: 0;">
-                                {% include 'partials/event_banner.html' with event=booking.event img_class='w-100 h-100 object-fit-cover' %}
-                            </div>
-                            <!-- Event Details -->
-                            <div>
-                                <div class="badge bg-primary-subtle text-primary border border-primary-subtle mb-1" style="font-size: 0.65rem; border-radius: 4px;">
-                                    {{ booking.event.category.name|default:"General" }}
-                                </div>
-                                <h4 class="fw-bold text-dark mb-1" style="font-size: 0.95rem; line-height: 1.3;">{{ booking.event.title }}</h4>
-                                <div class="text-muted small d-flex flex-wrap gap-2" style="font-size: 0.75rem;">
-                                    <span><i class="bi bi-geo-alt me-1"></i>{{ booking.event.venue|truncatechars:28 }}</span>
-                                    <span>&middot;</span>
-                                    <span><i class="bi bi-clock me-1"></i>{{ booking.event.date|date:"d M Y" }} @ {{ booking.event.time|time:"g:i A" }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Status Badge -->
-                        <div class="flex-shrink-0" style="width: 100px; text-align: center;">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5" style="font-size: 0.72rem; border-radius: 50px;">
-                                {{ booking.get_status_display }}
-                            </span>
-                        </div>
-
-                        <!-- Actions block: Ticket + Download PDF buttons in one row, fixed width -->
-                        <div class="d-flex gap-2 justify-content-end flex-shrink-0" style="min-width: 210px;">
-                            <a href="{% url 'bookings:detail' booking.id %}" class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center gap-1" style="border-radius: 6px; font-weight: 600; font-size: 0.78rem; width: 100px; height: 36px;" title="View Ticket">
-                                <i class="bi bi-ticket-perforated"></i> Ticket
-                            </a>
-                            <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn btn-sm btn-primary d-flex align-items-center justify-content-center gap-1" style="border-radius: 6px; background: #6D5DF6; border: none; font-weight: 600; font-size: 0.78rem; width: 100px; height: 36px; color: #fff;" title="Download PDF">
-                                <i class="bi bi-download"></i> PDF
-                            </a>
-                        </div>
-                        
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- RIGHT: Quick Actions (4 columns) -->
-        <div class="col-xl-4 col-lg-5">
-            <div class="card border-0 d-flex flex-column" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff;">
-                <div class="p-3 border-bottom" style="background: #FAFBFC; border-top-left-radius: 16px; border-top-right-radius: 16px;">
-                    <h3 class="m-0 fw-bold" style="font-size: 0.95rem; color: #0f172a;"><i class="bi bi-lightning text-primary me-2"></i>Quick Actions</h3>
-                </div>
-                <div class="p-4 d-flex flex-column gap-3">
-                    <a href="{% url 'events:list' %}" class="d-flex align-items-center justify-content-between p-3 border text-decoration-none" style="border-radius: 12px; background: #ffffff; transition: transform 0.2s, background-color 0.2s; border-color: #e2e8f0 !important; color: inherit;">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="d-flex align-items-center justify-content-center rounded-3" style="width: 36px; height: 36px; background-color: #EEF2FF !important; color: #4F46E5 !important; font-size: 1.1rem;">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <div>
-                                <h5 class="fw-bold text-dark m-0" style="font-size: 0.88rem;">Find Events</h5>
-                                <p class="text-muted small m-0 mt-0.5" style="font-size: 0.72rem;">Explore upcoming events in your city</p>
-                            </div>
-                        </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
-                    </a>
-                    
-                    <a href="{% url 'bookings:history' %}" class="d-flex align-items-center justify-content-between p-3 border text-decoration-none" style="border-radius: 12px; background: #ffffff; transition: transform 0.2s, background-color 0.2s; border-color: #e2e8f0 !important; color: inherit;">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="d-flex align-items-center justify-content-center rounded-3" style="width: 36px; height: 36px; background-color: #ECFDF5 !important; color: #10B981 !important; font-size: 1.1rem;">
-                                <i class="bi bi-ticket-perforated"></i>
-                            </span>
-                            <div>
-                                <h5 class="fw-bold text-dark m-0" style="font-size: 0.88rem;">My Bookings</h5>
-                                <p class="text-muted small m-0 mt-0.5" style="font-size: 0.72rem;">Manage your tickets and receipts</p>
-                            </div>
-                        </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
-                    </a>
-                    
-                    <a href="{% url 'accounts:wishlist' %}" class="d-flex align-items-center justify-content-between p-3 border text-decoration-none" style="border-radius: 12px; background: #ffffff; transition: transform 0.2s, background-color 0.2s; border-color: #e2e8f0 !important; color: inherit;">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="d-flex align-items-center justify-content-center rounded-3" style="width: 36px; height: 36px; background-color: #FEF2F2 !important; color: #EF4444 !important; font-size: 1.1rem;">
-                                <i class="bi bi-heart"></i>
-                            </span>
-                            <div>
-                                <h5 class="fw-bold text-dark m-0" style="font-size: 0.88rem;">Saved List</h5>
-                                <p class="text-muted small m-0 mt-0.5" style="font-size: 0.72rem;">View your bookmarked events</p>
-                            </div>
-                        </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
-                    </a>
-
-                    <a href="{% url 'accounts:profile' %}" class="d-flex align-items-center justify-content-between p-3 border text-decoration-none" style="border-radius: 12px; background: #ffffff; transition: transform 0.2s, background-color 0.2s; border-color: #e2e8f0 !important; color: inherit;">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="d-flex align-items-center justify-content-center rounded-3" style="width: 36px; height: 36px; background-color: #FFFBEB !important; color: #F59E0B !important; font-size: 1.1rem;">
-                                <i class="bi bi-person-gear"></i>
-                            </span>
-                            <div>
-                                <h5 class="fw-bold text-dark m-0" style="font-size: 0.88rem;">Settings</h5>
-                                <p class="text-muted small m-0 mt-0.5" style="font-size: 0.72rem;">Edit your preferences and profile</p>
-                            </div>
-                        </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
-                    </a>
-                </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="ep-stat-card ep-stat-green">
+            <div class="ep-stat-icon"><i class="bi bi-calendar-check-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ upcoming_bookings|length }}</div>
+                <div class="ep-stat-label">Upcoming Events</div>
             </div>
         </div>
     </div>
-    {% else %}
-    <!-- Full-Width Empty State Card (no sidebar) -->
-    <div class="card border-0 mb-4" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff;">
-        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4" style="height: 200px;">
-            <div class="text-muted mb-2" style="font-size: 1.6rem; line-height: 1;"><i class="bi bi-calendar-x"></i></div>
-            <h5 class="fw-semibold text-dark mb-1" style="font-size: 0.95rem; line-height: 1.2;">No upcoming events</h5>
-            <p class="text-muted small mb-3" style="font-size: 0.78rem; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.4;">You don't have any upcoming event bookings scheduled.</p>
-            <a href="{% url 'events:list' %}" class="btn btn-sm btn-primary px-4 py-1.5" style="border-radius: 8px; background: #6D5DF6; border: none; font-size: 0.78rem; font-weight: 600; color: #fff;">Browse Events</a>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- ─── 4. RECOMMENDED EVENTS (12 columns CSS Grid) ────────────────────── -->
-    {% if recommended_events %}
-    <div class="card border-0 mb-4" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff;">
-        <div class="p-3 border-bottom" style="background: #FAFBFC; border-top-left-radius: 16px; border-top-right-radius: 16px;">
-            <h3 class="m-0 fw-bold" style="font-size: 0.95rem; color: #0f172a;"><i class="bi bi-stars text-warning me-2"></i>Recommended For You</h3>
-        </div>
-        <div class="p-4">
-            <div class="row g-4">
-                {% for event in recommended_events|slice:":3" %}
-                <div class="col-lg-4 col-md-6 col-12">
-                    <div class="card h-100 d-flex flex-column" style="border: 1px solid #e2e8f0 !important; border-radius: 14px; overflow: hidden; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.01); transition: transform 0.2s;">
-                        <div style="height: 140px; overflow: hidden; position: relative; background: #f1f5f9;">
-                            {% include 'partials/event_banner.html' with event=event img_class='w-100 h-100 object-fit-cover' %}
-                            <div class="position-absolute" style="top: 8px; left: 8px;">
-                                <span class="badge bg-white text-dark shadow-sm border" style="font-size: 0.65rem; border-radius: 4px; padding: 0.25rem 0.5rem; font-weight: 600;">
-                                    {{ event.category.name|default:"General" }}
-                                </span>
-                            </div>
-                            <div class="position-absolute" style="top: 8px; right: 8px;">
-                                <a href="{% url 'accounts:toggle_wishlist' event.id %}" class="btn btn-sm btn-light shadow-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; border: 1px solid #e2e8f0; background: #fff; transition: all 0.2s;" title="Save Event">
-                                    {% if event.id in wishlist_ids %}
-                                    <i class="bi bi-heart-fill text-danger" style="font-size: 0.8rem;"></i>
-                                    {% else %}
-                                    <i class="bi bi-heart text-muted" style="font-size: 0.8rem;"></i>
-                                    {% endif %}
-                                </a>
-                            </div>
-                        </div>
-                        <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
-                            <div>
-                                <h4 class="fw-bold text-dark mb-1" style="font-size: 0.88rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.7em;">{{ event.title }}</h4>
-                                <p class="text-muted small mb-2 d-flex align-items-center gap-1" style="font-size: 0.72rem; margin-bottom: 8px;">
-                                    <i class="bi bi-geo-alt"></i>{{ event.city }} &middot; {{ event.date|date:"d M Y" }}
-                                </p>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
-                                <div class="fw-bold text-success" style="font-size: 0.9rem;">
-                                    {% if event.ticket_price == 0 %}FREE{% else %}₹{{ event.ticket_price|floatformat:0 }}{% endif %}
-                                </div>
-                                <a href="{% url 'events:detail' event.id %}" class="btn btn-xs btn-primary px-3 py-1.5" style="border-radius: 6px; background: #6D5DF6; border: none; font-size: 0.75rem; font-weight: 600; color: #fff;">View Event</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- ─── 5. BROWSE CATEGORIES ─────────────────────────────────────────── -->
-    <div class="card border-0 mb-4" style="border-radius: 16px; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.02); background: #ffffff;">
-        <div class="p-3 border-bottom" style="background: #FAFBFC; border-top-left-radius: 16px; border-top-right-radius: 16px;">
-            <h3 class="m-0 fw-bold" style="font-size: 0.95rem; color: #0f172a;"><i class="bi bi-grid text-success me-2"></i>Browse Categories</h3>
-        </div>
-        <div class="p-4">
-            <div class="row g-4">
-                <!-- Technology -->
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="card h-100 p-3 text-center d-flex flex-column justify-content-between align-items-center" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div class="d-flex align-items-center justify-content-center rounded-3 mb-3" style="width: 48px; height: 48px; font-size: 1.5rem; background-color: #EEF2FF !important; color: #4F46E5 !important;">
-                            <i class="bi bi-laptop"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-3" style="font-size: 0.88rem;">Technology</h4>
-                        </div>
-                        <a href="{% url 'events:list' %}?category=3" class="btn btn-xs btn-outline-secondary w-100 py-1.5" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Explore</a>
-                    </div>
-                </div>
-                <!-- Music -->
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="card h-100 p-3 text-center d-flex flex-column justify-content-between align-items-center" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div class="d-flex align-items-center justify-content-center rounded-3 mb-3" style="width: 48px; height: 48px; font-size: 1.5rem; background-color: #ECFDF5 !important; color: #10B981 !important;">
-                            <i class="bi bi-music-note-beamed"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-3" style="font-size: 0.88rem;">Music</h4>
-                        </div>
-                        <a href="{% url 'events:list' %}?category=1" class="btn btn-xs btn-outline-secondary w-100 py-1.5" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Explore</a>
-                    </div>
-                </div>
-                <!-- Business -->
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="card h-100 p-3 text-center d-flex flex-column justify-content-between align-items-center" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div class="d-flex align-items-center justify-content-center rounded-3 mb-3" style="width: 48px; height: 48px; font-size: 1.5rem; background-color: #E0F2FE !important; color: #0284C7 !important;">
-                            <i class="bi bi-briefcase"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-3" style="font-size: 0.88rem;">Business</h4>
-                        </div>
-                        <a href="{% url 'events:list' %}?category=6" class="btn btn-xs btn-outline-secondary w-100 py-1.5" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Explore</a>
-                    </div>
-                </div>
-                <!-- Sports -->
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="card h-100 p-3 text-center d-flex flex-column justify-content-between align-items-center" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div class="d-flex align-items-center justify-content-center rounded-3 mb-3" style="width: 48px; height: 48px; font-size: 1.5rem; background-color: #FEF2F2 !important; color: #EF4444 !important;">
-                            <i class="bi bi-trophy"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-3" style="font-size: 0.88rem;">Sports</h4>
-                        </div>
-                        <a href="{% url 'events:list' %}?category=2" class="btn btn-xs btn-outline-secondary w-100 py-1.5" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Explore</a>
-                    </div>
-                </div>
-                <!-- Food -->
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="card h-100 p-3 text-center d-flex flex-column justify-content-between align-items-center" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div class="d-flex align-items-center justify-content-center rounded-3 mb-3" style="width: 48px; height: 48px; font-size: 1.5rem; background-color: #FFFBEB !important; color: #F59E0B !important;">
-                            <i class="bi bi-cup-hot"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-3" style="font-size: 0.88rem;">Food</h4>
-                        </div>
-                        <a href="{% url 'events:list' %}?category=4" class="btn btn-xs btn-outline-secondary w-100 py-1.5" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Explore</a>
-                    </div>
-                </div>
-                <!-- Arts -->
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="card h-100 p-3 text-center d-flex flex-column justify-content-between align-items-center" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #ffffff; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div class="d-flex align-items-center justify-content-center rounded-3 mb-3" style="width: 48px; height: 48px; font-size: 1.5rem; background-color: #F3F4F6 !important; color: #4B5563 !important;">
-                            <i class="bi bi-palette"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-3" style="font-size: 0.88rem;">Arts</h4>
-                        </div>
-                        <a href="{% url 'events:list' %}?category=5" class="btn btn-xs btn-outline-secondary w-100 py-1.5" style="border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Explore</a>
-                    </div>
-                </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="ep-stat-card ep-stat-orange">
+            <div class="ep-stat-icon"><i class="bi bi-star-fill"></i></div>
+            <div class="ep-stat-info">
+                <div class="ep-stat-num">{{ recommended_events|length }}</div>
+                <div class="ep-stat-label">Recommendations</div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="ep-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Upcoming Events</h6>
+        <a href="{% url 'bookings:history' %}" class="btn ep-btn-outline btn-sm">All Bookings</a>
+    </div>
+    {% for booking in upcoming_bookings %}
+    <div class="ep-activity-row">
+        <div class="ep-avatar-xs bg-primary"><i class="bi bi-calendar text-white" style="font-size:0.7rem;"></i></div>
+        <div class="flex-grow-1">
+            <div class="fw-semibold small">{{ booking.event.title }}</div>
+            <div class="text-muted" style="font-size:0.75rem;">{{ booking.event.date }} &middot; {{ booking.event.venue|truncatechars:25 }}</div>
+        </div>
+        <div class="d-flex gap-1">
+            <a href="{% url 'bookings:detail' booking.id %}" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;">Ticket</a>
+            <a href="{% url 'bookings:download_pdf' booking.id %}" class="btn ep-btn-primary btn-sm" style="font-size:0.7rem;">
+                <i class="bi bi-download"></i>
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4 ep-empty-state">
+        <div class="ep-empty-icon"><i class="bi bi-calendar-x"></i></div>
+        <p class="text-muted mb-3">No upcoming events booked yet.</p>
+        <a href="{% url 'events:list' %}" class="btn ep-btn-primary btn-sm">Find Events</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if recommended_events %}
+<div class="ep-card p-4">
+    <h6 class="fw-bold mb-1"><i class="bi bi-stars me-2 text-warning"></i>Recommended For You</h6>
+    <p class="text-muted small mb-3">Based on your interests and booking history</p>
+    <div class="row g-3">
+        {% for event in recommended_events %}
+        <div class="col-md-6">
+            <div class="ep-rec-card d-flex gap-3 align-items-center p-3">
+                {% include 'partials/event_banner.html' with event=event img_class='ep-rec-thumb' size_class='ep-banner-thumb' show_label=False %}
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small">{{ event.title|truncatechars:25 }}</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ event.date }}</div>
+                    <div class="text-success fw-bold small">
+                        {% if event.ticket_price == 0 %}FREE{% else %}&#8377;{{ event.ticket_price }}{% endif %}
+                    </div>
+                </div>
+                <a href="{% url 'events:detail' event.id %}" class="btn ep-btn-primary btn-sm">View</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

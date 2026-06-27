@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Workspace Members{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header ep-ent-animate">
+    <div>
+        <h1>Workspace Members</h1>
+        <p>Invite and manage staff members, volunteers, marketers, and financial managers inside your workspace.</p>
+    </div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-8">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Roster List</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="ep-ent-table" id="membersTable">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members %}
+                        <tr>
+                            <td><strong>{{ member.username }}</strong></td>
+                            <td>{{ member.email }}</td>
+                            <td>{{ member.first_name }}</td>
+                            <td>{{ member.last_name }}</td>
+                            <td><span class="badge bg-secondary">{{ member.get_role_display }}</span></td>
+                            <td>
+                                {% if member.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No other members registered in your workspace yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Invite Member</h5>
+            </div>
+            <form method="POST" action="{% url 'accounts:invite_member' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="e.g. janesmith" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="e.g. jane@company.com" required>
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Workspace Role</label>
+                    <select class="form-select" id="role" name="role" required>
+                        <option value="event_manager">Event Manager</option>
+                        <option value="finance">Finance Manager</option>
+                        <option value="marketing">Marketing Specialist</option>
+                        <option value="staff">Check-in Staff</option>
+                        <option value="volunteer">Volunteer</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn ep-btn-primary w-100">Send Invitation</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $('#membersTable').DataTable({ pageLength: 10, searching: true });
+});
+</script>
+{% endblock %}

@@ -35,3 +35,21 @@ class Payment(models.Model):
     
     def __str__(self):
         return f"Payment {str(self.payment_id)[:8]} - {self.status} - INR {self.amount}"
+
+
+class Payout(models.Model):
+    """SaaS payouts to Organizer Bank details"""
+    organization = models.ForeignKey('accounts.Organization', on_delete=models.CASCADE, related_name='payouts')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('processed', 'Processed'), ('failed', 'Failed')],
+        default='pending'
+    )
+    bank_details = models.TextField()
+    requested_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Payout {self.amount} for {self.organization.name} - {self.status}"
+

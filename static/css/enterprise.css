@@ -2848,28 +2848,3 @@ body.ep-sidebar-open { overflow: hidden; }
     padding-right: 12px;
     padding-left: 12px;
 }
-
-/* Spacing, rounded corners and hover lift effects for User Dashboard layout */
-.ep-users-admin .card {
-    border-radius: 18px !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.ep-users-admin .row {
-    margin-right: -12px;
-    margin-left: -12px;
-}
-.ep-users-admin .col,
-.ep-users-admin .col-md-2,
-.ep-users-admin .col-md-3,
-.ep-users-admin .col-sm-6,
-.ep-users-admin .col-xl-8,
-.ep-users-admin .col-lg-7,
-.ep-users-admin .col-xl-4,
-.ep-users-admin .col-lg-5 {
-    padding-right: 12px;
-    padding-left: 12px;
-}
-.ep-users-admin .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
-}

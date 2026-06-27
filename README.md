@@ -129,7 +129,7 @@ pip install django pillow qrcode reportlab
 
 ### 2. Run migrations
 ```bash
-python manage.py makemigrations
+    python manage.py makemigrations
 python manage.py migrate
 ```
 

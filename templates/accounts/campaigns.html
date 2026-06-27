@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Email & Notifications Campaigns{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header ep-ent-animate">
+    <div>
+        <h1>Campaign Manager</h1>
+        <p>Send marketing email broadcasts and push notifications directly to registered event attendees.</p>
+    </div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-8">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5><i class="bi bi-megaphone me-2 text-primary"></i>Create Broadcast Campaign</h5>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="event_id" class="form-label">Target Event</label>
+                    <select class="form-select" id="event_id" name="event_id" required>
+                        <option value="">Select an Event...</option>
+                        {% for event in events %}
+                        <option value="{{ event.id }}">{{ event.title }} ({{ event.bookings.count }} registered)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="method" class="form-label">Delivery Channel</label>
+                    <select class="form-select" id="method" name="method" required>
+                        <option value="email">Simulated Email Blast</option>
+                        <option value="push">In-App Push Notification</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Campaign Subject / Title</label>
+                    <input type="text" class="form-control" id="subject" name="subject" placeholder="e.g. Schedule Update / Welcome Instructions" required>
+                </div>
+                <div class="mb-3">
+                    <label for="body" class="form-label">Campaign Body / Message</label>
+                    <textarea class="form-control" id="body" name="body" rows="6" placeholder="Write your announcement or newsletter details here..." required></textarea>
+                </div>
+                <button type="submit" class="btn ep-btn-primary"><i class="bi bi-send me-1"></i>Launch Campaign</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>SMS Integration Ready</h5>
+            </div>
+            <div class="p-2 border rounded bg-light text-muted small">
+                <i class="bi bi-info-circle me-1"></i> SMS Gateway status: <strong>Log-only / Ready</strong>. The platform is configured to log outbound SMS notification requests directly in the console backend for debug tracing.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -103,3 +103,31 @@ def category_distribution():
         .order_by('-count')[:8]
     )
     return [r['category__name'] for r in qs], [r['count'] for r in qs]
+
+
+def check_subscription_limits(organization, feature, current_value=0):
+    """
+    Checks if the organization is within subscription limits.
+    Features:
+      'max_events': Free=3, Pro=15, Enterprise=9999
+      'max_capacity': Free=100, Pro=1000, Enterprise=999999
+      'custom_branding': Free=False, Pro=True, Enterprise=True
+      'custom_domain': Free=False, Pro=False, Enterprise=True
+    """
+    if not organization:
+        return True
+    
+    tier = organization.subscription_tier
+    if feature == 'max_events':
+        event_count = organization.events.exclude(status='completed').count()
+        limit = {'free': 3, 'pro': 15, 'enterprise': 9999}.get(tier, 3)
+        return event_count < limit
+    elif feature == 'max_capacity':
+        limit = {'free': 100, 'pro': 1000, 'enterprise': 999999}.get(tier, 100)
+        return current_value <= limit
+    elif feature == 'custom_branding':
+        return tier in ['pro', 'enterprise']
+    elif feature == 'custom_domain':
+        return tier == 'enterprise'
+    return True
+

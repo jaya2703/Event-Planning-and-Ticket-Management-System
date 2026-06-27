@@ -34,6 +34,9 @@ urlpatterns = [
     
     # Notifications
     path('notifications/', include('notifications.urls')),
+    
+    # Networking
+    path('networking/', include('networking.urls')),
 ]
 
 # This tells Django to serve uploaded files (banners, QR codes) during development

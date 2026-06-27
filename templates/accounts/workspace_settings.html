@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Workspace Settings{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header ep-ent-animate">
+    <div>
+        <h1>Workspace Settings</h1>
+        <p>Manage your Organization profile, primary branding colors, logo, and domain.</p>
+    </div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-8">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5><i class="bi bi-gear-fill me-2 text-primary"></i>Organization Details</h5>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="name" class="form-label">Organization Name</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ org.name }}" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="branding_color" class="form-label">Primary Brand Color</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="color" class="form-control form-control-color" id="branding_color" name="branding_color" value="{{ org.branding_color }}" title="Choose primary branding color">
+                            <span class="text-muted small">Current: {{ org.branding_color }}</span>
+                        </div>
+                        <span class="form-text text-muted">Requires Pro or Enterprise tier plan.</span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="custom_domain" class="form-label">Custom Domain</label>
+                        <input type="text" class="form-control" id="custom_domain" name="custom_domain" value="{{ org.custom_domain|default:'' }}" placeholder="e.g. events.mycompany.com">
+                        <span class="form-text text-muted">Requires Enterprise tier plan.</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="logo" class="form-label">Workspace Logo</label>
+                    {% if org.logo %}
+                    <div class="mb-2">
+                        <img src="{{ org.logo.url }}" alt="Logo" class="img-thumbnail" style="max-height: 80px;">
+                    </div>
+                    {% endif %}
+                    <input class="form-control" type="file" id="logo" name="logo">
+                </div>
+                <button type="submit" class="btn ep-btn-primary"><i class="bi bi-save me-1"></i>Save Changes</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Workspace Billing</h5>
+            </div>
+            <div class="text-center py-3">
+                <div class="ep-badge-role-sm bg-primary text-white fs-6 mb-2">{{ org.get_subscription_tier_display }} Plan</div>
+                <p class="text-muted small">Status: <span class="badge bg-success">{{ org.get_subscription_status_display }}</span></p>
+                <a href="{% url 'accounts:subscription_plans' %}" class="btn btn-sm ep-btn-outline w-100 mt-2">Manage Subscription</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

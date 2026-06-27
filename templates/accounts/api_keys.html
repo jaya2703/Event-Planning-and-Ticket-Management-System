@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Developer API Keys{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header ep-ent-animate">
+    <div>
+        <h1>Integration API Keys</h1>
+        <p>Access your credentials and API key placeholders for external ticketing integrations.</p>
+    </div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <div class="col-lg-8">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Active API Credentials</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="ep-ent-table">
+                    <thead>
+                        <tr>
+                            <th>Key Description</th>
+                            <th>Credentials Key Prefix</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for k in keys %}
+                        <tr>
+                            <td><strong>{{ k.name }}</strong></td>
+                            <td><code>{{ k.key }}</code></td>
+                            <td>{{ k.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No API credentials generated yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Generate Key Credentials</h5>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="name" class="form-label">Key Label / Name</label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="e.g. Website Ticketing Plugin" required>
+                </div>
+                <button type="submit" class="btn ep-btn-primary w-100">Create Key</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

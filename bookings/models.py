@@ -9,6 +9,25 @@ from django.conf import settings
 from events.models import Event
 
 
+class PromoCode(models.Model):
+    """
+    Promo codes for ticket discount logic.
+    """
+    organization = models.ForeignKey('accounts.Organization', on_delete=models.CASCADE, related_name='promo_codes', null=True, blank=True)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='promo_codes', null=True, blank=True)
+    code = models.CharField(max_length=50, unique=True)
+    discount_type = models.CharField(max_length=20, choices=[('percentage', 'Percentage'), ('flat', 'Flat')], default='percentage')
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+    active = models.BooleanField(default=True)
+    max_uses = models.PositiveIntegerField(default=100)
+    used_count = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return self.code
+
+
 class Booking(models.Model):
     """
     Represents a ticket booking by a user for an event.
@@ -54,14 +73,29 @@ class Booking(models.Model):
     # Waitlist position (if waitlisted)
     waitlist_position = models.PositiveIntegerField(null=True, blank=True)
     
+    # Attendee SaaS extensions
+    attendee_notes = models.TextField(blank=True, default='')
+    promo_code = models.ForeignKey(PromoCode, on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
+    badge_printed = models.BooleanField(default=False)
+    
     def __str__(self):
         return f"Booking #{str(self.booking_id)[:8]} - {self.user.username} -> {self.event.title}"
     
     def save(self, *args, **kwargs):
         if self.ticket_tier:
-            self.total_price = self.ticket_tier.price * self.quantity
+            price = self.ticket_tier.price
         else:
-            self.total_price = self.event.ticket_price * self.quantity
+            price = self.event.ticket_price
+        
+        base_total = price * self.quantity
+        if self.promo_code:
+            if self.promo_code.discount_type == 'percentage':
+                discount = base_total * (self.promo_code.discount_value / 100)
+            else:
+                discount = self.promo_code.discount_value
+            self.total_price = max(0, base_total - discount)
+        else:
+            self.total_price = base_total
         super().save(*args, **kwargs)
 
     @property
@@ -71,12 +105,12 @@ class Booking(models.Model):
         from payments.models import Payment
         return Payment.objects.filter(
             booking=self, status='success', is_refunded=False
-        ).exists()
+        ).exists() and not hasattr(self, 'refund')
 
     @property
     def is_refunded_booking(self):
         from payments.models import Payment
-        return Payment.objects.filter(booking=self, is_refunded=True).exists()
+        return Payment.objects.filter(booking=self, is_refunded=True).exists() or (hasattr(self, 'refund') and self.refund.status == 'approved')
 
 
 class Waitlist(models.Model):
@@ -97,3 +131,21 @@ class Waitlist(models.Model):
     
     def __str__(self):
         return f"Waitlist #{self.position} - {self.user.username} for {self.event.title}"
+
+
+class Refund(models.Model):
+    """SaaS refund request processing"""
+    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='refund')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')],
+        default='pending'
+    )
+    reason = models.TextField(blank=True, null=True)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Refund for Booking #{str(self.booking.booking_id)[:8]} - {self.status}"
+

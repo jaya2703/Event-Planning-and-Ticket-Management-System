@@ -29,6 +29,13 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('change-password/', views.change_password_view, name='change_password'),
     path('notification/<int:notification_id>/read/', views.mark_notification_read, name='mark_read'),
+    # SaaS Workspace Routes
+    path('workspace/settings/', views.workspace_settings, name='workspace_settings'),
+    path('workspace/members/', views.list_members, name='list_members'),
+    path('workspace/members/invite/', views.invite_member, name='invite_member'),
+    path('workspace/api-keys/', views.generate_api_key, name='generate_api_key'),
+    path('workspace/campaigns/', views.campaign_manager, name='campaign_manager'),
+    path('workspace/subscriptions/', views.subscription_plans, name='subscription_plans'),
     
     # Django's built-in password reset (uses email)
     path('password-reset/', auth_views.PasswordResetView.as_view(

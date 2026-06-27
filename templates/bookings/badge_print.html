@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Badge - {{ booking.user.get_full_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .badge-card {
+            width: 320px;
+            height: 480px;
+            background: #ffffff;
+            border: 2px solid #6c5ce7;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .badge-header {
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .badge-content {
+            margin-top: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+            justify-content: center;
+        }
+        .badge-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3436;
+            margin-top: 10px;
+            margin-bottom: 2px;
+        }
+        .badge-company {
+            font-size: 14px;
+            color: #636e72;
+            margin-bottom: 15px;
+        }
+        .badge-qr img {
+            width: 120px;
+            height: 120px;
+            border: 1px solid #dfe6e9;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        .badge-footer {
+            width: 100%;
+            border-top: 1px dashed #dfe6e9;
+            padding-top: 15px;
+            font-size: 11px;
+            color: #b2bec3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-type {
+            background-color: #6c5ce7;
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        @media print {
+            body {
+                background: none;
+                margin: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .badge-card {
+                box-shadow: none;
+                border: 1px solid #000000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex flex-column align-items-center">
+        <div class="badge-card">
+            <div class="badge-header">
+                {{ booking.event.title|truncatechars:20 }}
+            </div>
+            
+            <div class="badge-content">
+                <div class="badge-name">{{ booking.user.get_full_name|default:booking.user.username }}</div>
+                <div class="badge-company">{{ booking.user.attendee_profile.company|default:"Attendee" }}</div>
+                
+                <span class="badge-type">{{ booking.ticket_tier.name|default:"General Access" }}</span>
+                
+                <div class="badge-qr">
+                    {% if booking.qr_code %}
+                    <img src="{{ booking.qr_code.url }}" alt="QR Ticket">
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="badge-footer">
+                EventPro SaaS Platform
+            </div>
+        </div>
+        
+        <button onclick="window.print()" class="btn btn-primary mt-4 no-print"><i class="bi bi-printer me-1"></i>Print Badge</button>
+    </div>
+</body>
+</html>

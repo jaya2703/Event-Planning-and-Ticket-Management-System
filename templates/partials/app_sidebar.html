@@ -2,11 +2,7 @@
 <aside class="ep-sidebar{% if user.role == 'admin' %} ep-sidebar--accordion{% endif %}" id="epAppSidebar">
     {% include 'partials/sidebar_brand.html' %}
     <div class="ep-sidebar-user">
-        {% if user.profile_picture %}
-        <img src="{{ user.profile_picture.url }}" alt="Profile" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; flex-shrink: 0;">
-        {% else %}
         <div class="ep-avatar-sm">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-        {% endif %}
         <div>
             <div class="fw-semibold small text-white">{{ user.get_full_name|default:user.username }}</div>
             <div class="ep-badge-role-sm">{{ user.get_role_display }}</div>
@@ -15,12 +11,12 @@
     <nav class="ep-sidebar-nav{% if user.role == 'admin' %} ep-sidebar-nav--admin{% endif %}">
         {% if user.role != 'admin' %}
         <a href="{% url 'accounts:dashboard' %}"
-           class="ep-nav-item{% if name == 'dashboard' or user.role == 'user' and name == 'user_dashboard' or user.role == 'organizer' and name == 'organizer_dashboard' %} active{% endif %}">
+           class="ep-nav-item{% if name == 'dashboard' or user.role == 'user' and name == 'user_dashboard' or user.role in 'organizer,event_manager,finance,marketing,staff,volunteer' and name == 'organizer_dashboard' %} active{% endif %}">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
         {% endif %}
 
-        {% if user.role == 'organizer' %}
+        {% if user.role in 'organizer,event_manager' %}
         <a href="{% url 'events:create' %}"
            class="ep-nav-item{% if ns == 'events' and name == 'create' or ns == 'events' and name == 'edit' %} active{% endif %}">
             <i class="bi bi-plus-circle"></i> Create Event
@@ -40,25 +36,51 @@
            class="ep-nav-item{% if ns == 'bookings' and name != 'scan_qr' and name != 'checkin_result' %} active{% endif %}">
             <i class="bi bi-ticket"></i> My Bookings
         </a>
+        <a href="{% url 'networking:directory' %}"
+           class="ep-nav-item{% if ns == 'networking' %} active{% endif %}">
+            <i class="bi bi-people"></i> Networking Hub
+        </a>
         {% endif %}
 
         {% if user.role == 'admin' %}
         {% include 'partials/admin_sidebar_nav.html' %}
         {% endif %}
 
-        {% if user.role == 'organizer' %}
-        <a href="{% url 'volunteers:overview' %}"
-           class="ep-nav-item{% if ns == 'volunteers' %} active{% endif %}">
-            <i class="bi bi-person-badge"></i> Event Staff
+        {% if user.role in 'organizer,event_manager,finance,marketing,staff,volunteer' %}
+        <a href="{% url 'accounts:list_members' %}"
+           class="ep-nav-item{% if name == 'list_members' %} active{% endif %}">
+            <i class="bi bi-person-badge"></i> Workspace Members
         </a>
         <a href="{% url 'accounts:organizer_dashboard' %}#my-events"
            class="ep-nav-item">
             <i class="bi bi-calendar-event"></i> My Events
         </a>
+        {% if user.role in 'organizer,event_manager,staff,volunteer' %}
         <a href="{% url 'bookings:scan_qr' %}"
            class="ep-nav-item{% if ns == 'bookings' and name == 'scan_qr' or ns == 'bookings' and name == 'checkin_result' %} active{% endif %}">
             <i class="bi bi-qr-code-scan"></i> Scan QR
         </a>
+        {% endif %}
+        {% if user.role in 'organizer,marketing' %}
+        <a href="{% url 'accounts:campaign_manager' %}"
+           class="ep-nav-item{% if name == 'campaign_manager' %} active{% endif %}">
+            <i class="bi bi-megaphone"></i> Campaigns
+        </a>
+        {% endif %}
+        {% if user.role in 'organizer,admin' %}
+        <a href="{% url 'accounts:workspace_settings' %}"
+           class="ep-nav-item{% if name == 'workspace_settings' %} active{% endif %}">
+            <i class="bi bi-gear"></i> Workspace Settings
+        </a>
+        <a href="{% url 'accounts:generate_api_key' %}"
+           class="ep-nav-item{% if name == 'generate_api_key' %} active{% endif %}">
+            <i class="bi bi-key"></i> Developer Keys
+        </a>
+        <a href="{% url 'accounts:subscription_plans' %}"
+           class="ep-nav-item{% if name == 'subscription_plans' %} active{% endif %}">
+            <i class="bi bi-credit-card"></i> Subscriptions
+        </a>
+        {% endif %}
         {% endif %}
 
         {% if user.role != 'admin' %}

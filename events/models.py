@@ -19,16 +19,53 @@ class Category(models.Model):
         return self.name
 
 
+class Venue(models.Model):
+    """
+    Venue metadata for hosting events
+    """
+    organization = models.ForeignKey('accounts.Organization', on_delete=models.CASCADE, related_name='venues', null=True, blank=True)
+    name = models.CharField(max_length=200)
+    address = models.CharField(max_length=300)
+    city = models.CharField(max_length=100)
+    capacity = models.PositiveIntegerField(default=100)
+    map_link = models.CharField(max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.city})"
+
+
+class Speaker(models.Model):
+    """
+    Event speakers profile details
+    """
+    organization = models.ForeignKey('accounts.Organization', on_delete=models.CASCADE, related_name='speakers', null=True, blank=True)
+    name = models.CharField(max_length=150)
+    title = models.CharField(max_length=150, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    avatar = models.ImageField(upload_to='speakers/', blank=True, null=True)
+    twitter = models.CharField(max_length=200, blank=True, null=True)
+    linkedin = models.CharField(max_length=200, blank=True, null=True)
+    website = models.CharField(max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Event(models.Model):
     """
     The main Event model.
     Stores all information about an event.
     """
     STATUS_CHOICES = [
-        ('upcoming', 'Upcoming'),
-        ('ongoing', 'Ongoing'),
+        ('draft', 'Draft'),
+        ('published', 'Published'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
+        ('upcoming', 'Upcoming'),
+        ('ongoing', 'Ongoing'),
     ]
     
     # Who created this event (must be an organizer or admin)
@@ -36,6 +73,15 @@ class Event(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='organized_events'
+    )
+    
+    # SaaS tenancy link
+    organization = models.ForeignKey(
+        'accounts.Organization',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events'
     )
     
     # Basic event info
@@ -49,15 +95,31 @@ class Event(models.Model):
         blank=True, null=True
     )
     
-    # When and where
+    # When and where (multi-day ready)
     date = models.DateField()
     time = models.TimeField()
+    end_date = models.DateField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
     venue = models.CharField(max_length=300)
+    venue_ref = models.ForeignKey(
+        Venue,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events'
+    )
     city = models.CharField(max_length=100, default='')
     
-    # Ticketing
+    # Ticketing & Visibility
     total_capacity = models.PositiveIntegerField(default=100)
     ticket_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    visibility = models.CharField(
+        max_length=20,
+        choices=[('public', 'Public'), ('private', 'Private')],
+        default='public'
+    )
+    password = models.CharField(max_length=50, blank=True, null=True)
+    is_template = models.BooleanField(default=False)
     
     # Rules
     rules = models.TextField(blank=True, null=True)
@@ -222,6 +284,8 @@ class TicketTier(models.Model):
         ('vip', 'VIP'),
         ('student', 'Student'),
         ('early_bird', 'Early Bird'),
+        ('group', 'Group'),
+        ('complimentary', 'Complimentary'),
     ]
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='ticket_tiers')
     tier_type = models.CharField(max_length=20, choices=TIER_CHOICES, default='general')
@@ -230,6 +294,12 @@ class TicketTier(models.Model):
     capacity = models.PositiveIntegerField(default=50)
     description = models.CharField(max_length=300, blank=True, default='')
     is_active = models.BooleanField(default=True)
+    
+    # SaaS features
+    early_bird_deadline = models.DateTimeField(null=True, blank=True)
+    ticket_limit_per_user = models.PositiveIntegerField(default=5)
+    availability_timer = models.DateTimeField(null=True, blank=True)
+    group_size = models.PositiveIntegerField(default=1, help_text="Min tickets for group tier")
 
     class Meta:
         unique_together = ['event', 'tier_type']
@@ -249,3 +319,45 @@ class TicketTier(models.Model):
     @property
     def available(self):
         return max(0, self.capacity - self.sold_count)
+
+
+class Session(models.Model):
+    """Event sessions (agenda builder)"""
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='sessions')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    speaker = models.ForeignKey(Speaker, on_delete=models.SET_NULL, null=True, blank=True, related_name='sessions')
+
+    def __str__(self):
+        return f"{self.title} ({self.event.title})"
+
+
+class Sponsor(models.Model):
+    """Event sponsors and deliverables checklist"""
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='sponsors')
+    name = models.CharField(max_length=150)
+    logo = models.ImageField(upload_to='sponsors/', blank=True, null=True)
+    website = models.CharField(max_length=200, blank=True, null=True)
+    tier = models.CharField(max_length=20, choices=[('gold', 'Gold'), ('silver', 'Silver'), ('bronze', 'Bronze')], default='silver')
+    booth_number = models.CharField(max_length=50, blank=True, null=True)
+    deliverables = models.TextField(blank=True, null=True, help_text="Deliverables checklist description")
+
+    def __str__(self):
+        return f"{self.name} ({self.event.title})"
+
+
+class EventFAQ(models.Model):
+    """Frequently asked questions for events"""
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='faqs')
+    question = models.CharField(max_length=300)
+    answer = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"FAQ: {self.question[:50]}"
+

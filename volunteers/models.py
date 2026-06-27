@@ -68,3 +68,35 @@ class VolunteerAssignment(models.Model):
 
     def __str__(self):
         return f"{self.volunteer.username} -> {self.event.title} ({self.role})"
+
+
+class Shift(models.Model):
+    """Event staff/volunteer shift schedules"""
+    event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='shifts')
+    staff = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='shifts')
+    duty = models.CharField(max_length=100)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    notes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Shift: {self.staff.username} - {self.event.title}"
+
+
+class Task(models.Model):
+    """Staff/volunteer tasks checklist"""
+    event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='tasks')
+    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='assigned_tasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('ongoing', 'Ongoing'), ('completed', 'Completed')],
+        default='pending'
+    )
+    due_date = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Task: {self.title} -> {self.assignee.username}"
+

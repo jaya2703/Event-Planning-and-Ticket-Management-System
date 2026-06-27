@@ -135,6 +135,22 @@ def event_list(request):
 def event_detail(request, event_id):
     """Single event detail page"""
     event = get_object_or_404(Event, id=event_id)
+    
+    # Private password check
+    if event.visibility == 'private' and event.password:
+        pwd_session_key = f'event_pwd_{event.id}'
+        is_pwd_verified = request.session.get(pwd_session_key) == event.password
+        if not is_pwd_verified:
+            if request.method == 'POST' and 'event_private_password' in request.POST:
+                submitted_pwd = request.POST.get('event_private_password', '').strip()
+                if submitted_pwd == event.password:
+                    request.session[pwd_session_key] = event.password
+                    messages.success(request, "Access granted!")
+                    return redirect('events:detail', event_id=event.id)
+                else:
+                    messages.error(request, "Incorrect password. Access denied.")
+            return render(request, 'events/private_password.html', {'event': event})
+
     feedbacks = EventFeedback.objects.filter(event=event).order_by('-created_at')
     polls = Poll.objects.filter(event=event, is_active=True)
     
@@ -284,3 +300,100 @@ def add_poll(request, event_id):
             messages.error(request, "Please provide a question and at least one option.")
     
     return redirect('events:detail', event_id=event.id)
+
+
+@login_required
+def duplicate_event(request, event_id):
+    """Clone an event and its settings (sessions, ticket tiers, FAQ, sponsors) as a draft."""
+    from datetime import timedelta
+    from events.models import TicketTier, Session, Sponsor, EventFAQ
+    if request.user.role not in ['organizer', 'admin']:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:dashboard')
+    
+    orig = get_object_or_404(Event, id=event_id)
+    if orig.organizer != request.user and request.user.role != 'admin':
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:dashboard')
+    
+    # Check subscription limits
+    from accounts.services import check_subscription_limits
+    if not check_subscription_limits(request.user.organization, 'max_events'):
+        messages.error(request, "Upgrade plan to create more events.")
+        return redirect('accounts:organizer_dashboard')
+
+    # Clone
+    new_event = Event.objects.create(
+        organizer=orig.organizer,
+        organization=orig.organization,
+        title=f"Copy of {orig.title}",
+        description=orig.description,
+        category=orig.category,
+        banner=orig.banner,
+        date=orig.date + timedelta(days=7),
+        time=orig.time,
+        end_date=orig.end_date + timedelta(days=7) if orig.end_date else None,
+        end_time=orig.end_time,
+        venue=orig.venue,
+        venue_ref=orig.venue_ref,
+        city=orig.city,
+        total_capacity=orig.total_capacity,
+        ticket_price=orig.ticket_price,
+        visibility=orig.visibility,
+        password=orig.password,
+        is_template=orig.is_template,
+        rules=orig.rules,
+        status='draft'
+    )
+    
+    # Clone ticket tiers
+    for tier in orig.ticket_tiers.all():
+        TicketTier.objects.create(
+            event=new_event,
+            tier_type=tier.tier_type,
+            name=tier.name,
+            price=tier.price,
+            capacity=tier.capacity,
+            description=tier.description,
+            is_active=tier.is_active,
+            early_bird_deadline=tier.early_bird_deadline,
+            ticket_limit_per_user=tier.ticket_limit_per_user,
+            availability_timer=tier.availability_timer,
+            group_size=tier.group_size
+        )
+    
+    # Clone FAQs
+    for faq in orig.faqs.all():
+        EventFAQ.objects.create(
+            event=new_event,
+            question=faq.question,
+            answer=faq.answer,
+            order=faq.order
+        )
+        
+    # Clone Sessions
+    for session in orig.sessions.all():
+        Session.objects.create(
+            event=new_event,
+            title=session.title,
+            description=session.description,
+            start_time=session.start_time + timedelta(days=7),
+            end_time=session.end_time + timedelta(days=7),
+            speaker=session.speaker
+        )
+        
+    # Clone Sponsors
+    for sponsor in orig.sponsors.all():
+        Sponsor.objects.create(
+            event=new_event,
+            name=sponsor.name,
+            logo=sponsor.logo,
+            website=sponsor.website,
+            tier=sponsor.tier,
+            booth_number=sponsor.booth_number,
+            deliverables=sponsor.deliverables
+        )
+        
+    messages.success(request, f"Event duplicated successfully as draft: '{new_event.title}'")
+    return redirect('accounts:organizer_dashboard')
+

@@ -141,7 +141,7 @@ def payment_failed(request, booking_id):
 
 @login_required
 def request_refund(request, booking_id):
-    """Mock refund for cancelled paid bookings."""
+    """Mock refund request for cancelled paid bookings."""
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
 
     if not booking.is_refund_eligible:
@@ -151,20 +151,17 @@ def request_refund(request, booking_id):
     payment = booking.payment
 
     if request.method == 'POST':
-        refund_method = request.POST.get('refund_method', payment.payment_method)
-        payment.is_refunded = True
-        payment.refunded_at = timezone.now()
-        payment.save()
-
-        Notification.objects.create(
-            user=request.user,
-            message=(
-                f"💰 Refund of INR {payment.amount} initiated for '{booking.event.title}'. "
-                f"Amount will be credited within 3–5 business days."
-            )
+        reason = request.POST.get('reason', '').strip()
+        from bookings.models import Refund
+        Refund.objects.create(
+            booking=booking,
+            amount=payment.amount,
+            reason=reason,
+            status='pending'
         )
-        messages.success(request, f"Refund of ₹{payment.amount} has been initiated successfully.")
-        return redirect('payments:refund_success', booking_id=booking.id)
+        notify(request.user, f"Refund request submitted for '{booking.event.title}'", 'refund', link=f'/bookings/{booking.id}/')
+        messages.success(request, f"Refund request of ₹{payment.amount} has been submitted for approval.")
+        return redirect('bookings:detail', booking_id=booking.id)
 
     context = {
         'booking': booking,
@@ -185,3 +182,85 @@ def refund_success(request, booking_id):
         'booking': booking,
         'payment': payment,
     })
+
+
+@login_required
+def approve_refund(request, refund_id):
+    """Approve or reject a pending refund request (finance/organizer/admin role)."""
+    if request.user.role not in ['organizer', 'admin', 'finance']:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:dashboard')
+    
+    from bookings.models import Refund
+    refund = get_object_or_404(Refund, id=refund_id)
+    payment = refund.booking.payment
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'approve':
+            refund.status = 'approved'
+            refund.processed_at = timezone.now()
+            refund.save()
+            
+            payment.is_refunded = True
+            payment.refunded_at = timezone.now()
+            payment.save()
+            
+            notify(refund.booking.user, f"Your refund request for '{refund.booking.event.title}' has been approved.", 'refund')
+            messages.success(request, f"Refund request approved and processed successfully.")
+        else:
+            refund.status = 'rejected'
+            refund.processed_at = timezone.now()
+            refund.save()
+            notify(refund.booking.user, f"Your refund request for '{refund.booking.event.title}' was rejected.", 'refund')
+            messages.warning(request, f"Refund request was rejected.")
+            
+    return redirect('accounts:dashboard')
+
+
+@login_required
+def request_payout(request):
+    """Request a payout for organization revenue (organizer/finance)."""
+    if request.user.role not in ['organizer', 'finance']:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:dashboard')
+        
+    org = request.user.organization
+    if not org:
+        messages.error(request, "No organization profile associated.")
+        return redirect('accounts:dashboard')
+        
+    if request.method == 'POST':
+        amount = float(request.POST.get('amount', 0))
+        bank_details = request.POST.get('bank_details', '').strip()
+        
+        if amount <= 0 or not bank_details:
+            messages.error(request, "Invalid payout amount or bank details.")
+        else:
+            from .models import Payout
+            Payout.objects.create(
+                organization=org,
+                amount=amount,
+                bank_details=bank_details,
+                status='pending'
+            )
+            messages.success(request, f"Payout request of ₹{amount} submitted successfully.")
+            
+    return redirect('accounts:dashboard')
+
+
+@login_required
+def download_invoice(request, booking_id):
+    """Generate a printable HTML invoice for the booking."""
+    booking = get_object_or_404(Booking, id=booking_id)
+    if booking.user != request.user and request.user.role != 'admin':
+        messages.error(request, "Access denied.")
+        return redirect('accounts:dashboard')
+        
+    payment = getattr(booking, 'payment', None)
+    return render(request, 'payments/invoice.html', {
+        'booking': booking,
+        'payment': payment,
+        'invoice_number': f"INV-{booking.booking_id.hex[:8].upper()}"
+    })
+

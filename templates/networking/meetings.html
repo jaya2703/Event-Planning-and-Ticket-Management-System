@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}My Meetings{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="ep-ent-header ep-ent-animate">
+    <div>
+        <h1>My Networking Meetings</h1>
+        <p>Manage incoming meeting requests, accept schedules, and view confirmed table allocations.</p>
+    </div>
+    <div>
+        <a href="{% url 'networking:directory' %}" class="btn ep-btn-outline"><i class="bi bi-arrow-left me-1"></i>Back to Directory</a>
+    </div>
+</div>
+
+<div class="row g-4 ep-ent-animate">
+    <!-- Incoming requests -->
+    <div class="col-md-6">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Incoming Requests</h5>
+            </div>
+            {% for r in received_requests %}
+            <div class="border rounded p-3 mb-3 bg-white shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="text-dark">{{ r.sender.get_full_name }}</strong>
+                    <span class="badge bg-{{ r.status }}">{{ r.get_status_display }}</span>
+                </div>
+                <p class="small text-muted mb-2">Event: <strong>{{ r.event.title }}</strong></p>
+                <p class="small text-muted mb-2">Time: <strong>{{ r.proposed_time|date:"Y-m-d H:i" }}</strong></p>
+                <div class="bg-light p-2 rounded mb-2 small text-muted">"{{ r.message|default:'No introduction message.' }}"</div>
+                
+                {% if r.status == 'pending' %}
+                <form method="POST" action="{% url 'networking:respond_request' r.id %}" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <input type="text" class="form-control form-control-sm" name="table_number" placeholder="Table No (optional)">
+                    <button type="submit" name="action" value="accept" class="btn btn-sm btn-success">Accept</button>
+                    <button type="submit" name="action" value="decline" class="btn btn-sm btn-danger">Decline</button>
+                </form>
+                {% elif r.status == 'accepted' %}
+                <div class="small text-success fw-bold"><i class="bi bi-shop me-1"></i>Allocated: {{ r.table_number }}</div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-muted small">No incoming meeting proposals yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Outgoing requests -->
+    <div class="col-md-6">
+        <div class="ep-ent-card">
+            <div class="ep-ent-card-header">
+                <h5>Outgoing Proposals</h5>
+            </div>
+            {% for r in sent_requests %}
+            <div class="border rounded p-3 mb-3 bg-white shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="text-dark">{{ r.receiver.get_full_name }}</strong>
+                    <span class="badge bg-{{ r.status }}">{{ r.get_status_display }}</span>
+                </div>
+                <p class="small text-muted mb-2">Event: <strong>{{ r.event.title }}</strong></p>
+                <p class="small text-muted mb-2">Time: <strong>{{ r.proposed_time|date:"Y-m-d H:i" }}</strong></p>
+                {% if r.status == 'accepted' %}
+                <div class="small text-success fw-bold"><i class="bi bi-shop me-1"></i>Allocated: {{ r.table_number }}</div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-muted small">No outgoing meeting proposals yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

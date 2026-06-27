@@ -8,32 +8,74 @@ Roles: admin, organizer, user
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-PLATFORM_ROLES = ('admin', 'organizer', 'user')
+class Organization(models.Model):
+    """
+    SaaS Tenant: Organization Workspace
+    """
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(unique=True, max_length=150)
+    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_organizations')
+    logo = models.ImageField(upload_to='org_logos/', blank=True, null=True)
+    branding_color = models.CharField(max_length=7, default='#6c5ce7', help_text="Hex primary color")
+    custom_domain = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    subscription_tier = models.CharField(
+        max_length=20,
+        choices=[('free', 'Free'), ('pro', 'Pro'), ('enterprise', 'Enterprise')],
+        default='free'
+    )
+    subscription_status = models.CharField(
+        max_length=20,
+        choices=[('active', 'Active'), ('past_due', 'Past Due'), ('canceled', 'Canceled')],
+        default='active'
+    )
+    stripe_customer_id = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+PLATFORM_ROLES = ('admin', 'super_admin', 'organizer', 'event_manager', 'finance', 'marketing', 'staff', 'volunteer', 'user')
 
 
 class CustomUser(AbstractUser):
     """
-    Custom user with platform role: admin, organizer, or user.
+    Custom user with SaaS platform role.
     """
     
     ROLE_CHOICES = [
-        ('admin', 'Admin'),
+        ('admin', 'Super Admin'),  # Kept 'admin' database value for backwards compatibility
+        ('super_admin', 'Super Admin'),
         ('organizer', 'Organizer'),
-        ('user', 'User'),
+        ('event_manager', 'Event Manager'),
+        ('finance', 'Finance'),
+        ('marketing', 'Marketing'),
+        ('staff', 'Staff'),
+        ('volunteer', 'Volunteer'),
+        ('user', 'Attendee'),
     ]
     
-    # Role field - every user must have one role
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
-        default='user',  # By default, new users are regular "user"
+        default='user',
+    )
+    
+    # Multi-tenant workspace association
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members'
     )
     
     # Profile picture - optional
     profile_picture = models.ImageField(
-        upload_to='profile_pictures/',
-        null=True,
-        blank=True
+        upload_to='profile_pics/',  # Saved in media/profile_pics/
+        blank=True,
+        null=True
     )
     
     # Phone number - optional
@@ -56,22 +98,34 @@ class CustomUser(AbstractUser):
     email_verification_token = models.CharField(max_length=64, blank=True, default='')
     
     def __str__(self):
-        # This is what shows in Django admin for this user
         return f"{self.username} ({self.role})"
     
     def is_admin(self):
-        return self.role == 'admin'
+        return self.role in ['admin', 'super_admin']
     
     def is_organizer(self):
         return self.role == 'organizer'
+    
+    def is_event_manager(self):
+        return self.role == 'event_manager'
+
+    def is_finance(self):
+        return self.role == 'finance'
+
+    def is_marketing(self):
+        return self.role == 'marketing'
+
+    def is_staff_role(self):
+        return self.role in ['staff', 'volunteer']
     
     def is_regular_user(self):
         return self.role == 'user'
 
     @classmethod
     def platform_users(cls):
-        """Users with a platform login role (excludes legacy volunteer accounts)."""
+        """Users with a platform login role."""
         return cls.objects.filter(role__in=PLATFORM_ROLES)
+
 
 
 class Notification(models.Model):
@@ -171,3 +225,15 @@ class WindowSession(models.Model):
 
     def __str__(self):
         return f"Window {self.wsid[:8]}…"
+
+
+class ApiKey(models.Model):
+    """API Key credentials for SaaS integration."""
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='api_keys')
+    name = models.CharField(max_length=100, default='Default Key')
+    key = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.key[:8]}...)"
+

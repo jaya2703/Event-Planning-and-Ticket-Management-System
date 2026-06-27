@@ -80,17 +80,61 @@ def book_ticket(request, event_id):
             if tier_id:
                 from events.models import TicketTier
                 ticket_tier = TicketTier.objects.filter(id=tier_id, event=event, is_active=True).first()
-                if ticket_tier and ticket_tier.available < quantity:
+                if not ticket_tier:
+                    messages.error(request, "Invalid ticket tier.")
+                    return redirect('events:detail', event_id=event.id)
+                if ticket_tier.available < quantity:
                     messages.error(request, "Not enough tickets available for this tier.")
                     return redirect('events:detail', event_id=event.id)
+                
+                # SaaS tier limits & validation
+                if quantity > ticket_tier.ticket_limit_per_user:
+                    messages.error(request, f"This tier has a limit of {ticket_tier.ticket_limit_per_user} tickets per booking.")
+                    return redirect('events:detail', event_id=event.id)
+                if ticket_tier.tier_type == 'group' and quantity < ticket_tier.group_size:
+                    messages.error(request, f"Group tickets require a minimum purchase of {ticket_tier.group_size} tickets.")
+                    return redirect('events:detail', event_id=event.id)
+                if ticket_tier.early_bird_deadline and ticket_tier.early_bird_deadline < timezone.now():
+                    messages.error(request, "Early Bird sales have ended for this event.")
+                    return redirect('events:detail', event_id=event.id)
+                if ticket_tier.availability_timer and ticket_tier.availability_timer < timezone.now():
+                    messages.error(request, "This ticket tier is no longer available.")
+                    return redirect('events:detail', event_id=event.id)
+
+            # Promo Code validation
+            promo_code = None
+            promo_code_str = request.POST.get('promo_code', '').strip().upper()
+            if promo_code_str:
+                from .models import PromoCode
+                promo = PromoCode.objects.filter(code=promo_code_str, active=True, valid_from__lte=timezone.now(), valid_to__gte=timezone.now()).first()
+                if promo:
+                    if promo.used_count < promo.max_uses:
+                        promo_code = promo
+                    else:
+                        messages.warning(request, "Promo code usage limit reached.")
+                else:
+                    messages.warning(request, "Invalid or expired promo code.")
 
             booking = Booking.objects.create(
                 user=request.user,
                 event=event,
                 quantity=quantity,
                 ticket_tier=ticket_tier,
-                status='pending_payment' if (ticket_tier and ticket_tier.price > 0) or event.ticket_price > 0 else 'confirmed'
+                promo_code=promo_code,
+                status='confirmed'
             )
+            
+            # Recalculate based on price (after promo discount)
+            if booking.total_price > 0:
+                booking.status = 'pending_payment'
+                booking.save()
+            else:
+                booking.status = 'confirmed'
+                booking.save()
+
+            if promo_code:
+                promo_code.used_count += 1
+                promo_code.save()
 
             if booking.status == 'confirmed':
                 qr_path = generate_qr_code(booking)
@@ -408,3 +452,216 @@ def scan_qr(request):
             messages.error(request, "Invalid QR code format.")
     
     return render(request, 'bookings/scan_qr.html')
+
+
+import csv
+from django.http import JsonResponse
+import json
+
+@login_required
+def export_attendees_csv(request, event_id):
+    """Export event attendee bookings to CSV."""
+    if request.user.role not in ['organizer', 'admin', 'event_manager']:
+        return HttpResponse("Unauthorized", status=401)
+    event = get_object_or_404(Event, id=event_id)
+    if event.organizer != request.user and request.user.role != 'admin' and not (request.user.organization and request.user.organization == event.organization):
+        return HttpResponse("Unauthorized", status=401)
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="attendees_event_{event_id}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Booking ID', 'Username', 'Email', 'First Name', 'Last Name', 'Ticket Tier', 'Quantity', 'Total Price', 'Status', 'Checked In', 'Checked In At', 'Notes'])
+    
+    for b in event.bookings.all().select_related('user', 'ticket_tier'):
+        writer.writerow([
+            str(b.booking_id),
+            b.user.username,
+            b.user.email,
+            b.user.first_name,
+            b.user.last_name,
+            b.ticket_tier.name if b.ticket_tier else 'General',
+            b.quantity,
+            b.total_price,
+            b.status,
+            'Yes' if b.is_checked_in else 'No',
+            b.checked_in_at.strftime('%Y-%m-%d %H:%M:%S') if b.checked_in_at else '',
+            b.attendee_notes
+        ])
+    return response
+
+
+@login_required
+def import_attendees_csv(request, event_id):
+    """Import and register attendees from a CSV upload."""
+    if request.user.role not in ['organizer', 'admin', 'event_manager']:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:dashboard')
+    event = get_object_or_404(Event, id=event_id)
+    
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        csv_file = request.FILES['csv_file']
+        decoded_file = csv_file.read().decode('utf-8').splitlines()
+        reader = csv.DictReader(decoded_file)
+        
+        from accounts.models import CustomUser
+        from events.models import TicketTier
+        
+        success_count = 0
+        error_count = 0
+        
+        for row in reader:
+            try:
+                username = row.get('username', '').strip()
+                email = row.get('email', '').strip()
+                first_name = row.get('first_name', '').strip()
+                last_name = row.get('last_name', '').strip()
+                quantity = int(row.get('quantity', 1))
+                tier_type = row.get('tier_type', 'general').strip().lower()
+                
+                if not email or not username:
+                    error_count += 1
+                    continue
+                
+                # Get or create user
+                user, created = CustomUser.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'username': username,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'role': 'user'
+                    }
+                )
+                if created:
+                    user.set_password(CustomUser.objects.make_random_password())
+                    user.save()
+                
+                # Get tier
+                ticket_tier = TicketTier.objects.filter(event=event, tier_type=tier_type, is_active=True).first()
+                
+                # Check capacity
+                if event.tickets_available >= quantity:
+                    booking = Booking.objects.create(
+                        user=user,
+                        event=event,
+                        quantity=quantity,
+                        ticket_tier=ticket_tier,
+                        status='confirmed'
+                    )
+                    booking.qr_code = generate_qr_code(booking)
+                    booking.save()
+                    success_count += 1
+                else:
+                    error_count += 1
+            except Exception:
+                error_count += 1
+                
+        messages.success(request, f"Import complete: {success_count} successful registrations, {error_count} errors.")
+        return redirect('events:detail', event_id=event.id)
+        
+    messages.error(request, "Please upload a valid CSV file.")
+    return redirect('events:detail', event_id=event.id)
+
+
+@login_required
+def manual_registration(request, event_id):
+    """Manually register a single attendee (organizer desk)."""
+    if request.user.role not in ['organizer', 'admin', 'event_manager', 'staff']:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:dashboard')
+    event = get_object_or_404(Event, id=event_id)
+    
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        quantity = int(request.POST.get('quantity', 1))
+        tier_id = request.POST.get('ticket_tier', '')
+        attendee_notes = request.POST.get('attendee_notes', '').strip()
+        
+        from accounts.models import CustomUser
+        from events.models import TicketTier
+        
+        user, created = CustomUser.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': username or email.split('@')[0],
+                'first_name': first_name,
+                'last_name': last_name,
+                'role': 'user'
+            }
+        )
+        if created:
+            user.set_password('welcome123')
+            user.save()
+            
+        ticket_tier = None
+        if tier_id:
+            ticket_tier = TicketTier.objects.filter(id=tier_id, event=event).first()
+            
+        if event.tickets_available >= quantity:
+            booking = Booking.objects.create(
+                user=user,
+                event=event,
+                quantity=quantity,
+                ticket_tier=ticket_tier,
+                attendee_notes=attendee_notes,
+                status='confirmed'
+            )
+            booking.qr_code = generate_qr_code(booking)
+            booking.save()
+            messages.success(request, f"Successfully registered {user.get_full_name()}!")
+        else:
+            messages.error(request, "Event is at full capacity. Cannot register.")
+            
+    return redirect('events:detail', event_id=event.id)
+
+
+@login_required
+def badge_generation(request, booking_id):
+    """HTML preview of printable badge for event check-in desk."""
+    booking = get_object_or_404(Booking, id=booking_id)
+    if booking.event.organizer != request.user and request.user.role != 'admin' and booking.user != request.user:
+        messages.error(request, "Unauthorized")
+        return redirect('accounts:dashboard')
+        
+    booking.badge_printed = True
+    booking.save()
+    
+    return render(request, 'bookings/badge_print.html', {'booking': booking})
+
+
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def api_offline_sync(request):
+    """API endpoint to sync scanned tickets from local storage (offline mode)."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            scans = data.get('scans', [])
+            
+            success = 0
+            duplicates = 0
+            errors = 0
+            
+            for scan_id in scans:
+                try:
+                    booking = Booking.objects.get(booking_id=scan_id)
+                    if booking.is_checked_in:
+                        duplicates += 1
+                    else:
+                        booking.is_checked_in = True
+                        booking.checked_in_at = timezone.now()
+                        booking.status = 'attended'
+                        booking.save()
+                        success += 1
+                except Booking.DoesNotExist:
+                    errors += 1
+            return JsonResponse({'status': 'success', 'success_count': success, 'duplicate_count': duplicates, 'error_count': errors})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
