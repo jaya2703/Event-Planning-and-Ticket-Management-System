@@ -1,36 +1,371 @@
 {% extends 'base.html' %}
-{% block title %}Scan QR Code{% endblock %}
+{% block title %}Verify Ticket - Organizer Dashboard{% endblock %}
 {% block content %}
 <div class="container em-container ep-page-wrap">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="ep-card p-4">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="ep-page-icon bg-primary me-3"><i class="bi bi-qr-code-scan text-white"></i></div>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <div class="ep-page-icon bg-success me-3"><i class="bi bi-qr-code-scan text-white"></i></div>
+            <div>
+                <h4 class="fw-bold mb-0">Verify Ticket & Access Control</h4>
+                <p class="text-muted mb-0">Scan QR codes, type ticket/user verification codes, and manage entrance gates.</p>
+            </div>
+        </div>
+        <div>
+            {% if selected_event %}
+            <a href="{% url 'bookings:scan_logs' selected_event.id %}" class="btn ep-btn-outline btn-sm me-2"><i class="bi bi-journal-text me-1"></i> Scan Logs</a>
+            {% endif %}
+            <a href="{% url 'accounts:organizer_dashboard' %}" class="btn ep-btn-outline btn-sm">← Back to Workspace</a>
+        </div>
+    </div>
+
+    <!-- Event & Gate Setup Context -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Active Event Context</label>
+                <select id="event-selector" class="form-select ep-input">
+                    {% for ev in my_events %}
+                    <option value="{{ ev.id }}" {% if ev.id == selected_event.id %}selected{% endif %}>{{ ev.title }}</option>
+                    {% empty %}
+                    <option value="">-- No Active Events --</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Gate / Entry Point</label>
+                <input type="text" id="gate-input" class="form-control ep-input" value="Main Gate" placeholder="e.g. VIP Entrance, Gate A">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small">Scanner Device</label>
+                <input type="text" id="device-input" class="form-control ep-input" value="Web Checkin Console" placeholder="e.g. Scanner #1, iPad Desk">
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Ticket Verification KPI Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 p-3" style="background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+                <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h4 class="fw-bold mb-0">QR Code Verification</h4>
-                        <p class="text-muted mb-0">Enter or paste the QR code data</p>
+                        <h6 class="text-muted small mb-1 text-uppercase fw-semibold">Checked In</h6>
+                        <h3 class="fw-bold mb-0 text-success" id="val-checked-in">{{ total_checked_in }}</h3>
+                    </div>
+                    <div class="fs-2 text-success"><i class="bi bi-person-check-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 p-3" style="background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted small mb-1 text-uppercase fw-semibold">Remaining Capacity</h6>
+                        <h3 class="fw-bold mb-0 text-warning" id="val-remaining">{{ remaining_capacity }}</h3>
+                    </div>
+                    <div class="fs-2 text-warning"><i class="bi bi-hourglass-split"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 p-3" style="background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted small mb-1 text-uppercase fw-semibold">Attendance Rate</h6>
+                        <h3 class="fw-bold mb-0 text-info" id="val-attendance-rate">{{ attendance_rate }}%</h3>
+                    </div>
+                    <div class="fs-2 text-info"><i class="bi bi-percent"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Verification Result Window -->
+    <div id="verify-result-container" class="mb-4 d-none">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                <div class="d-flex align-items-center">
+                    <div class="fs-3 me-2" id="verify-result-icon"></div>
+                    <h5 class="fw-bold mb-0" id="verify-result-title">Scan Result</h5>
+                </div>
+                <button type="button" class="btn-close" onclick="document.getElementById('verify-result-container').classList.add('d-none')"></button>
+            </div>
+            
+            <div class="row align-items-center py-2">
+                <div class="col-md-2 text-center mb-3 mb-md-0" id="verify-profile-avatar-col">
+                    <!-- Dynamic Avatar -->
+                </div>
+                <div class="col-md-5">
+                    <h4 class="fw-bold mb-1" id="verify-profile-name">John Doe</h4>
+                    <p class="text-muted mb-2" id="verify-profile-email">john@example.com</p>
+                    <div id="verify-warnings-container" class="d-flex flex-wrap gap-2 mb-2"></div>
+                </div>
+                <div class="col-md-5 border-start ps-md-4">
+                    <div class="row g-2 small">
+                        <div class="col-6 text-muted">Ticket / Pass Code:</div>
+                        <div class="col-6 fw-bold text-dark" id="verify-profile-code">-</div>
+                        
+                        <div class="col-6 text-muted">Ticket Tier:</div>
+                        <div class="col-6 fw-bold text-dark" id="verify-profile-tier">-</div>
+                        
+                        <div class="col-6 text-muted">Price:</div>
+                        <div class="col-6 fw-bold text-dark" id="verify-profile-price">-</div>
+                        
+                        <div class="col-6 text-muted">Role / Status:</div>
+                        <div class="col-6 fw-bold text-dark" id="verify-profile-status">-</div>
+
+                        <div class="col-6 text-muted">Previous Scans Today:</div>
+                        <div class="col-6 fw-bold" id="verify-profile-prev-scans">-</div>
                     </div>
                 </div>
-                <form method="post">
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Verification Input form -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm p-4 h-100" style="background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+                <h5 class="fw-bold mb-3"><i class="bi bi-keyboard me-2 text-primary"></i>Manual Entry / Lookup</h5>
+                <form id="verify-form" method="post" novalidate>
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">QR Code Data</label>
-                        <input type="text" name="qr_data" class="form-control ep-input"
-                               placeholder="EVENTPRO-BOOKING-xxxxxxxx-..." required>
-                        <small class="text-muted">Paste the QR code content here (format: EVENTPRO-BOOKING-uuid)</small>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Scan Data, Ticket Code, or User Code</label>
+                        <textarea name="qr_data" id="qr_data_input" class="form-control ep-input font-monospace" rows="4" 
+                                  placeholder="Paste QR string, or type:&#10;- Ticket Code (e.g. EVT-2026-XXXXXX)&#10;- User Code (e.g. USR-XXXXXXXX)&#10;- Booking UUID" required></textarea>
+                        <small class="text-muted d-block mt-2">Enter any valid check-in identifier. Real registered attendees, waitlist promotions, staff, speakers, and VIPs are all accepted.</small>
                     </div>
-                    <button type="submit" class="btn ep-btn-primary w-100">
-                        <i class="bi bi-check-circle me-2"></i>Verify & Check In
+                    <button type="submit" class="btn ep-btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-shield-check me-2"></i>Verify & Check In
                     </button>
                 </form>
-                <hr class="my-4">
-                <div class="text-center text-muted small">
+                <div class="mt-4 pt-3 border-top text-center text-muted small">
                     <i class="bi bi-info-circle me-1"></i>
-                    In a real deployment, use a phone camera to scan the QR code directly.
+                    Gate entry is logged under the active scanner context defined above.
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation scan lists -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm p-4" style="background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+                <h5 class="fw-bold mb-3"><i class="bi bi-bug me-2 text-danger"></i>Simulate Scan Console</h5>
+                <p class="text-muted small">Select any recent active booking below to simulate a real-time QR check-in.</p>
+                
+                <div class="list-group list-group-flush overflow-auto" style="max-height: 380px;">
+                    {% for booking in recent_bookings %}
+                    <div class="list-group-item bg-transparent px-0 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <div class="small me-2" style="max-width: 70%;">
+                            <div class="fw-bold text-dark">{{ booking.user.get_full_name|default:booking.user.username }}</div>
+                            <div class="text-muted text-truncate">{{ booking.event.title }}</div>
+                            <div class="mt-1 d-flex gap-2">
+                                <span class="badge bg-secondary">Code: {{ booking.ticket_code|default:"N/A" }}</span>
+                                <span class="badge bg-secondary">User Code: {{ booking.user.verification_code|default:"N/A" }}</span>
+                                <span class="badge {% if booking.is_checked_in %}bg-success{% else %}bg-warning{% endif %}" id="badge-checkin-{{ booking.id }}">
+                                    {% if booking.is_checked_in %}Checked In{% else %}Unchecked{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-simulate-scan"
+                                    data-qr-string="{{ booking.qr_string }}"
+                                    data-ticket-code="{{ booking.ticket_code }}"
+                                    data-user-code="{{ booking.user.verification_code }}"
+                                    data-id="{{ booking.id }}">
+                                <i class="bi bi-play-circle me-1"></i>Simulate
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted">
+                        No bookings exist for the selected event to simulate.
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('verify-form');
+    const qrInput = document.getElementById('qr_data_input');
+    const resultContainer = document.getElementById('verify-result-container');
+    const resultIcon = document.getElementById('verify-result-icon');
+    const resultTitle = document.getElementById('verify-result-title');
+    const csrftoken = '{{ csrf_token }}';
+
+    // Dropdown reload context
+    const eventSelector = document.getElementById('event-selector');
+    if (eventSelector) {
+        eventSelector.addEventListener('change', function() {
+            window.location.href = `?event_id=${this.value}`;
+        });
+    }
+
+    function displayResult(success, resultType, message, warnings = [], prevScans = 0, profile = {}) {
+        resultContainer.classList.remove('d-none');
+        
+        const avatarCol = document.getElementById('verify-profile-avatar-col');
+        const nameEl = document.getElementById('verify-profile-name');
+        const emailEl = document.getElementById('verify-profile-email');
+        const warningsContainer = document.getElementById('verify-warnings-container');
+        
+        const codeEl = document.getElementById('verify-profile-code');
+        const tierEl = document.getElementById('verify-profile-tier');
+        const priceEl = document.getElementById('verify-profile-price');
+        const statusEl = document.getElementById('verify-profile-status');
+        const scansEl = document.getElementById('verify-profile-prev-scans');
+
+        // Setup styles according to result types
+        if (success) {
+            resultContainer.firstElementChild.className = "card border-start border-4 border-success shadow-sm p-4 bg-success-light";
+            resultIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+            resultTitle.innerText = "Entry Approved: Access Granted";
+            resultTitle.className = "fw-bold mb-0 text-success";
+        } else {
+            resultContainer.firstElementChild.className = "card border-start border-4 border-danger shadow-sm p-4 bg-danger-light";
+            resultIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            resultTitle.innerText = "Access Rejected: " + message;
+            resultTitle.className = "fw-bold mb-0 text-danger";
+        }
+
+        // Render Attendee Profile details
+        if (profile && Object.keys(profile).length > 0) {
+            nameEl.innerText = profile.full_name || 'Guest Attendee';
+            emailEl.innerText = profile.email || 'N/A';
+            codeEl.innerText = profile.ticket_code || 'N/A';
+            tierEl.innerText = profile.tier || 'N/A';
+            priceEl.innerText = '₹' + profile.price;
+            statusEl.innerText = profile.status ? profile.status.toUpperCase() : 'N/A';
+            scansEl.innerText = prevScans;
+            scansEl.className = prevScans > 0 ? "col-6 fw-bold text-danger animate-pulse" : "col-6 fw-bold text-success";
+
+            // Render Avatar
+            if (profile.photo_url) {
+                avatarCol.innerHTML = `<img src="${profile.photo_url}" class="rounded-circle shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">`;
+            } else {
+                const initial = (profile.full_name || 'G')[0].toUpperCase();
+                avatarCol.innerHTML = `<div class="ep-avatar-md mx-auto" style="width: 80px; height: 80px; line-height: 80px; font-size: 2rem;">${initial}</div>`;
+            }
+        } else {
+            nameEl.innerText = 'Unknown Guest';
+            emailEl.innerText = 'No profile record available';
+            codeEl.innerText = qrInput.value || 'N/A';
+            tierEl.innerText = '-';
+            priceEl.innerText = '-';
+            statusEl.innerText = '-';
+            scansEl.innerText = '-';
+            avatarCol.innerHTML = `<div class="ep-avatar-md mx-auto" style="width: 80px; height: 80px; line-height: 80px; font-size: 2rem; background: #6c757d;">?</div>`;
+        }
+
+        // Render Warning Badges
+        warningsContainer.innerHTML = '';
+        if (warnings && warnings.length > 0) {
+            warnings.forEach(w => {
+                let badgeClass = "bg-warning text-dark";
+                if (w === "CANCELLED" || w === "INVALID_CODE") badgeClass = "bg-danger text-white";
+                if (w === "ALREADY_SCANNED") badgeClass = "bg-warning text-dark border border-danger";
+                warningsContainer.innerHTML += `<span class="badge ${badgeClass} small py-1 px-2 fw-semibold"><i class="bi bi-exclamation-octagon me-1"></i>${w.replace('_', ' ')}</span>`;
+            });
+        } else if (success) {
+            warningsContainer.innerHTML = `<span class="badge bg-success small py-1 px-2 fw-semibold"><i class="bi bi-shield-check me-1"></i>VERIFIED ATTENDEE</span>`;
+        }
+
+        // Scroll to view result window
+        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function updateMetrics(metrics) {
+        if (!metrics) return;
+        document.getElementById('val-checked-in').innerText = metrics.checked_in;
+        document.getElementById('val-remaining').innerText = metrics.remaining;
+        document.getElementById('val-attendance-rate').innerText = metrics.attendance_rate + '%';
+    }
+
+    async function handleVerify(qrData, bookingId = null) {
+        try {
+            const gateVal = document.getElementById('gate-input').value;
+            const deviceVal = document.getElementById('device-input').value;
+            const eventVal = eventSelector ? eventSelector.value : '';
+
+            const formData = new FormData();
+            formData.append('qr_data', qrData);
+            formData.append('gate', gateVal);
+            formData.append('device', deviceVal);
+            formData.append('event_id', eventVal);
+            formData.append('ajax', 'true');
+
+            const response = await fetch('{% url "bookings:scan_qr" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            displayResult(data.success, data.result, data.message, data.warnings, data.prev_scans, data.profile);
+            
+            updateMetrics(data.metrics);
+            
+            if (data.success) {
+                if (bookingId) {
+                    const badge = document.getElementById(`badge-checkin-${bookingId}`);
+                    if (badge) {
+                        badge.className = 'badge bg-success';
+                        badge.innerText = 'Checked In';
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            displayResult(false, 'invalid', 'Network or connection error.', ['CONNECTION_ERROR']);
+        }
+    }
+
+    // Capture manual form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const qrData = qrInput.value.trim();
+        if (qrData) {
+            handleVerify(qrData);
+        }
+    });
+
+    // Capture simulate scan buttons
+    document.querySelectorAll('.btn-simulate-scan').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Randomly choose scanning QR string, ticket code, or user code for full coverage simulation
+            const choose = Math.floor(Math.random() * 3);
+            let qrString = this.dataset.qrString;
+            if (choose === 1 && this.dataset.ticketCode) {
+                qrString = this.dataset.ticketCode;
+            } else if (choose === 2 && this.dataset.userCode) {
+                qrString = this.dataset.userCode;
+            }
+            
+            const bookingId = this.dataset.id;
+            qrInput.value = qrString;
+            handleVerify(qrString, bookingId);
+        });
+    });
+});
+</script>
+
+<style>
+.bg-success-light { background-color: #f0fdf4 !important; border-left-color: #198754 !important; }
+.bg-danger-light { background-color: #fef2f2 !important; border-left-color: #dc3545 !important; }
+.animate-pulse {
+    animation: pulse-border 1.5s infinite alternate;
+}
+@keyframes pulse-border {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+</style>
 {% endblock %}

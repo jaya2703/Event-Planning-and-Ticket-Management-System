@@ -12,18 +12,86 @@ import qrcode
 import io
 import os
 from django.conf import settings as django_settings
+from datetime import timedelta
 from .models import Booking, Waitlist
 from events.models import Event
 from accounts.models import Notification
 
 
+import hmac
+import hashlib
+from django.db.models import Sum
+
+def generate_secure_token(booking_id, event_id, user_id):
+    key = django_settings.SECRET_KEY.encode('utf-8')
+    msg = f"{booking_id}-{event_id}-{user_id}".encode('utf-8')
+    return hmac.new(key, msg, hashlib.sha256).hexdigest()[:16]
+
+def parse_and_verify_qr(qr_data):
+    """
+    Parses the QR string and verifies the token.
+    Returns (is_valid, booking, reason)
+    reason can be: 'invalid', 'already_used', 'approved'
+    """
+    if not qr_data or not qr_data.startswith("EVENTPRO|"):
+        # Support fallback to EVENTPRO-BOOKING-<uuid> format for backward compatibility
+        if qr_data.startswith('EVENTPRO-BOOKING-'):
+            uuid_str = qr_data.replace('EVENTPRO-BOOKING-', '')
+            try:
+                booking = Booking.objects.get(booking_id=uuid_str)
+                if booking.is_checked_in:
+                    return True, booking, 'already_used'
+                if booking.status not in ['confirmed', 'attended']:
+                    return False, None, 'invalid'
+                return True, booking, 'approved'
+            except Exception:
+                return False, None, 'invalid'
+        return False, None, 'invalid'
+    
+    try:
+        parts = dict(p.split(':', 1) for p in qr_data.split('|')[1:] if ':' in p)
+        ticket_id = parts.get('T')
+        booking_id = parts.get('B')
+        event_id = parts.get('E')
+        user_id = parts.get('U')
+        token = parts.get('K')
+        
+        if not all([ticket_id, booking_id, event_id, user_id, token]):
+            return False, None, 'invalid'
+            
+        # Verify token
+        expected_token = generate_secure_token(booking_id, event_id, user_id)
+        if not hmac.compare_digest(token, expected_token):
+            return False, None, 'invalid'
+            
+        # Fetch booking
+        booking = Booking.objects.get(booking_id=booking_id)
+        
+        # Verify matching IDs
+        if str(booking.id) != str(ticket_id) or str(booking.event_id) != str(event_id) or str(booking.user_id) != str(user_id):
+            return False, None, 'invalid'
+            
+        # Check if already checked in
+        if booking.is_checked_in:
+            return True, booking, 'already_used'
+            
+        # Check booking status (must not be cancelled)
+        if booking.status not in ['confirmed', 'attended']:
+            return False, None, 'invalid'
+            
+        return True, booking, 'approved'
+        
+    except Exception:
+        return False, None, 'invalid'
+
 def generate_qr_code(booking):
     """
     Generate a QR code image for a booking.
-    The QR code contains the booking ID which can be scanned to verify the ticket.
+    The QR code contains ticketId, bookingId, eventId, userId, and secure token.
     """
-    # The data inside the QR code
-    qr_data = f"EVENTPRO|B:{booking.booking_id}|E:{booking.event_id}|U:{booking.user_id}"
+    token = generate_secure_token(booking.booking_id, booking.event_id, booking.user_id)
+    # Format: EVENTPRO|T:{ticketId}|B:{bookingId}|E:{eventId}|U:{userId}|K:{token}
+    qr_data = f"EVENTPRO|T:{booking.id}|B:{booking.booking_id}|E:{booking.event_id}|U:{booking.user_id}|K:{token}"
     
     # Create QR code
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -50,6 +118,7 @@ def book_ticket(request, event_id):
     Book a ticket for an event.
     If event is full, automatically join waitlist.
     """
+    cleanup_expired_reservations()
     if request.user.role != 'user':
         messages.error(request, "Only attendees can book events.")
         return redirect('accounts:dashboard')
@@ -222,6 +291,7 @@ def cancel_booking(request, booking_id):
     Cancel a booking.
     After cancellation, check if anyone is on the waitlist and promote them.
     """
+    cleanup_expired_reservations()
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     
     if booking.status != 'confirmed':
@@ -252,11 +322,59 @@ def cancel_booking(request, booking_id):
     return render(request, 'bookings/cancel_confirm.html', {'booking': booking})
 
 
+def cleanup_expired_reservations():
+    """
+    Checks all bookings with status='pending_payment' where payment_deadline has passed.
+    Releases their reservation (sets status='cancelled'), notifies the user, and promotes the next.
+    Also handles payment reminders before expiry (e.g. 5 minutes before deadline).
+    """
+    from .models import Booking
+    from django.utils import timezone
+    from datetime import timedelta
+    from accounts.services import notify
+
+    now = timezone.now()
+
+    # 1. Handle Expirations
+    expired = Booking.objects.filter(status='pending_payment', payment_deadline__lt=now)
+    for b in expired:
+        b.status = 'cancelled'
+        b.save()
+        notify(
+            b.user,
+            f"Your ticket reservation for '{b.event.title}' has expired because payment was not completed within the time limit.",
+            'payment_failed'
+        )
+        # Notify waitlist
+        promote_from_waitlist(b.event, b.quantity)
+
+    # 2. Handle Reminders (if deadline is less than 5 minutes away and reminder not sent)
+    reminders = Booking.objects.filter(
+        status='pending_payment',
+        payment_deadline__gte=now,
+        payment_deadline__lt=now + timedelta(minutes=5),
+        reminder_sent=False
+    )
+    for b in reminders:
+        b.reminder_sent = True
+        b.save()
+        notify(
+            b.user,
+            f"Reminder: You have less than 5 minutes to complete payment for your reservation at '{b.event.title}'!",
+            'event_reminder',
+            link=f'/payments/process/{b.id}/'
+        )
+
+
 def promote_from_waitlist(event, freed_quantity):
     """
-    Waitlist Auto Upgrade Feature:
-    When a booking is cancelled, automatically promote the first person on the waitlist.
+    Waitlist Promotion:
+    When a booking is cancelled, automatically select the first person on the waitlist.
+    Handles enabled check, auto vs manual approval, reservation deadline.
     """
+    if not event.waitlist_enabled:
+        return
+
     # Find the first person on the waitlist (lowest position number)
     first_in_line = Waitlist.objects.filter(event=event).order_by('position').first()
     
@@ -271,31 +389,48 @@ def promote_from_waitlist(event, freed_quantity):
         ).first()
         
         if waitlisted_booking:
-            waitlisted_booking.status = 'pending_payment' if event.ticket_price > 0 else 'confirmed'
-            waitlisted_booking.waitlist_position = None
-
-            if waitlisted_booking.status == 'confirmed':
-                qr_path = generate_qr_code(waitlisted_booking)
-                waitlisted_booking.qr_code = qr_path
-            waitlisted_booking.save()
-
-            first_in_line.delete()
-
             from accounts.services import notify
-            msg = (
-                f"Great news! A spot opened for '{event.title}'. "
-                + ("Complete payment to confirm your booking." if waitlisted_booking.status == 'pending_payment'
-                   else "Your booking is now confirmed!")
-            )
-            notify(user_to_promote, msg, 'waitlist_upgraded',
-                   link=f'/payments/process/{waitlisted_booking.id}/' if waitlisted_booking.status == 'pending_payment'
-                   else f'/bookings/{waitlisted_booking.id}/')
+            first_in_line.delete()
             
             # Re-number remaining waitlist positions
             remaining = Waitlist.objects.filter(event=event).order_by('position')
             for i, entry in enumerate(remaining, start=1):
                 entry.position = i
                 entry.save()
+
+            if event.auto_approve_waitlist:
+                # Automatic approval
+                waitlisted_booking.status = 'pending_payment' if event.ticket_price > 0 else 'confirmed'
+                waitlisted_booking.waitlist_position = None
+                
+                if waitlisted_booking.status == 'pending_payment':
+                    waitlisted_booking.payment_deadline = timezone.now() + timedelta(minutes=event.reservation_timeout)
+                    waitlisted_booking.reminder_sent = False
+                    waitlisted_booking.save()
+                    
+                    msg = f"Great news! A spot opened for '{event.title}'. Complete payment within {event.reservation_timeout} minutes to confirm your booking."
+                    notify(user_to_promote, msg, 'waitlist_upgraded', link=f'/payments/process/{waitlisted_booking.id}/')
+                else:
+                    # Free event
+                    qr_path = generate_qr_code(waitlisted_booking)
+                    waitlisted_booking.qr_code = qr_path
+                    waitlisted_booking.save()
+                    
+                    msg = f"Great news! Your booking for '{event.title}' is confirmed!"
+                    notify(user_to_promote, msg, 'booking_success', link=f'/bookings/{waitlisted_booking.id}/')
+            else:
+                # Manual approval required
+                waitlisted_booking.status = 'pending_approval'
+                waitlisted_booking.waitlist_position = None
+                waitlisted_booking.save()
+                
+                # Notify User
+                msg_user = f"You have been selected from the waitlist for '{event.title}'. Pending organizer approval."
+                notify(user_to_promote, msg_user, 'waitlist_upgraded')
+                
+                # Notify Organizer
+                msg_org = f"Attendee {user_to_promote.username} is promoted from waitlist for '{event.title}' and requires approval."
+                notify(event.organizer, msg_org, 'waitlist_upgraded', link=f'/bookings/approve-waitlist/{waitlisted_booking.id}/')
 
 
 @login_required
@@ -339,7 +474,7 @@ def download_ticket_pdf(request, booking_id):
     
     p.setFont("Helvetica", 12)
     p.setFillColor(HexColor('#636e72'))
-    p.drawString(40, height - 185, f"Booking ID: {str(booking.booking_id).upper()[:16]}")
+    p.drawString(40, height - 185, f"Ticket Code: {booking.ticket_code or 'N/A'}")
     
     # Divider
     p.setStrokeColor(HexColor('#dfe6e9'))
@@ -355,6 +490,8 @@ def download_ticket_pdf(request, booking_id):
         ("Venue", booking.event.venue),
         ("Ticket Holder", f"{booking.user.first_name} {booking.user.last_name}"),
         ("Email", booking.user.email),
+        ("Ticket Code", booking.ticket_code or "N/A"),
+        ("User Code", booking.user.verification_code or "N/A"),
         ("Quantity", str(booking.quantity)),
         ("Total Paid", f"INR {booking.total_price}"),
         ("Status", booking.status.upper()),
@@ -430,28 +567,298 @@ def verify_checkin(request, booking_uuid):
     return render(request, 'bookings/checkin_result.html', {'booking': booking, 'success': True})
 
 
+def verify_ticket_or_user(scan_data, event, scanner, gate="Main Gate", device="Web Scanner"):
+    """
+    Validates a ticket scan (QR string, UUID, EVT code, or USR code).
+    Returns (result_status, message, booking_obj, user_obj, warnings, scan_log_obj, prev_scans)
+    """
+    from bookings.models import Booking, TicketScanLog
+    from accounts.models import CustomUser
+    from volunteers.models import EventVolunteer
+    from django.utils import timezone
+    
+    scan_data = scan_data.strip()
+    booking = None
+    user = None
+    result = "rejected"
+    reason = ""
+    warnings = []
+    
+    # 1. Try parsing QR string
+    if scan_data.startswith("EVENTPRO|"):
+        try:
+            parts = dict(p.split(':', 1) for p in scan_data.split('|')[1:] if ':' in p)
+            booking_uuid = parts.get('B')
+            booking = Booking.objects.select_related('user', 'event', 'ticket_tier').filter(booking_id=booking_uuid).first()
+        except Exception:
+            pass
+            
+    # 2. Try lookup by booking UUID
+    if not booking:
+        try:
+            booking = Booking.objects.select_related('user', 'event', 'ticket_tier').filter(booking_id=scan_data).first()
+        except Exception:
+            pass
+            
+    # 3. Try lookup by ticket_code (EVT-...)
+    if not booking and scan_data.startswith("EVT-"):
+        booking = Booking.objects.select_related('user', 'event', 'ticket_tier').filter(ticket_code=scan_data).first()
+        
+    # 4. Try lookup by user_verification_code (USR-...)
+    if not booking:
+        user_code = scan_data
+        user = CustomUser.objects.filter(verification_code=user_code).first()
+        if user:
+            # Check if this user has a booking for the event
+            booking = Booking.objects.select_related('user', 'event', 'ticket_tier').filter(user=user, event=event).first()
+
+    # Now we evaluate the booking or user
+    if booking:
+        user = booking.user
+        # Verify event match
+        if booking.event != event:
+            reason = f"Ticket belongs to different event: '{booking.event.title}'"
+            warnings.append("WRONG_EVENT")
+        elif booking.status == 'cancelled':
+            reason = "Ticket has been cancelled."
+            warnings.append("CANCELLED")
+        elif booking.status == 'waitlisted':
+            reason = "User is still on the waitlist."
+            warnings.append("WAITLISTED")
+        elif booking.status in ['pending_payment', 'pending_approval']:
+            reason = f"Booking status is {booking.status}."
+            warnings.append("PENDING_PAYMENT" if booking.status == 'pending_payment' else "PENDING_APPROVAL")
+        elif booking.is_checked_in:
+            reason = "Ticket already scanned / Checked-in."
+            warnings.append("ALREADY_SCANNED")
+            result = "rejected"
+        else:
+            # Success check-in!
+            result = "success"
+            booking.is_checked_in = True
+            booking.checked_in_at = timezone.now()
+            booking.status = 'attended'
+            booking.save()
+            
+    elif user:
+        # Check if the user is staff/speaker/VIP/organizer
+        is_staff_or_speaker = False
+        role_display = "VIP/Attendee"
+        
+        if event.organizer == user:
+            is_staff_or_speaker = True
+            role_display = "Event Organizer"
+        elif user.role in ['admin', 'organizer', 'event_manager', 'staff', 'volunteer']:
+            is_staff_or_speaker = True
+            role_display = f"Staff ({user.role.title()})"
+        else:
+            # Check volunteer/staff assignment
+            vol = EventVolunteer.objects.filter(event=event, email=user.email).first()
+            if not vol and user.phone:
+                vol = EventVolunteer.objects.filter(event=event, mobile=user.phone).first()
+            if vol:
+                is_staff_or_speaker = True
+                role_display = f"Staff ({vol.role})"
+                
+                if not vol.is_present:
+                    vol.is_present = True
+                    vol.checked_in_at = timezone.now()
+                    vol.status = 'active'
+                    vol.save()
+                    
+        if is_staff_or_speaker:
+            result = "success"
+            reason = f"Staff Pass - {role_display}"
+        else:
+            reason = "No ticket booking found for this user for this event."
+            warnings.append("NO_BOOKING")
+    else:
+        # Direct lookup by name or mobile for EventVolunteer
+        vol = EventVolunteer.objects.filter(event=event, mobile=scan_data).first()
+        if not vol:
+            vol = EventVolunteer.objects.filter(event=event, name__iexact=scan_data).first()
+        if vol:
+            result = "success"
+            reason = f"Staff Pass - {vol.role} (Direct lookup)"
+            if not vol.is_present:
+                vol.is_present = True
+                vol.checked_in_at = timezone.now()
+                vol.status = 'active'
+                vol.save()
+        else:
+            reason = "Invalid Code: No booking, user, or staff member found."
+            warnings.append("INVALID_CODE")
+
+    # Record Scan Log
+    log = TicketScanLog.objects.create(
+        booking=booking,
+        user=user,
+        verification_code=scan_data,
+        event=event,
+        scanner=scanner,
+        gate=gate,
+        device=device,
+        result=result,
+        rejection_reason=reason if result == "rejected" else ""
+    )
+    
+    # Calculate previous successful scans for user
+    prev_scans = TicketScanLog.objects.filter(
+        event=event,
+        user=user,
+        result='success'
+    ).exclude(id=log.id).count() if user else 0
+
+    # User notification triggers on successful check-in
+    if result == "success" and user:
+        from accounts.services import notify
+        notify(
+            user,
+            f"Welcome! Your check-in at '{event.title}' was successful.",
+            'event_reminder',
+            link=f'/bookings/{booking.id}/' if booking else f'/events/{event.id}/'
+        )
+
+    return result, reason or "Access Granted", booking, user, warnings, log, prev_scans
+
+
 @login_required
 def scan_qr(request):
-    """Page where organizer can scan QR codes"""
-    if request.user.role != 'organizer':
+    """Page where organizer can scan QR codes and verify tickets"""
+    staff_roles = ['organizer', 'event_manager', 'finance', 'marketing', 'staff', 'volunteer', 'admin']
+    if request.user.role not in staff_roles:
         messages.error(request, "Access denied.")
         return redirect('accounts:dashboard')
     
+    is_admin = request.user.role == 'admin'
+    if is_admin:
+        my_events = Event.objects.all()
+    else:
+        my_events = Event.objects.filter(organizer=request.user)
+
+    # Get event context
+    selected_event_id = request.POST.get('event_id') or request.GET.get('event_id')
+    selected_event = None
+    if selected_event_id:
+        try:
+            selected_event = Event.objects.get(id=selected_event_id)
+            if not is_admin and selected_event.organizer != request.user:
+                selected_event = None
+        except Event.DoesNotExist:
+            pass
+    if not selected_event:
+        selected_event = my_events.first()
+
+    my_bookings = Booking.objects.filter(event=selected_event) if selected_event else Booking.objects.none()
+
+    # Re-calculate metrics
+    total_capacity = selected_event.total_capacity or 0 if selected_event else 0
+    total_checked_in = my_bookings.filter(is_checked_in=True).count()
+    from django.db.models import Sum
+    total_tickets_sold = my_bookings.filter(status__in=['confirmed', 'attended']).aggregate(t=Sum('quantity'))['t'] or 0
+    remaining_capacity = max(0, total_capacity - total_tickets_sold)
+    attendance_rate = int((total_checked_in / total_capacity * 100)) if total_capacity > 0 else 0
+
     if request.method == 'POST':
         qr_data = request.POST.get('qr_data', '')
-        # QR data format: "EVENTPRO-BOOKING-<uuid>"
-        if qr_data.startswith('EVENTPRO-BOOKING-'):
-            booking_uuid = qr_data.replace('EVENTPRO-BOOKING-', '')
-            return redirect('bookings:verify_checkin', booking_uuid=booking_uuid)
-        if qr_data.startswith('EVENTPRO|'):
-            parts = dict(p.split(':', 1) for p in qr_data.split('|')[1:] if ':' in p)
-            booking_uuid = parts.get('B', '')
-            if booking_uuid:
-                return redirect('bookings:verify_checkin', booking_uuid=booking_uuid)
+        gate = request.POST.get('gate', 'Main Gate')
+        device = request.POST.get('device', 'Web Scanner')
+        
+        if not selected_event:
+            return JsonResponse({'success': False, 'message': 'No event selected'}, status=400)
+            
+        result_status, message, booking, user, warnings, log, prev_scans = verify_ticket_or_user(
+            qr_data, selected_event, request.user, gate=gate, device=device
+        )
+        
+        success = (result_status == "success")
+        
+        # Recalculate metrics after check-in
+        total_checked_in = my_bookings.filter(is_checked_in=True).count()
+        attendance_rate = int((total_checked_in / total_capacity * 100)) if total_capacity > 0 else 0
+        
+        profile = {}
+        if user:
+            profile = {
+                'username': user.username,
+                'full_name': user.get_full_name() or user.username,
+                'email': user.email,
+                'role': user.role,
+                'photo_url': user.profile_picture.url if user.profile_picture else None,
+                'ticket_code': booking.ticket_code if booking else "N/A",
+                'tier': booking.ticket_tier.name if (booking and booking.ticket_tier) else "Staff/VIP Pass",
+                'price': str(booking.total_price) if booking else "0.00",
+                'status': booking.status if booking else "Staff",
+            }
+        elif booking:
+            profile = {
+                'username': 'Guest',
+                'full_name': 'Guest Attendee',
+                'email': booking.user.email,
+                'role': 'guest',
+                'photo_url': None,
+                'ticket_code': booking.ticket_code,
+                'tier': booking.ticket_tier.name if booking.ticket_tier else "Standard",
+                'price': str(booking.total_price),
+                'status': booking.status,
+            }
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json' or request.POST.get('ajax') == 'true':
+            return JsonResponse({
+                'success': success,
+                'result': result_status,
+                'message': message,
+                'warnings': warnings,
+                'prev_scans': prev_scans,
+                'profile': profile,
+                'metrics': {
+                    'checked_in': total_checked_in,
+                    'remaining': remaining_capacity,
+                    'attendance_rate': attendance_rate
+                }
+            })
+        
+        # Standard fallback POST
+        if success:
+            messages.success(request, f"✅ Check-in successful for {profile.get('full_name')}!")
         else:
-            messages.error(request, "Invalid QR code format.")
+            messages.error(request, f"❌ Rejection: {message}")
+        return redirect(f'/bookings/scan/?event_id={selected_event.id}')
+
+    # Fetch recent bookings for simulation
+    recent_bookings = my_bookings.select_related('user', 'event').order_by('-booked_at')[:10]
+    for b in recent_bookings:
+        b.secure_token = generate_secure_token(b.booking_id, b.event_id, b.user_id)
+        b.qr_string = f"EVENTPRO|T:{b.id}|B:{b.booking_id}|E:{b.event_id}|U:{b.user_id}|K:{b.secure_token}"
+
+    context = {
+        'my_events': my_events,
+        'selected_event': selected_event,
+        'recent_bookings': recent_bookings,
+        'total_capacity': total_capacity,
+        'total_checked_in': total_checked_in,
+        'remaining_capacity': remaining_capacity,
+        'attendance_rate': attendance_rate,
+        'my_bookings_count': total_tickets_sold
+    }
+    return render(request, 'bookings/scan_qr.html', context)
+
+
+@login_required
+def event_scan_logs(request, event_id):
+    """View scan log audits for a specific event"""
+    event = get_object_or_404(Event, id=event_id)
+    if request.user.role != 'admin' and event.organizer != request.user:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:organizer_dashboard')
+        
+    from bookings.models import TicketScanLog
+    logs = TicketScanLog.objects.filter(event=event).select_related('user', 'booking', 'scanner').order_by('-scanned_at')
     
-    return render(request, 'bookings/scan_qr.html')
+    return render(request, 'bookings/scan_logs.html', {
+        'event': event,
+        'logs': logs
+    })
 
 
 import csv
@@ -664,4 +1071,47 @@ def api_offline_sync(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
+
+@login_required
+def approve_waitlist_booking(request, booking_id):
+    """Organizer manual approval of waitlist booking"""
+    booking = get_object_or_404(Booking, id=booking_id)
+    event = booking.event
+    
+    # Check permissions
+    if request.user.role != 'admin' and event.organizer != request.user:
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:organizer_dashboard')
+        
+    if booking.status != 'pending_approval':
+        messages.error(request, "This booking is not pending approval.")
+        return redirect('accounts:organizer_dashboard')
+        
+    # Promote to pending_payment (or confirmed if free)
+    booking.status = 'pending_payment' if event.ticket_price > 0 else 'confirmed'
+    if booking.status == 'pending_payment':
+        booking.payment_deadline = timezone.now() + timedelta(minutes=event.reservation_timeout)
+        booking.reminder_sent = False
+        booking.save()
+        
+        # Notify user
+        from accounts.services import notify
+        msg = f"Your waitlist request for '{event.title}' has been approved! Complete payment within {event.reservation_timeout} minutes."
+        notify(booking.user, msg, 'waitlist_upgraded', link=f'/payments/process/{booking.id}/')
+        
+        messages.success(request, f"Approved waitlist promotion for {booking.user.username}. Payment link sent.")
+    else:
+        # Free event
+        qr_path = generate_qr_code(booking)
+        booking.qr_code = qr_path
+        booking.save()
+        
+        from accounts.services import notify
+        msg = f"Your booking for '{event.title}' has been approved and confirmed!"
+        notify(booking.user, msg, 'booking_success', link=f'/bookings/{booking.id}/')
+        
+        messages.success(request, f"Approved and confirmed booking for {booking.user.username}.")
+        
+    return redirect('accounts:organizer_dashboard')
 

@@ -3,6 +3,19 @@ from django.conf import settings
 from events.models import Event
 
 
+class DutyArea(models.Model):
+    event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='duty_areas', null=True, blank=True)
+    name = models.CharField(max_length=100)
+    is_global = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['event', 'name']
+
+    def __str__(self):
+        return self.name
+
+
 class EventVolunteer(models.Model):
     """Event staff member — managed by organizer, not a platform login role."""
 
@@ -29,9 +42,12 @@ class EventVolunteer(models.Model):
     name = models.CharField(max_length=120)
     mobile = models.CharField(max_length=15, blank=True, default='')
     email = models.EmailField(blank=True, default='')
-    duty = models.CharField(max_length=30, choices=DUTY_CHOICES, default='registration')
+    duty = models.CharField(max_length=30, choices=DUTY_CHOICES, default='registration', null=True, blank=True)
+    duty_area = models.ForeignKey(DutyArea, on_delete=models.SET_NULL, null=True, blank=True, related_name='volunteers')
+    role = models.CharField(max_length=50, blank=True, default='Volunteer')
     shift_timing = models.CharField(max_length=100, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
+    notes = models.TextField(blank=True, default='')
     assigned_at = models.DateTimeField(auto_now_add=True)
     is_present = models.BooleanField(default=False)
     checked_in_at = models.DateTimeField(null=True, blank=True)
@@ -40,7 +56,8 @@ class EventVolunteer(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return f"{self.name} — {self.event.title} ({self.get_duty_display()})"
+        duty_name = self.duty_area.name if self.duty_area else self.get_duty_display()
+        return f"{self.name} — {self.event.title} ({self.role} @ {duty_name})"
 
 
 class VolunteerAssignment(models.Model):

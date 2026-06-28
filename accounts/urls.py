@@ -36,6 +36,7 @@ urlpatterns = [
     path('workspace/api-keys/', views.generate_api_key, name='generate_api_key'),
     path('workspace/campaigns/', views.campaign_manager, name='campaign_manager'),
     path('workspace/subscriptions/', views.subscription_plans, name='subscription_plans'),
+    path('dashboard/organizer/stats/', views.organizer_stats_api, name='organizer_stats_api'),
     
     # Django's built-in password reset (uses email)
     path('password-reset/', auth_views.PasswordResetView.as_view(

@@ -59,8 +59,14 @@
                         </div>
                         <div class="col-6">
                             <div class="ep-ticket-field">
-                                <small class="text-muted">BOOKING ID</small>
-                                <div class="fw-semibold text-primary small">{{ booking.booking_id|stringformat:"s"|slice:":16"|upper }}</div>
+                                <small class="text-muted">TICKET CODE</small>
+                                <div class="fw-semibold text-primary font-monospace">{{ booking.ticket_code|default:"—" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-ticket-field">
+                                <small class="text-muted">USER CODE</small>
+                                <div class="fw-semibold text-primary font-monospace">{{ booking.user.verification_code|default:"—" }}</div>
                             </div>
                         </div>
                     </div>

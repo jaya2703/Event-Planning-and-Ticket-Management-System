@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Scan Logs — {{ event.title }}{% endblock %}
+{% block body_class %}ep-site ep-dashboard-layout ep-enterprise{% endblock %}
+{% block content %}
+<div class="container ep-page-wrap">
+    <a href="{% url 'events:detail' event.id %}" class="ep-back-link"><i class="bi bi-arrow-left"></i> Back to Event</a>
+
+    <div class="ep-ent-header mb-4">
+        <div>
+            <h1>Scan Logs & Access Audits</h1>
+            <p>Real-time security log for event: <strong>{{ event.title }}</strong></p>
+        </div>
+        <a href="{% url 'bookings:scan_qr' %}?event_id={{ event.id }}" class="btn ep-btn-primary btn-sm">Launch QR Scanner</a>
+    </div>
+
+    <div class="ep-ent-card">
+        <h5 class="fw-bold mb-3">Scan Logs</h5>
+        <div class="table-responsive">
+            <table class="ep-ent-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Verification Code</th>
+                        <th>Attendee</th>
+                        <th>Gate / Device</th>
+                        <th>Scanner (Staff)</th>
+                        <th>Result</th>
+                        <th>Details / Rejection Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="small">{{ log.scanned_at|date:"d M Y, h:i A" }}</td>
+                    <td><code>{{ log.verification_code }}</code></td>
+                    <td>
+                        {% if log.user %}
+                        <strong>{{ log.user.get_full_name|default:log.user.username }}</strong><br>
+                        <small class="text-muted">{{ log.user.email }}</small>
+                        {% elif log.booking %}
+                        <strong>Guest (No Account)</strong><br>
+                        <small class="text-muted">{{ log.booking.user.email }}</small>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="small d-block fw-semibold">{{ log.gate }}</span>
+                        <small class="text-muted">{{ log.device }}</small>
+                    </td>
+                    <td>
+                        {% if log.scanner %}
+                        {{ log.scanner.get_full_name|default:log.scanner.username }}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.result == 'success' %}
+                        <span class="badge bg-success">Success</span>
+                        {% else %}
+                        <span class="badge bg-danger">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.result == 'success' %}
+                        <span class="text-success small"><i class="bi bi-check-circle-fill"></i> Access Granted</span>
+                        {% else %}
+                        <span class="text-danger small fw-semibold"><i class="bi bi-x-circle-fill"></i> {{ log.rejection_reason }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-muted text-center py-4">No scan logs recorded for this event yet.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

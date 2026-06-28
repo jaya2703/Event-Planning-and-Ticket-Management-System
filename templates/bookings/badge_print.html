@@ -121,6 +121,9 @@
                     {% if booking.qr_code %}
                     <img src="{{ booking.qr_code.url }}" alt="QR Ticket">
                     {% endif %}
+                    <div class="mt-2 small font-monospace" style="font-size: 10px; color: #2d3436;">
+                        T: {{ booking.ticket_code|default:"—" }} | U: {{ booking.user.verification_code|default:"—" }}
+                    </div>
                 </div>
             </div>
             

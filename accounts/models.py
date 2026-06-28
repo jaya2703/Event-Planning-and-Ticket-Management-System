@@ -96,9 +96,26 @@ class CustomUser(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     email_verified = models.BooleanField(default=False)
     email_verification_token = models.CharField(max_length=64, blank=True, default='')
+    verification_code = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True
+    )
     
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+    def save(self, *args, **kwargs):
+        if not self.verification_code:
+            import random
+            import string
+            while True:
+                code = "USR-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                if not self.__class__.objects.filter(verification_code=code).exists():
+                    self.verification_code = code
+                    break
+        super().save(*args, **kwargs)
     
     def is_admin(self):
         return self.role in ['admin', 'super_admin']

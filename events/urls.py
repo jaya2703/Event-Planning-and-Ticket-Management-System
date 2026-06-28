@@ -10,5 +10,7 @@ urlpatterns = [
     path('<int:event_id>/edit/', views.edit_event, name='edit'),
     path('<int:event_id>/delete/', views.delete_event, name='delete'),
     path('<int:event_id>/duplicate/', views.duplicate_event, name='duplicate'),
+    path('<int:event_id>/publish/', views.publish_event, name='publish'),
+    path('<int:event_id>/unpublish/', views.unpublish_event, name='unpublish'),
     path('<int:event_id>/poll/add/', views.add_poll, name='add_poll'),
 ]

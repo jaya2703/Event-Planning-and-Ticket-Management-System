@@ -4,6 +4,7 @@ Events Views
 Handles all event-related pages: listing, detail, create, edit, delete.
 """
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
@@ -218,7 +219,7 @@ def event_detail(request, event_id):
 @login_required
 def create_event(request):
     """Create a new event — organizers only."""
-    if request.user.role != 'organizer':
+    if request.user.role not in ['organizer', 'admin', 'event_manager']:
         messages.error(request, "Only organizers can create events.")
         return redirect('accounts:dashboard')
     
@@ -227,9 +228,11 @@ def create_event(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user  # Set the organizer to current user
+            if request.user.organization:
+                event.organization = request.user.organization
             event.save()
             messages.success(request, f"Event '{event.title}' created successfully!")
-            return redirect('events:detail', event_id=event.id)
+            return redirect('accounts:organizer_dashboard')
     else:
         form = EventForm()
     
@@ -241,17 +244,18 @@ def edit_event(request, event_id):
     """Edit an existing event"""
     event = get_object_or_404(Event, id=event_id)
     
-    # Only the organizer who created it (or admin) can edit
-    if event.organizer != request.user and request.user.role != 'admin':
-        messages.error(request, "You can only edit your own events.")
-        return redirect('events:detail', event_id=event.id)
+    can_edit = (request.user.role == 'admin') or (event.organizer == request.user)
+
+    if not can_edit:
+        messages.error(request, "You do not have permission to edit this event.")
+        return redirect('accounts:organizer_dashboard')
     
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
             messages.success(request, "Event updated successfully!")
-            return redirect('events:detail', event_id=event.id)
+            return redirect('accounts:organizer_dashboard')
     else:
         form = EventForm(instance=event)
     
@@ -265,15 +269,21 @@ def delete_event(request, event_id):
     """Delete an event"""
     event = get_object_or_404(Event, id=event_id)
     
-    if event.organizer != request.user and request.user.role != 'admin':
-        messages.error(request, "You can only delete your own events.")
-        return redirect('events:detail', event_id=event.id)
+    can_delete = (request.user.role == 'admin') or (event.organizer == request.user)
+
+    if not can_delete:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        messages.error(request, "You do not have permission to delete this event.")
+        return redirect('accounts:organizer_dashboard')
     
-    if request.method == 'POST':
+    if request.method == 'POST' or request.GET.get('ajax') == 'true':
         event_title = event.title
         event.delete()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json' or request.GET.get('ajax') == 'true':
+            return JsonResponse({'success': True, 'message': f"Event '{event_title}' deleted."})
         messages.success(request, f"Event '{event_title}' deleted.")
-        return redirect('events:list')
+        return redirect('accounts:organizer_dashboard')
     
     return render(request, 'events/event_confirm_delete.html', {'event': event})
 
@@ -282,7 +292,16 @@ def delete_event(request, event_id):
 def add_poll(request, event_id):
     """Add a poll to an event (organizer only)"""
     event = get_object_or_404(Event, id=event_id)
-    if event.organizer != request.user and request.user.role != 'admin':
+    # Only the organizer who created it, someone in the same organization, or admin can add polls
+    can_add_poll = False
+    if request.user.role == 'admin':
+        can_add_poll = True
+    elif event.organizer == request.user:
+        can_add_poll = True
+    elif event.organization and request.user.organization == event.organization and request.user.role in ['organizer', 'event_manager']:
+        can_add_poll = True
+
+    if not can_add_poll:
         messages.error(request, "Permission denied.")
         return redirect('events:detail', event_id=event.id)
     
@@ -312,20 +331,26 @@ def duplicate_event(request, event_id):
         return redirect('accounts:dashboard')
     
     orig = get_object_or_404(Event, id=event_id)
-    if orig.organizer != request.user and request.user.role != 'admin':
+    can_duplicate = (request.user.role == 'admin') or (orig.organizer == request.user)
+
+    if not can_duplicate:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return JsonResponse({'error': 'Permission denied'}, status=403)
         messages.error(request, "Permission denied.")
-        return redirect('accounts:dashboard')
+        return redirect('accounts:organizer_dashboard')
     
     # Check subscription limits
     from accounts.services import check_subscription_limits
     if not check_subscription_limits(request.user.organization, 'max_events'):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return JsonResponse({'error': 'Upgrade plan to create more events.'}, status=400)
         messages.error(request, "Upgrade plan to create more events.")
         return redirect('accounts:organizer_dashboard')
 
     # Clone
     new_event = Event.objects.create(
-        organizer=orig.organizer,
-        organization=orig.organization,
+        organizer=request.user,  # Set the clone organizer to the user performing the duplicate action
+        organization=request.user.organization,
         title=f"Copy of {orig.title}",
         description=orig.description,
         category=orig.category,
@@ -394,6 +419,53 @@ def duplicate_event(request, event_id):
             deliverables=sponsor.deliverables
         )
         
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json' or request.GET.get('ajax') == 'true':
+        return JsonResponse({'success': True, 'message': f"Event duplicated successfully as draft: '{new_event.title}'"})
+        
     messages.success(request, f"Event duplicated successfully as draft: '{new_event.title}'")
+    return redirect('accounts:organizer_dashboard')
+
+
+@login_required
+def publish_event(request, event_id):
+    """Publish an event"""
+    event = get_object_or_404(Event, id=event_id)
+    can_manage = (request.user.role == 'admin') or (event.organizer == request.user)
+    
+    if not can_manage:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:organizer_dashboard')
+        
+    event.status = 'published'
+    event.save()
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json' or request.GET.get('ajax') == 'true':
+        return JsonResponse({'success': True, 'status': 'published', 'status_display': event.get_status_display()})
+        
+    messages.success(request, f"Event '{event.title}' published successfully.")
+    return redirect('accounts:organizer_dashboard')
+
+
+@login_required
+def unpublish_event(request, event_id):
+    """Unpublish an event (convert to draft)"""
+    event = get_object_or_404(Event, id=event_id)
+    can_manage = (request.user.role == 'admin') or (event.organizer == request.user)
+    
+    if not can_manage:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        messages.error(request, "Permission denied.")
+        return redirect('accounts:organizer_dashboard')
+        
+    event.status = 'draft'
+    event.save()
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json' or request.GET.get('ajax') == 'true':
+        return JsonResponse({'success': True, 'status': 'draft', 'status_display': event.get_status_display()})
+        
+    messages.success(request, f"Event '{event.title}' unpublished (saved as draft).")
     return redirect('accounts:organizer_dashboard')
 

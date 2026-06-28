@@ -7,7 +7,8 @@ class EventForm(forms.ModelForm):
     class Meta:
         model = Event
         fields = ['title', 'description', 'category', 'banner', 'date', 'time', 
-                  'venue', 'city', 'total_capacity', 'ticket_price', 'rules', 'status']
+                  'venue', 'city', 'total_capacity', 'ticket_price', 'rules', 'status',
+                  'waitlist_enabled', 'reservation_timeout', 'auto_approve_waitlist', 'max_waitlist_size']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
             'time': forms.TimeInput(attrs={'type': 'time'}),

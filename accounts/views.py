@@ -11,8 +11,10 @@ from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.db.models import Sum, Count, Q
-import json
-from .forms import RegisterForm, ProfileUpdateForm, AdminAccountForm
+from django.http import JsonResponse
+
+# ... in the imports ...
+from .forms import RegisterForm, ProfileUpdateForm
 from .models import CustomUser, Notification, Wishlist
 from .services import (
     monthly_revenue_data, monthly_user_growth, category_distribution,
@@ -142,6 +144,8 @@ def admin_dashboard_view(request):
 @login_required
 def organizer_dashboard_view(request):
     """Organizer SaaS dashboard"""
+    from bookings.views import cleanup_expired_reservations
+    cleanup_expired_reservations()
     staff_roles = ['organizer', 'event_manager', 'finance', 'marketing', 'staff', 'volunteer', 'admin']
     if request.user.role not in staff_roles:
         messages.error(request, "Access denied.")
@@ -154,14 +158,13 @@ def organizer_dashboard_view(request):
     from accounts.models import AuditLog
     
     org = request.user.organization
-    if org:
-        my_events = Event.objects.filter(organization=org).select_related('category')
-        my_bookings = Booking.objects.filter(event__organization=org).select_related('user', 'event')
-        my_revenue = Payment.objects.filter(
-            booking__event__organization=org, status='success'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-        pending_refunds_count = Refund.objects.filter(booking__event__organization=org, status='pending').count()
-        recent_activity = AuditLog.objects.filter(user__organization=org)[:5]
+    is_admin = request.user.role == 'admin'
+    if is_admin:
+        my_events = Event.objects.all().select_related('category')
+        my_bookings = Booking.objects.all().select_related('user', 'event')
+        my_revenue = Payment.objects.filter(status='success').aggregate(total=Sum('amount'))['total'] or 0
+        pending_refunds_count = Refund.objects.filter(status='pending').count()
+        recent_activity = AuditLog.objects.all()[:5]
     else:
         my_events = Event.objects.filter(organizer=request.user).select_related('category')
         my_bookings = Booking.objects.filter(event__organizer=request.user).select_related('user', 'event')
@@ -172,8 +175,8 @@ def organizer_dashboard_view(request):
         recent_activity = AuditLog.objects.filter(user=request.user)[:5]
 
     from volunteers.models import EventVolunteer
-    if org:
-        vol_qs = EventVolunteer.objects.filter(event__organization=org)
+    if is_admin:
+        vol_qs = EventVolunteer.objects.all()
     else:
         vol_qs = EventVolunteer.objects.filter(event__organizer=request.user)
         
@@ -213,11 +216,21 @@ def organizer_dashboard_view(request):
     checkins_today = my_bookings.filter(is_checked_in=True, checked_in_at__date=timezone.now().date()).count()
     active_events_count = my_events.filter(status__in=['draft', 'published', 'upcoming', 'ongoing']).count()
 
+    # Global Stats for Org
+    total_capacity = sum(ev.total_capacity or 0 for ev in my_events)
+    total_checked_in = 0
+    for ev in my_events:
+        total_checked_in += Booking.objects.filter(event=ev, is_checked_in=True).count()
+
+    total_tickets_sold = my_bookings.filter(status__in=['confirmed', 'attended']).aggregate(t=Sum('quantity'))['t'] or 0
+    remaining_capacity = total_capacity - total_tickets_sold
+    attendance_rate = int((total_checked_in / total_capacity * 100)) if total_capacity > 0 else 0
+
     context = {
         'org': org,
         'my_events': my_events,
         'my_events_count': my_events.count(),
-        'my_bookings_count': my_bookings.filter(status__in=['confirmed', 'attended']).aggregate(t=Sum('quantity'))['t'] or 0,
+        'my_bookings_count': total_tickets_sold,
         'my_revenue': my_revenue,
         'recent_bookings': my_bookings.order_by('-booked_at')[:10],
         'my_volunteers': my_volunteers,
@@ -230,6 +243,10 @@ def organizer_dashboard_view(request):
         'active_events_count': active_events_count,
         'pending_refunds_count': pending_refunds_count,
         'recent_activity': recent_activity,
+        'total_capacity': total_capacity,
+        'total_checked_in': total_checked_in,
+        'remaining_capacity': remaining_capacity,
+        'attendance_rate': attendance_rate,
     }
     return render(request, 'dashboard/organizer_dashboard.html', context)
 
@@ -237,6 +254,8 @@ def organizer_dashboard_view(request):
 @login_required
 def user_dashboard_view(request):
     """User dashboard - shows bookings, recommended events etc."""
+    from bookings.views import cleanup_expired_reservations
+    cleanup_expired_reservations()
     from bookings.models import Booking
     from django.utils import timezone
 
@@ -253,6 +272,48 @@ def user_dashboard_view(request):
         'wishlist_ids': wishlist_ids,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
+
+
+@login_required
+def organizer_stats_api(request):
+    """API endpoint to return organizer dashboard statistics for auto-refresh."""
+    from bookings.views import cleanup_expired_reservations
+    cleanup_expired_reservations()
+    staff_roles = ['organizer', 'event_manager', 'finance', 'marketing', 'staff', 'volunteer', 'admin']
+    if request.user.role not in staff_roles:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    is_admin = request.user.role == 'admin'
+    if is_admin:
+        my_events = Event.objects.all()
+        my_bookings = Booking.objects.all()
+        my_revenue = Payment.objects.filter(status='success').aggregate(total=Sum('amount'))['total'] or 0
+    else:
+        my_events = Event.objects.filter(organizer=request.user)
+        my_bookings = Booking.objects.filter(event__organizer=request.user)
+        my_revenue = Payment.objects.filter(
+            booking__event__organizer=request.user, status='success'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+    total_capacity = sum(ev.total_capacity or 0 for ev in my_events)
+    total_checked_in = 0
+    for ev in my_events:
+        total_checked_in += Booking.objects.filter(event=ev, is_checked_in=True).count()
+
+    total_tickets_sold = my_bookings.filter(status__in=['confirmed', 'attended']).aggregate(t=Sum('quantity'))['t'] or 0
+    remaining_capacity = total_capacity - total_tickets_sold
+    attendance_rate = int((total_checked_in / total_capacity * 100)) if total_capacity > 0 else 0
+
+    return JsonResponse({
+        'my_events_count': my_events.count(),
+        'my_bookings_count': total_tickets_sold,
+        'my_revenue': float(my_revenue),
+        'total_checked_in': total_checked_in,
+        'remaining_capacity': remaining_capacity,
+        'attendance_rate': attendance_rate,
+        'registrations_today': my_bookings.filter(booked_at__date=timezone.now().date(), status__in=['confirmed', 'attended', 'pending_payment']).count(),
+        'checkins_today': my_bookings.filter(is_checked_in=True, checked_in_at__date=timezone.now().date()).count(),
+    })
 
 
 @login_required

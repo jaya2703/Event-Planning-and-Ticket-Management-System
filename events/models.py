@@ -121,6 +121,12 @@ class Event(models.Model):
     password = models.CharField(max_length=50, blank=True, null=True)
     is_template = models.BooleanField(default=False)
     
+    # Waitlist controls
+    waitlist_enabled = models.BooleanField(default=True)
+    reservation_timeout = models.PositiveIntegerField(default=15, help_text="Reservation timeout in minutes")
+    auto_approve_waitlist = models.BooleanField(default=True, help_text="Automatic vs manual approval")
+    max_waitlist_size = models.PositiveIntegerField(default=50, help_text="Maximum waiting list size")
+    
     # Rules
     rules = models.TextField(blank=True, null=True)
     

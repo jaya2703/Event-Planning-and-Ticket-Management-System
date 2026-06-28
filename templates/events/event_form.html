@@ -84,7 +84,37 @@
                                 <small class="text-muted">Current: {{ form.instance.banner.name }}</small>
                             {% endif %}
                         </div>
-                        <div class="col-12">
+                        <!-- Waiting List Settings -->
+                        <div class="col-12 border-top pt-3 mt-4">
+                            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-hourglass-split me-2"></i>Waiting List Controls</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="waitlist_enabled" id="id_waitlist_enabled" 
+                                       {% if form.waitlist_enabled.value %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="id_waitlist_enabled">Enable Waiting List</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="auto_approve_waitlist" id="id_auto_approve_waitlist" 
+                                       {% if form.auto_approve_waitlist.value %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="id_auto_approve_waitlist">Auto-Promote & Email Payment Link</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Reservation Expiry Timeout (Minutes)</label>
+                            <input type="number" name="reservation_timeout" class="form-control ep-input" 
+                                   value="{{ form.reservation_timeout.value|default:15 }}" min="1">
+                            <small class="text-muted">Allocated time window for promoted waitlist users to pay.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Max Waiting List Capacity</label>
+                            <input type="number" name="max_waitlist_size" class="form-control ep-input" 
+                                   value="{{ form.max_waitlist_size.value|default:50 }}" min="1">
+                        </div>
+                        
+                        <div class="col-12 mt-4">
                             <label class="form-label fw-semibold">Rules & Guidelines</label>
                             <textarea name="rules" class="form-control ep-input" rows="3" 
                                       placeholder="Any rules attendees should know...">{{ form.rules.value|default:'' }}</textarea>

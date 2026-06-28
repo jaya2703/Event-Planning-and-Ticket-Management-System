@@ -268,7 +268,7 @@
                     <td>
                         <div class="ep-saas-user-cell">
                             <span class="ep-saas-avatar">{{ u.username|first|upper }}</span>
-                            <span>{{ u.username|truncatechars:14 }}</span>
+                            <span>{{ u.username|truncatechars:14 }}<br><small class="text-muted font-monospace" style="font-size: 10px;">{{ u.verification_code|default:"—" }}</small></span>
                         </div>
                     </td>
                     <td><span class="ep-saas-role">{{ u.get_role_display }}</span></td>

@@ -12,6 +12,9 @@
                 {% endif %}
                 <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
                 <span class="badge ep-badge-role">{{ user.get_role_display }}</span>
+                {% if user.verification_code %}
+                    <div class="mt-2 text-dark small font-monospace">User Code: <strong class="text-primary">{{ user.verification_code }}</strong></div>
+                {% endif %}
                 <p class="text-muted small mt-2">{{ user.email }}</p>
             </div>
             <div class="ep-card p-3">

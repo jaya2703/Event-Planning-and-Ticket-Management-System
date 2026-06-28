@@ -123,7 +123,7 @@
                         </td>
                         <td>
                             <div class="fw-bold text-dark">{{ u.get_full_name|default:u.username }}</div>
-                            <div class="text-muted small" style="font-size: 0.68rem;">@{{ u.username }}</div>
+                            <div class="text-muted small" style="font-size: 0.68rem;">@{{ u.username }} · <span class="font-monospace text-primary fw-semibold">{{ u.verification_code|default:"—" }}</span></div>
                         </td>
                         <td>
                             <div class="text-dark">{{ u.email }}</div>

@@ -34,6 +34,7 @@ class Booking(models.Model):
     """
     STATUS_CHOICES = [
         ('pending_payment', 'Pending Payment'),
+        ('pending_approval', 'Pending Approval'),
         ('confirmed', 'Confirmed'),
         ('cancelled', 'Cancelled'),
         ('waitlisted', 'Waitlisted'),
@@ -78,10 +79,24 @@ class Booking(models.Model):
     promo_code = models.ForeignKey(PromoCode, on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
     badge_printed = models.BooleanField(default=False)
     
+    ticket_code = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    payment_deadline = models.DateTimeField(null=True, blank=True)
+    reminder_sent = models.BooleanField(default=False)
+    
     def __str__(self):
         return f"Booking #{str(self.booking_id)[:8]} - {self.user.username} -> {self.event.title}"
     
     def save(self, *args, **kwargs):
+        if not self.ticket_code:
+            import random
+            import string
+            year = self.event.date.year if self.event else 2026
+            while True:
+                code = f"EVT-{year}-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                if not self.__class__.objects.filter(ticket_code=code).exists():
+                    self.ticket_code = code
+                    break
+        
         if self.ticket_tier:
             price = self.ticket_tier.price
         else:
@@ -148,4 +163,20 @@ class Refund(models.Model):
 
     def __str__(self):
         return f"Refund for Booking #{str(self.booking.booking_id)[:8]} - {self.status}"
+
+
+class TicketScanLog(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.SET_NULL, null=True, blank=True, related_name='scan_logs')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='ticket_scans') # attendee
+    verification_code = models.CharField(max_length=50, blank=True, default='')
+    event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True, blank=True)
+    scanner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='scanned_by') # staff/organizer
+    gate = models.CharField(max_length=50, blank=True, default='Main Gate')
+    device = models.CharField(max_length=150, blank=True, default='Mobile Scanner')
+    scanned_at = models.DateTimeField(auto_now_add=True)
+    result = models.CharField(max_length=20, choices=[('success', 'Success'), ('rejected', 'Rejected')], default='success')
+    rejection_reason = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return f"Scan: {self.verification_code} - {self.result} at {self.scanned_at}"
 

@@ -38,7 +38,7 @@
             <tr>
                 <td><strong>{{ v.name }}</strong><br><small class="text-muted">{{ v.mobile }}</small></td>
                 <td>{{ v.event.title|truncatechars:24 }}</td>
-                <td>{{ v.get_duty_display }}</td>
+                <td>{{ v.role }} @ {{ v.duty_area.name|default:"General" }}</td>
                 <td class="small">{{ v.shift_timing|default:"—" }}</td>
                 <td><span class="badge bg-secondary">{{ v.get_status_display }}</span></td>
                 <td><a href="{% url 'volunteers:edit' v.id %}" class="btn btn-sm ep-btn-outline">Edit</a></td>

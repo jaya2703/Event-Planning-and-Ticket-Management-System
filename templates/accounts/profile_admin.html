@@ -42,6 +42,12 @@
                         <span class="ep-settings-meta-label">Account ID</span>
                         <span class="ep-settings-meta-value"><code>#{{ user.id|stringformat:"04d" }}</code></span>
                     </div>
+                    {% if user.verification_code %}
+                    <div class="ep-settings-meta-item">
+                        <span class="ep-settings-meta-label">User Verification Code</span>
+                        <span class="ep-settings-meta-value"><code>{{ user.verification_code }}</code></span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
